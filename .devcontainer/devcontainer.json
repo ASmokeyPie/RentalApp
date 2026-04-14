@@ -1,0 +1,21 @@
+{
+  "name": "MAUI Dev Environment",
+  "dockerComposeFile": ["../docker-compose.yml"],
+  "service": "app",
+  "workspaceFolder": "/RentalApp",
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "cweijan.vscode-postgresql-client2",
+        "ms-dotnettools.dotnet-maui",
+        "toroxx.vscode-avdmanager"
+      ]
+    }
+  },
+  "remoteUser": "root",
+  "portsAttributes": {
+    "5037": { "onAutoForward": "ignore" },
+    "5554": { "onAutoForward": "silent" },
+    "5555": { "onAutoForward": "silent" }
+  }
+}

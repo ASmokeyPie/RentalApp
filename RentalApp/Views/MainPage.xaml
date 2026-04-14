@@ -1,0 +1,198 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage x:Class="RentalApp.Views.MainPage"
+             xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:vm="clr-namespace:RentalApp.ViewModels"
+             Title="{Binding Title}">
+
+    <ContentPage.BindingContext>
+        <vm:MainViewModel />
+    </ContentPage.BindingContext>
+
+    <ContentPage.ToolbarItems>
+        <ToolbarItem Text="Profile" 
+                     Command="{Binding NavigateToProfileCommand}"
+                     IconImageSource="user.png" />
+        <ToolbarItem Text="Settings" 
+                     Command="{Binding NavigateToSettingsCommand}"
+                     IconImageSource="settings.png" />
+        <ToolbarItem Text="Logout" 
+                     Command="{Binding LogoutCommand}"
+                     IconImageSource="logout.png" />
+    </ContentPage.ToolbarItems>
+
+    <RefreshView IsRefreshing="{Binding IsBusy}" 
+                 Command="{Binding RefreshDataCommand}">
+        <ScrollView>
+            <Grid Padding="20" RowSpacing="20">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="*" />
+                </Grid.RowDefinitions>
+
+                <!-- Welcome Section -->
+                <Border Grid.Row="0"
+                        BackgroundColor="{AppThemeBinding Light={StaticResource Primary}, Dark={StaticResource PrimaryDark}}"
+                        Padding="20"
+                        HeightRequest="120">
+                    <Border.StrokeShape>
+                        <RoundRectangle CornerRadius="12" />
+                    </Border.StrokeShape>
+                    <StackLayout VerticalOptions="Center">
+                        <Label Text="{Binding WelcomeMessage}"
+                               FontSize="24"
+                               FontAttributes="Bold"
+                               TextColor="White"
+                               HorizontalOptions="Center" />
+                        <Label Text="{Binding CurrentUser.Email}"
+                               FontSize="14"
+                               TextColor="White"
+                               Opacity="0.8"
+                               HorizontalOptions="Center" />
+                    </StackLayout>
+                </Border>
+
+                <!-- Error Display -->
+                <Border Grid.Row="1"
+                        BackgroundColor="{AppThemeBinding Light=#FFEBEE, Dark=#1B0000}"
+                        Stroke="{AppThemeBinding Light=#F44336, Dark=#EF5350}"
+                        StrokeThickness="1"
+                        Padding="15"
+                        IsVisible="{Binding HasError}">
+                    <Border.StrokeShape>
+                        <RoundRectangle CornerRadius="8" />
+                    </Border.StrokeShape>
+                    <StackLayout Orientation="Horizontal">
+                        <Label Text="{Binding ErrorMessage}"
+                               TextColor="{AppThemeBinding Light=#D32F2F, Dark=#EF5350}"
+                               FontSize="14"
+                               VerticalOptions="Center"
+                               HorizontalOptions="StartAndExpand" />
+                        <Button Text="×"
+                                Command="{Binding ClearErrorCommand}"
+                                BackgroundColor="Transparent"
+                                TextColor="{AppThemeBinding Light=#D32F2F, Dark=#EF5350}"
+                                FontSize="18"
+                                Padding="5"
+                                WidthRequest="30"
+                                HeightRequest="30" />
+                    </StackLayout>
+                </Border>
+
+                <!-- Quick Actions -->
+                <Label Grid.Row="2"
+                       Text="Quick Actions"
+                       FontSize="20"
+                       FontAttributes="Bold"
+                       Margin="0,10,0,10" />
+
+                <!-- Action Cards -->
+                <StackLayout Grid.Row="3" Spacing="15">
+                    
+                    <!-- Profile Card -->
+                    <Border BackgroundColor="{AppThemeBinding Light={StaticResource White}, Dark={StaticResource Gray900}}"
+                            Stroke="{AppThemeBinding Light={StaticResource Gray200}, Dark={StaticResource Gray700}}"
+                            StrokeThickness="1"
+                            Padding="20"
+                            HeightRequest="80">
+                        <Border.StrokeShape>
+                            <RoundRectangle CornerRadius="12" />
+                        </Border.StrokeShape>
+                        <Border.GestureRecognizers>
+                            <TapGestureRecognizer Command="{Binding NavigateToProfileCommand}" />
+                        </Border.GestureRecognizers>
+                        <Grid ColumnDefinitions="Auto,*,Auto">
+                            <Label Grid.Column="0"
+                                   Text="👤"
+                                   FontSize="24"
+                                   VerticalOptions="Center" />
+                            <StackLayout Grid.Column="1" Margin="15,0,0,0" VerticalOptions="Center">
+                                <Label Text="Profile Settings"
+                                       FontSize="16"
+                                       FontAttributes="Bold" />
+                                <Label Text="Manage your account information"
+                                       FontSize="12"
+                                       TextColor="{AppThemeBinding Light={StaticResource Gray600}, Dark={StaticResource Gray400}}" />
+                            </StackLayout>
+                            <Label Grid.Column="2"
+                                   Text=">"
+                                   FontSize="18"
+                                   VerticalOptions="Center"
+                                   TextColor="{AppThemeBinding Light={StaticResource Gray400}, Dark={StaticResource Gray600}}" />
+                        </Grid>
+                    </Border>
+
+                    <!-- Settings Card -->
+                    <Border BackgroundColor="{AppThemeBinding Light={StaticResource White}, Dark={StaticResource Gray900}}"
+                            Stroke="{AppThemeBinding Light={StaticResource Gray200}, Dark={StaticResource Gray700}}"
+                            StrokeThickness="1"
+                            Padding="20"
+                            HeightRequest="80">
+                        <Border.StrokeShape>
+                            <RoundRectangle CornerRadius="12" />
+                        </Border.StrokeShape>
+                        <Border.GestureRecognizers>
+                            <TapGestureRecognizer Command="{Binding NavigateToSettingsCommand}" />
+                        </Border.GestureRecognizers>
+                        <Grid ColumnDefinitions="Auto,*,Auto">
+                            <Label Grid.Column="0"
+                                   Text="⚙️"
+                                   FontSize="24"
+                                   VerticalOptions="Center" />
+                            <StackLayout Grid.Column="1" Margin="15,0,0,0" VerticalOptions="Center">
+                                <Label Text="App Settings"
+                                       FontSize="16"
+                                       FontAttributes="Bold" />
+                                <Label Text="Configure app preferences"
+                                       FontSize="12"
+                                       TextColor="{AppThemeBinding Light={StaticResource Gray600}, Dark={StaticResource Gray400}}" />
+                            </StackLayout>
+                            <Label Grid.Column="2"
+                                   Text=">"
+                                   FontSize="18"
+                                   VerticalOptions="Center"
+                                   TextColor="{AppThemeBinding Light={StaticResource Gray400}, Dark={StaticResource Gray600}}" />
+                        </Grid>
+                    </Border>
+
+                    <!-- Users Card (Only visible for admins) -->
+                    <Border BackgroundColor="{AppThemeBinding Light={StaticResource White}, Dark={StaticResource Gray900}}"
+                            Stroke="{AppThemeBinding Light={StaticResource Gray200}, Dark={StaticResource Gray700}}"
+                            StrokeThickness="1"
+                            Padding="20"
+                            HeightRequest="80"
+                            IsVisible="{Binding IsAdmin}">
+                        <Border.StrokeShape>
+                            <RoundRectangle CornerRadius="12" />
+                        </Border.StrokeShape>
+                        <Border.GestureRecognizers>
+                            <TapGestureRecognizer Command="{Binding NavigateToUserListCommand}" />
+                        </Border.GestureRecognizers>
+                        <Grid ColumnDefinitions="Auto,*,Auto">
+                            <Label Grid.Column="0"
+                                   Text="🔐"
+                                   FontSize="24"
+                                   VerticalOptions="Center" />
+                            <StackLayout Grid.Column="1" Margin="15,0,0,0" VerticalOptions="Center">
+                                <Label Text="User management"
+                                       FontSize="16"
+                                       FontAttributes="Bold" />
+                                <Label Text="Manage users and their roles"
+                                       FontSize="12"
+                                       TextColor="{AppThemeBinding Light={StaticResource Gray600}, Dark={StaticResource Gray400}}" />
+                            </StackLayout>
+                            <Label Grid.Column="2"
+                                   Text=">"
+                                   FontSize="18"
+                                   VerticalOptions="Center"
+                                   TextColor="{AppThemeBinding Light={StaticResource Gray400}, Dark={StaticResource Gray600}}" />
+                        </Grid>
+                    </Border>
+
+                </StackLayout>
+            </Grid>
+        </ScrollView>
+    </RefreshView>
+</ContentPage>

@@ -1,0 +1,54 @@
+services:
+  migrate:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    platform: linux/amd64
+    volumes:
+      - .:/RentalApp:cached
+      - nuget_cache:/root/.nuget/packages
+    network_mode: service:db
+    environment:
+      - CONNECTION_STRING=Host=localhost;Username=app_user;Password=app_password;Database=appdb
+    command: bash -c "cd /RentalApp && dotnet run --project RentalApp.Migrations/RentalApp.Migrations.csproj"
+    depends_on:
+      db:
+        condition: service_healthy
+    restart: "no"
+
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    platform: linux/amd64
+    volumes:
+      - .:/RentalApp:cached
+      - nuget_cache:/root/.nuget/packages
+    network_mode: service:db
+    environment:
+      - ADB_SERVER_SOCKET=tcp:host.docker.internal:5037
+    command: sleep infinity
+    depends_on:
+      db:
+        condition: service_healthy
+
+  db:
+    image: postgres:16
+    restart: always
+    environment:
+      POSTGRES_USER: app_user
+      POSTGRES_PASSWORD: app_password
+      POSTGRES_DB: appdb
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U app_user -d appdb"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  postgres_data:
+  nuget_cache:
