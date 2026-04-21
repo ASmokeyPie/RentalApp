@@ -20,9 +20,22 @@ public static class MauiProgram
                 fonts.AddFont("OpenSans-Semibold.ttf", "OpenSansSemibold");
             });
 
-        builder.Services.AddDbContext<AppDbContext>();
+        const bool useSharedApi = true; // Set to false to use local database and authentication
 
-        builder.Services.AddSingleton<IAuthenticationService, AuthenticationService>();
+        if (useSharedApi)
+        {
+            var httpClient = new HttpClient
+            {
+                BaseAddress = new Uri("https://set09102-api.b-davison.workers.dev/")
+            };
+            builder.Services.AddSingleton(httpClient);
+            builder.Services.AddSingleton<IAuthenticationService, ApiAuthenticationService>();
+        }
+        else
+        {
+            builder.Services.AddDbContext<AppDbContext>();
+            builder.Services.AddSingleton<IAuthenticationService, AuthenticationService>();
+        }
         builder.Services.AddSingleton<INavigationService, NavigationService>();
 
         builder.Services.AddSingleton<AppShellViewModel>();
