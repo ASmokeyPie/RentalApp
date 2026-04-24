@@ -1,0 +1,41 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <IsPackable>false</IsPackable>
+    <IsTestProject>true</IsTestProject>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.12.0" />
+    <PackageReference Include="xunit" Version="2.9.2" />
+    <PackageReference Include="xunit.runner.visualstudio" Version="2.8.2">
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+      <PrivateAssets>all</PrivateAssets>
+    </PackageReference>
+    <PackageReference Include="Moq" Version="4.20.72" />
+    <PackageReference Include="coverlet.collector" Version="6.0.2">
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+      <PrivateAssets>all</PrivateAssets>
+    </PackageReference>
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\RentalApp.Database\RentalApp.Database.csproj" />
+  </ItemGroup>
+
+  <!--
+    The MAUI head project (RentalApp) does not multi-target net10.0, so we cannot
+    ProjectReference it from a net10.0 test project. Instead, as new logic lands
+    in RentalApp/ that we want to test, we pull the specific source files in here
+    via <Compile Include="..\RentalApp\..." />. Only add files that do not depend
+    on MAUI (Microsoft.Maui.*) types — MAUI collaborators stay behind interfaces
+    so tests can fake them.
+  -->
+  <ItemGroup>
+    <!-- Per-phase Compile Include entries will be added below as phases land. -->
+  </ItemGroup>
+
+</Project>
