@@ -1,4 +1,6 @@
-﻿using RentalApp.ViewModels;
+﻿using System.Diagnostics;
+using RentalApp.Services;
+using RentalApp.ViewModels;
 
 namespace RentalApp;
 
@@ -28,6 +30,24 @@ public partial class App : Application
 			throw new InvalidOperationException("AppShell could not be resolved from the service provider.");
 		}
 		var window = new Window(shell);
+
+		// Fire-and-forget: attempt to restore a persisted session on startup.
+		// If successful, IAuthenticationService raises AuthenticationStateChanged
+		// and subscribers (shell view model, pages) react. If not, the shell
+		// stays on its default LoginPage content.
+		_ = Task.Run(async () =>
+		{
+			try
+			{
+				var auth = _serviceProvider.GetRequiredService<IAuthenticationService>();
+				await auth.TryRestoreSessionAsync();
+			}
+			catch (Exception ex)
+			{
+				Debug.WriteLine($"Session restore failed: {ex.Message}");
+			}
+		});
+
 		return window;
 	}
 }

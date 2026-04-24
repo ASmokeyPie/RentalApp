@@ -95,6 +95,13 @@ public class AuthenticationService : IAuthenticationService
         return Task.CompletedTask;
     }
 
+    /// <summary>
+    /// Offline/local auth has no persisted session — the user signs in fresh
+    /// every app launch. This is the local-database code path and is not used
+    /// while `useSharedApi = true` in MauiProgram.
+    /// </summary>
+    public Task<bool> TryRestoreSessionAsync() => Task.FromResult(false);
+
     public async Task<bool> ChangePasswordAsync(string currentPassword, string newPassword)
     {
         if (_currentUser == null)
@@ -122,17 +129,5 @@ public class AuthenticationService : IAuthenticationService
         {
             return false;
         }
-    }
-}
-
-public class AuthenticationResult
-{
-    public bool IsSuccess { get; }
-    public string Message { get; }
-
-    public AuthenticationResult(bool isSuccess, string message)
-    {
-        IsSuccess = isSuccess;
-        Message = message;
     }
 }

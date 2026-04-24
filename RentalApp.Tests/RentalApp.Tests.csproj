@@ -35,7 +35,17 @@
     so tests can fake them.
   -->
   <ItemGroup>
-    <!-- Per-phase Compile Include entries will be added below as phases land. -->
+    <!-- Phase 1: auth + token handling. These files have no MAUI dependencies
+         so they compile cleanly against net10.0. SecureStorageTokenStorage.cs
+         is deliberately excluded because it references Microsoft.Maui.Storage. -->
+    <Compile Include="..\RentalApp\Services\StoredToken.cs" Link="Services\StoredToken.cs" />
+    <Compile Include="..\RentalApp\Services\ITokenStorage.cs" Link="Services\ITokenStorage.cs" />
+    <Compile Include="..\RentalApp\Services\TokenStorageExtensions.cs" Link="Services\TokenStorageExtensions.cs" />
+    <Compile Include="..\RentalApp\Services\AuthDelegatingHandler.cs" Link="Services\AuthDelegatingHandler.cs" />
+    <Compile Include="..\RentalApp\Services\IAuthenticationService.cs" Link="Services\IAuthenticationService.cs" />
+    <Compile Include="..\RentalApp\Services\AuthenticationResult.cs" Link="Services\AuthenticationResult.cs" />
+    <Compile Include="..\RentalApp\Services\AuthStateChangedEventArgs.cs" Link="Services\AuthStateChangedEventArgs.cs" />
+    <Compile Include="..\RentalApp\Services\ApiAuthenticationService.cs" Link="Services\ApiAuthenticationService.cs" />
   </ItemGroup>
 
 </Project>
