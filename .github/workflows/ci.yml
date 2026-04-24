@@ -1,0 +1,60 @@
+name: CI
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main, develop]
+
+jobs:
+  test:
+    name: Build class libs & run xUnit tests
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup .NET 10
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 10.0.x
+
+      - name: Cache NuGet packages
+        uses: actions/cache@v4
+        with:
+          path: ~/.nuget/packages
+          key: nuget-${{ runner.os }}-${{ hashFiles('**/*.csproj') }}
+          restore-keys: |
+            nuget-${{ runner.os }}-
+
+      - name: Restore class libs & tests
+        run: |
+          dotnet restore RentalApp.Database/RentalApp.Database.csproj
+          dotnet restore RentalApp.Migrations/RentalApp.Migrations.csproj
+          dotnet restore RentalApp.Tests/RentalApp.Tests.csproj
+
+      - name: Build RentalApp.Database
+        run: dotnet build RentalApp.Database/RentalApp.Database.csproj --configuration Release --no-restore
+
+      - name: Build RentalApp.Migrations
+        run: dotnet build RentalApp.Migrations/RentalApp.Migrations.csproj --configuration Release --no-restore
+
+      - name: Build RentalApp.Tests
+        run: dotnet build RentalApp.Tests/RentalApp.Tests.csproj --configuration Release --no-restore
+
+      - name: Run tests with coverage
+        run: >
+          dotnet test RentalApp.Tests/RentalApp.Tests.csproj
+          --configuration Release
+          --no-build
+          --logger "trx;LogFileName=test-results.trx"
+          --collect:"XPlat Code Coverage"
+          --results-directory ./TestResults
+
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-results
+          path: ./TestResults
+          if-no-files-found: warn
