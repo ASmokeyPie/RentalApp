@@ -24,11 +24,25 @@ public static class MauiProgram
 
         if (useSharedApi)
         {
-            var httpClient = new HttpClient
+            // Token storage (SecureStorage on device).
+            builder.Services.AddSingleton<ITokenStorage, SecureStorageTokenStorage>();
+
+            // The delegating handler attaches the stored Bearer token per request
+            // and raises AuthenticationExpired on 401s to authenticated requests.
+            // It is a singleton so ApiAuthenticationService can subscribe to its
+            // event exactly once.
+            builder.Services.AddSingleton(sp => new AuthDelegatingHandler(
+                sp.GetRequiredService<ITokenStorage>())
             {
-                BaseAddress = new Uri("https://set09102-api.b-davison.workers.dev/")
-            };
-            builder.Services.AddSingleton(httpClient);
+                InnerHandler = new HttpClientHandler(),
+            });
+
+            builder.Services.AddSingleton(sp => new HttpClient(
+                sp.GetRequiredService<AuthDelegatingHandler>(), disposeHandler: false)
+            {
+                BaseAddress = new Uri("https://set09102-api.b-davison.workers.dev/"),
+            });
+
             builder.Services.AddSingleton<IAuthenticationService, ApiAuthenticationService>();
         }
         else

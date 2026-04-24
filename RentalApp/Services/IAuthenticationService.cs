@@ -14,4 +14,12 @@ public interface IAuthenticationService
     Task LogoutAsync();
 
     Task<bool> ChangePasswordAsync(string currentPassword, string newPassword);
+
+    /// <summary>
+    /// Attempts to restore an authenticated session from persisted storage
+    /// without prompting the user. Called on app start. Returns true if a
+    /// valid session was restored (and AuthenticationStateChanged has been
+    /// raised); false if the user must log in again.
+    /// </summary>
+    Task<bool> TryRestoreSessionAsync();
 }
