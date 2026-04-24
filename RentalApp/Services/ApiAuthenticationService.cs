@@ -8,13 +8,11 @@ public class ApiAuthenticationService : IAuthenticationService
 {
     private readonly HttpClient _httpClient;
     private User? _currentUser;
-    private readonly List<string> _currentUserRoles = new();
 
     public event EventHandler<bool>? AuthenticationStateChanged;
 
     public bool IsAuthenticated => _currentUser != null;
     public User? CurrentUser => _currentUser;
-    public List<string> CurrentUserRoles => _currentUserRoles;
 
     public ApiAuthenticationService(HttpClient httpClient)
     {
@@ -88,20 +86,11 @@ public class ApiAuthenticationService : IAuthenticationService
     public Task LogoutAsync()
     {
         _currentUser = null;
-        _currentUserRoles.Clear();
         _httpClient.DefaultRequestHeaders.Authorization = null;
         AuthenticationStateChanged?.Invoke(this, false);
         return Task.CompletedTask;
     }
 
-    public bool HasRole(string roleName) =>
-        _currentUserRoles.Contains(roleName, StringComparer.OrdinalIgnoreCase);
-
-    public bool HasAnyRole(params string[] roleNames) =>
-        roleNames.Any(HasRole);
-
-    public bool HasAllRoles(params string[] roleNames) =>
-        roleNames.All(HasRole);
 
     public Task<bool> ChangePasswordAsync(string currentPassword, string newPassword)
     {

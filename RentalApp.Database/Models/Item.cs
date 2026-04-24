@@ -1,0 +1,72 @@
+using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
+using Microsoft.EntityFrameworkCore;
+
+namespace RentalApp.Database.Models;
+
+/// <summary>
+/// A rentable item listed by an owner (e.g. a drill, a tent, a camera).
+/// </summary>
+[Table("items")]
+[PrimaryKey(nameof(Id))]
+public class Item
+{
+    public int Id { get; set; }
+
+    /// <summary>Short, human-readable title (5–100 chars).</summary>
+    [Required, MinLength(5), MaxLength(100)]
+    public string Title { get; set; } = string.Empty;
+
+    /// <summary>Optional long-form description (up to 1000 chars).</summary>
+    [MaxLength(1000)]
+    public string? Description { get; set; }
+
+    /// <summary>Rental price per day. 0 &lt; DailyRate ≤ 1000.</summary>
+    [Required]
+    [Range(0.01, 1000.00)]
+    [Column(TypeName = "numeric(10,2)")]
+    public decimal DailyRate { get; set; }
+
+    /// <summary>Foreign key to Category. Required.</summary>
+    [Required]
+    public int CategoryId { get; set; }
+
+    [ForeignKey(nameof(CategoryId))]
+    public Category? Category { get; set; }
+
+    /// <summary>Foreign key to the owning User. Required.</summary>
+    [Required]
+    public int OwnerId { get; set; }
+
+    [ForeignKey(nameof(OwnerId))]
+    public User? Owner { get; set; }
+
+    /// <summary>Latitude in decimal degrees, -90 to 90.</summary>
+    [Required]
+    [Range(-90.0, 90.0)]
+    public double Latitude { get; set; }
+
+    /// <summary>Longitude in decimal degrees, -180 to 180.</summary>
+    [Required]
+    [Range(-180.0, 180.0)]
+    public double Longitude { get; set; }
+
+    /// <summary>Whether the item is currently listed as available to rent.</summary>
+    public bool IsAvailable { get; set; } = true;
+
+    public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+    public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
+
+    // Navigation properties
+    public List<Rental> Rentals { get; set; } = new();
+
+    /// <summary>
+    /// Preview of description for list views (API returns full description,
+    /// this is a client-side convenience).
+    /// </summary>
+    [NotMapped]
+    public string? DescriptionPreview =>
+        Description is null ? null
+        : Description.Length > 100 ? Description[..100] + "..."
+        : Description;
+}

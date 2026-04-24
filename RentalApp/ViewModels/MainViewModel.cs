@@ -17,7 +17,7 @@ public partial class MainViewModel : BaseViewModel
 {
     /// @brief Authentication service for managing user authentication
     private readonly IAuthenticationService _authService;
-    
+
     /// @brief Navigation service for managing page navigation
     private readonly INavigationService _navigationService;
 
@@ -31,19 +31,15 @@ public partial class MainViewModel : BaseViewModel
     [ObservableProperty]
     private string welcomeMessage = string.Empty;
 
-    /// @brief Indicates whether the current user has admin privileges
-    /// @details Observable property used to control visibility of admin features
-    [ObservableProperty]
-    private bool isAdmin;
 
     /// @brief Default constructor for design-time support
     /// @details Sets the title to "Dashboard"
     public MainViewModel()
-        {
-            // Default constructor for design time support
-            Title = "Dashboard";
-        }
-    
+    {
+        // Default constructor for design time support
+        Title = "Dashboard";
+    }
+
     /// @brief Initializes a new instance of the MainViewModel class
     /// @param authService The authentication service instance
     /// @param navigationService The navigation service instance
@@ -62,8 +58,7 @@ public partial class MainViewModel : BaseViewModel
     private void LoadUserData()
     {
         CurrentUser = _authService.CurrentUser;
-        IsAdmin = _authService.HasRole("Admin");
-        
+
         if (CurrentUser != null)
         {
             WelcomeMessage = $"Welcome, {CurrentUser.FullName}!";
@@ -76,10 +71,10 @@ public partial class MainViewModel : BaseViewModel
     [RelayCommand]
     private async Task LogoutAsync()
     {
-        var result = await Application.Current.MainPage.DisplayAlert(
-            "Logout", 
-            "Are you sure you want to logout?", 
-            "Yes", 
+        var result = await Application.Current.MainPage.DisplayAlertAsync(
+            "Logout",
+            "Are you sure you want to logout?",
+            "Yes",
             "No");
 
         if (result)
@@ -108,21 +103,6 @@ public partial class MainViewModel : BaseViewModel
     }
 
 
-    /// @brief Navigates to the user list page
-    /// @details Relay command that navigates to the user management page, admin only
-    /// @return A task representing the asynchronous navigation operation
-    [RelayCommand]
-    private async Task NavigateToUserListAsync()
-    {
-        if (!IsAdmin)
-        {
-            await Application.Current.MainPage.DisplayAlert("Access Denied", "You don't have permission to access admin features.", "OK");
-            return;
-        }
-        
-        await _navigationService.NavigateToAsync("UserListPage");
-    }
-
     /// @brief Refreshes the dashboard data
     /// @details Relay command that reloads user data and simulates a refresh operation
     /// @return A task representing the asynchronous refresh operation
@@ -133,7 +113,7 @@ public partial class MainViewModel : BaseViewModel
         {
             IsBusy = true;
             LoadUserData();
-            
+
             // Simulate refresh delay
             await Task.Delay(1000);
         }

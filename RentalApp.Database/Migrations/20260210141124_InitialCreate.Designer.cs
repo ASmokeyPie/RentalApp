@@ -5,11 +5,11 @@ using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
-using RentalApp.Database.Data;
+using StarterApp.Database.Data;
 
 #nullable disable
 
-namespace RentalApp.Database.Migrations
+namespace StarterApp.Database.Migrations
 {
     [DbContext(typeof(AppDbContext))]
     [Migration("20260210141124_InitialCreate")]
@@ -25,7 +25,7 @@ namespace RentalApp.Database.Migrations
 
             NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
 
-            modelBuilder.Entity("RentalApp.Database.Models.Role", b =>
+            modelBuilder.Entity("StarterApp.Database.Models.Role", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
@@ -54,7 +54,7 @@ namespace RentalApp.Database.Migrations
                     b.ToTable("role");
                 });
 
-            modelBuilder.Entity("RentalApp.Database.Models.User", b =>
+            modelBuilder.Entity("StarterApp.Database.Models.User", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
@@ -107,7 +107,7 @@ namespace RentalApp.Database.Migrations
                     b.ToTable("users");
                 });
 
-            modelBuilder.Entity("RentalApp.Database.Models.UserRole", b =>
+            modelBuilder.Entity("StarterApp.Database.Models.UserRole", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
@@ -143,15 +143,15 @@ namespace RentalApp.Database.Migrations
                     b.ToTable("user_role");
                 });
 
-            modelBuilder.Entity("RentalApp.Database.Models.UserRole", b =>
+            modelBuilder.Entity("StarterApp.Database.Models.UserRole", b =>
                 {
-                    b.HasOne("RentalApp.Database.Models.Role", "Role")
+                    b.HasOne("StarterApp.Database.Models.Role", "Role")
                         .WithMany("UserRoles")
                         .HasForeignKey("RoleId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.HasOne("RentalApp.Database.Models.User", "User")
+                    b.HasOne("StarterApp.Database.Models.User", "User")
                         .WithMany("UserRoles")
                         .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Cascade)
@@ -162,12 +162,12 @@ namespace RentalApp.Database.Migrations
                     b.Navigation("User");
                 });
 
-            modelBuilder.Entity("RentalApp.Database.Models.Role", b =>
+            modelBuilder.Entity("StarterApp.Database.Models.Role", b =>
                 {
                     b.Navigation("UserRoles");
                 });
 
-            modelBuilder.Entity("RentalApp.Database.Models.User", b =>
+            modelBuilder.Entity("StarterApp.Database.Models.User", b =>
                 {
                     b.Navigation("UserRoles");
                 });

@@ -17,7 +17,7 @@ public partial class ProfileViewModel : BaseViewModel
 {
     /// @brief Authentication service for managing user authentication
     private readonly IAuthenticationService _authService;
-    
+
     /// @brief Navigation service for managing page navigation
     private readonly INavigationService _navigationService;
 
@@ -87,7 +87,7 @@ public partial class ProfileViewModel : BaseViewModel
 
             if (success)
             {
-                await Application.Current.MainPage.DisplayAlert("Success", "Password changed successfully!", "OK");
+                await Application.Current.MainPage.DisplayAlertAsync("Success", "Password changed successfully!", "OK");
                 ClearPasswordFields();
                 IsChangingPassword = false;
             }
