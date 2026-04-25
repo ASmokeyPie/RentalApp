@@ -1,6 +1,9 @@
 using Microsoft.Extensions.Logging;
 using RentalApp.ViewModels;
 using RentalApp.Database.Data;
+using RentalApp.Database.Repositories;
+using RentalApp.Database.Repositories.Api;
+using RentalApp.Database.Repositories.Db;
 using RentalApp.Views;
 using System.Diagnostics;
 using RentalApp.Services;
@@ -44,11 +47,29 @@ public static class MauiProgram
             });
 
             builder.Services.AddSingleton<IAuthenticationService, ApiAuthenticationService>();
+
+            // Repositories — API-backed implementations against the shared API.
+            // Each takes the same singleton HttpClient (already wired with the
+            // AuthDelegatingHandler), so authenticated endpoints get the Bearer
+            // token attached automatically.
+            builder.Services.AddSingleton<ICategoryRepository, ApiCategoryRepository>();
+            builder.Services.AddSingleton<IItemRepository,     ApiItemRepository>();
+            builder.Services.AddSingleton<IRentalRepository,   ApiRentalRepository>();
+            builder.Services.AddSingleton<IReviewRepository,   ApiReviewRepository>();
         }
         else
         {
             builder.Services.AddDbContext<AppDbContext>();
             builder.Services.AddSingleton<IAuthenticationService, AuthenticationService>();
+
+            // Local-DB path: stub repositories. They throw NotImplementedException
+            // until the EF-backed implementations land. Registered so DI still
+            // resolves and the app starts; any code path that actually calls
+            // them will fail loudly until the slice that fills them in.
+            builder.Services.AddSingleton<ICategoryRepository, DbCategoryRepository>();
+            builder.Services.AddSingleton<IItemRepository,     DbItemRepository>();
+            builder.Services.AddSingleton<IRentalRepository,   DbRentalRepository>();
+            builder.Services.AddSingleton<IReviewRepository,   DbReviewRepository>();
         }
         builder.Services.AddSingleton<INavigationService, NavigationService>();
 

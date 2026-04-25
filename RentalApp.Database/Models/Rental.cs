@@ -108,4 +108,36 @@ public class Rental
     /// </summary>
     [NotMapped]
     public int DurationDays => EndDate.DayNumber - StartDate.DayNumber;
+
+    // ---- Display-only fields populated by the API repository --------------
+    // The API returns denormalised fields (item title, owner name, etc.)
+    // alongside a rental so list views don't need a follow-up Item fetch.
+    // Marked [NotMapped] so EF Core ignores them.
+
+    /// <summary>Title of the rented item (display).</summary>
+    [NotMapped]
+    public string ItemTitle { get; set; } = string.Empty;
+
+    /// <summary>Daily rate of the item at the time the rental was created.</summary>
+    [NotMapped]
+    public decimal? ItemDailyRate { get; set; }
+
+    /// <summary>Display name of the borrower (e.g. "Ada L.").</summary>
+    [NotMapped]
+    public string BorrowerName { get; set; } = string.Empty;
+
+    /// <summary>Display name of the owner (the item's owner).</summary>
+    [NotMapped]
+    public string OwnerName { get; set; } = string.Empty;
+
+    /// <summary>True if today falls within [StartDate, EndDate] inclusive.</summary>
+    [NotMapped]
+    public bool IsActiveOnToday
+    {
+        get
+        {
+            var today = DateOnly.FromDateTime(DateTime.UtcNow);
+            return today >= StartDate && today <= EndDate;
+        }
+    }
 }

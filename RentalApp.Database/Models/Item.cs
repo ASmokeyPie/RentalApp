@@ -69,4 +69,38 @@ public class Item
         Description is null ? null
         : Description.Length > 100 ? Description[..100] + "..."
         : Description;
+
+    // ---- Display-only fields populated by the API repository --------------
+    // These mirror denormalised fields the API returns alongside an Item but
+    // that aren't stored on the items table. Marked [NotMapped] so EF Core
+    // ignores them. Setters exist so the API mapper can populate them; they
+    // default to safe values for cases where the source isn't a wire payload
+    // (e.g. constructed in tests, fetched from the local DB).
+
+    /// <summary>Display name of the owner (e.g. "Ada L."). API only.</summary>
+    [NotMapped]
+    public string OwnerName { get; set; } = string.Empty;
+
+    /// <summary>Owner's average review rating across all their items, 1–5.</summary>
+    [NotMapped]
+    public double? OwnerRating { get; set; }
+
+    /// <summary>Average rating for THIS item across its reviews, 1–5.</summary>
+    [NotMapped]
+    public double? AverageRating { get; set; }
+
+    /// <summary>Human-readable category name (e.g. "Power Tools").</summary>
+    [NotMapped]
+    public string CategoryName { get; set; } = string.Empty;
+
+    /// <summary>URL slug of the category (e.g. "power-tools").</summary>
+    [NotMapped]
+    public string CategorySlug { get; set; } = string.Empty;
+
+    /// <summary>
+    /// Distance in kilometres from the query origin. Only populated by
+    /// <c>GET /items/nearby</c> responses; null otherwise.
+    /// </summary>
+    [NotMapped]
+    public double? DistanceKm { get; set; }
 }
