@@ -16,6 +16,9 @@
       <PrivateAssets>all</PrivateAssets>
     </PackageReference>
     <PackageReference Include="Moq" Version="4.20.72" />
+    <!-- Required so [ObservableProperty]/[RelayCommand] source generators run
+         on the ViewModel files we pull in via <Compile Include> below. -->
+    <PackageReference Include="CommunityToolkit.Mvvm" Version="8.4.0" />
     <PackageReference Include="coverlet.collector" Version="6.0.2">
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
       <PrivateAssets>all</PrivateAssets>
@@ -46,6 +49,15 @@
     <Compile Include="..\RentalApp\Services\AuthenticationResult.cs" Link="Services\AuthenticationResult.cs" />
     <Compile Include="..\RentalApp\Services\AuthStateChangedEventArgs.cs" Link="Services\AuthStateChangedEventArgs.cs" />
     <Compile Include="..\RentalApp\Services\ApiAuthenticationService.cs" Link="Services\ApiAuthenticationService.cs" />
+
+    <!-- Phase 3: item browsing read-path VMs. INavigationService is the
+         interface (no MAUI deps); the NavigationService impl uses Shell.Current
+         and is deliberately excluded. BaseViewModel is shared scaffolding and
+         needs to compile here so the Phase 3 VMs (which inherit it) can too. -->
+    <Compile Include="..\RentalApp\Services\INavigationService.cs" Link="Services\INavigationService.cs" />
+    <Compile Include="..\RentalApp\ViewModels\BaseViewModel.cs" Link="ViewModels\BaseViewModel.cs" />
+    <Compile Include="..\RentalApp\ViewModels\ItemsListViewModel.cs" Link="ViewModels\ItemsListViewModel.cs" />
+    <Compile Include="..\RentalApp\ViewModels\ItemDetailsViewModel.cs" Link="ViewModels\ItemDetailsViewModel.cs" />
   </ItemGroup>
 
 </Project>

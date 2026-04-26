@@ -61,4 +61,17 @@ public class Review
     /// When the review was submitted
     /// </summary>
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+
+    // ---- Display-only fields populated by the API repository --------------
+    // The API surfaces reviews with denormalised reviewer + item info so list
+    // views can render without further fetches. Marked [NotMapped] so EF Core
+    // ignores them.
+
+    /// <summary>Display name of the reviewer (e.g. "Ada L.").</summary>
+    [NotMapped]
+    public string ReviewerName { get; set; } = string.Empty;
+
+    /// <summary>Title of the item that was rented and reviewed.</summary>
+    [NotMapped]
+    public string ItemTitle { get; set; } = string.Empty;
 }

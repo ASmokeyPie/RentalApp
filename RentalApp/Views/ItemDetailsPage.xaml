@@ -1,0 +1,103 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage x:Class="RentalApp.Views.ItemDetailsPage"
+             xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:vm="clr-namespace:RentalApp.ViewModels"
+             x:DataType="vm:ItemDetailsViewModel"
+             Title="{Binding Title}">
+
+    <ContentPage.BindingContext>
+        <vm:ItemDetailsViewModel/>
+    </ContentPage.BindingContext>
+
+    <RefreshView IsRefreshing="{Binding IsBusy}"
+                 Command="{Binding LoadCommand}">
+        <ScrollView>
+            <Grid Padding="20" RowSpacing="16">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                </Grid.RowDefinitions>
+
+                <!-- Error banner -->
+                <Border Grid.Row="0"
+                        BackgroundColor="{AppThemeBinding Light=#FFEBEE, Dark=#1B0000}"
+                        Stroke="{AppThemeBinding Light=#F44336, Dark=#EF5350}"
+                        StrokeThickness="1"
+                        Padding="12"
+                        IsVisible="{Binding HasError}">
+                    <Border.StrokeShape>
+                        <RoundRectangle CornerRadius="8"/>
+                    </Border.StrokeShape>
+                    <Grid ColumnDefinitions="*,Auto">
+                        <Label Grid.Column="0"
+                               Text="{Binding ErrorMessage}"
+                               TextColor="{AppThemeBinding Light=#D32F2F, Dark=#EF5350}"
+                               VerticalOptions="Center"/>
+                        <Button Grid.Column="1"
+                                Text="×"
+                                Command="{Binding ClearErrorCommand}"
+                                BackgroundColor="Transparent"
+                                TextColor="{AppThemeBinding Light=#D32F2F, Dark=#EF5350}"
+                                FontSize="18"
+                                Padding="4"
+                                WidthRequest="32"
+                                HeightRequest="32"/>
+                    </Grid>
+                </Border>
+
+                <!-- Loading placeholder -->
+                <ActivityIndicator Grid.Row="1"
+                                   IsRunning="{Binding IsBusy}"
+                                   IsVisible="{Binding IsBusy}"
+                                   HorizontalOptions="Center"
+                                   Margin="0,40,0,0"/>
+
+                <!-- Item details -->
+                <StackLayout Grid.Row="2"
+                             Spacing="14"
+                             IsVisible="{Binding IsLoaded}">
+
+                    <Label Text="{Binding Item.Title}"
+                           FontSize="24"
+                           FontAttributes="Bold"/>
+
+                    <Label Text="{Binding Item.DailyRate, StringFormat='£{0:F2} per day'}"
+                           FontSize="18"
+                           FontAttributes="Bold"
+                           TextColor="{AppThemeBinding Light={StaticResource Primary}, Dark={StaticResource PrimaryDark}}"/>
+
+                    <Border BackgroundColor="{AppThemeBinding Light={StaticResource White}, Dark={StaticResource Gray900}}"
+                            Stroke="{AppThemeBinding Light={StaticResource Gray200}, Dark={StaticResource Gray700}}"
+                            StrokeThickness="1"
+                            Padding="14">
+                        <Border.StrokeShape>
+                            <RoundRectangle CornerRadius="10"/>
+                        </Border.StrokeShape>
+                        <StackLayout Spacing="6">
+                            <Label Text="{Binding Item.CategoryName, StringFormat='Category: {0}'}"
+                                   FontSize="13"/>
+                            <Label Text="{Binding Item.OwnerName, StringFormat='Owner: {0}'}"
+                                   FontSize="13"/>
+                            <Label Text="{Binding Item.OwnerRating, StringFormat='Owner rating: {0:F1} / 5', TargetNullValue='Owner rating: not yet rated'}"
+                                   FontSize="13"/>
+                            <Label Text="{Binding Item.AverageRating, StringFormat='Item rating: {0:F1} / 5', TargetNullValue='Item rating: no reviews yet'}"
+                                   FontSize="13"/>
+                            <Label Text="{Binding Item.IsAvailable, StringFormat='Available: {0}'}"
+                                   FontSize="13"/>
+                        </StackLayout>
+                    </Border>
+
+                    <Label Text="Description"
+                           FontSize="16"
+                           FontAttributes="Bold"
+                           Margin="0,8,0,0"/>
+                    <Label Text="{Binding Item.Description}"
+                           FontSize="14"
+                           LineBreakMode="WordWrap"/>
+                </StackLayout>
+            </Grid>
+        </ScrollView>
+    </RefreshView>
+</ContentPage>
