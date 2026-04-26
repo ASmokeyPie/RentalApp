@@ -139,6 +139,33 @@ public class ApiRentalRepositoryTests
         Assert.Null(rental);
     }
 
+    [Theory]
+    [InlineData("2026-04-01", "2026-04-02")]                                           // spec-stated yyyy-MM-dd
+    [InlineData("2026-04-01T00:00:00.000Z", "2026-04-02T00:00:00.000Z")]              // ISO 8601 with millis + Z (what the live API actually emits)
+    [InlineData("2026-04-01T00:00:00Z", "2026-04-02T00:00:00Z")]                      // ISO 8601 without millis
+    public async Task GetByIdAsync_TolerantOfDateFormats(string startDate, string endDate)
+    {
+        // Regression: live API sends full ISO datetimes for startDate/endDate
+        // even though the spec types them as "yyyy-MM-dd". The repo's parser
+        // handles both shapes plus a prefix fallback.
+        var stub = new StubHttpMessageHandler(TestResponses.Json(new
+        {
+            id = 7, itemId = 1, itemTitle = "Drill",
+            borrowerId = 2, borrowerName = "Bob",
+            ownerId = 1, ownerName = "Ada",
+            startDate, endDate,
+            status = "Approved", totalPrice = 10m,
+            requestedAt = DateTime.UtcNow,
+        }));
+        var repo = BuildRepo(stub);
+
+        var rental = await repo.GetByIdAsync(7);
+
+        Assert.NotNull(rental);
+        Assert.Equal(new DateOnly(2026, 4, 1), rental!.StartDate);
+        Assert.Equal(new DateOnly(2026, 4, 2), rental.EndDate);
+    }
+
     [Fact]
     public async Task GetByIdAsync_Parses200_WithRequestedAtAndItemDescription()
     {

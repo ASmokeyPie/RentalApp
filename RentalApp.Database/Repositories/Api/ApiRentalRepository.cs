@@ -16,7 +16,9 @@ namespace RentalApp.Database.Repositories.Api;
 ///   <item><description>PATCH <c>/rentals/{id}/status</c> returns only <c>{ id, status, updatedAt }</c>.</description></item>
 ///   <item><description>The status field is bare <c>string</c> on the wire. We parse it into <see cref="RentalStatus"/> defensively; an unknown string throws <see cref="InvalidDataException"/> with the offending value so Phase 5 work can pin the canonical strings.</description></item>
 /// </list>
-/// Date strings are <c>"yyyy-MM-dd"</c> on the wire and parse to <see cref="DateOnly"/> via <see cref="DateOnly.ParseExact(string,string,IFormatProvider)"/> with invariant culture.
+/// Date strings come back in either <c>"yyyy-MM-dd"</c> (per spec) or full
+/// ISO 8601 (<c>"2026-04-27T00:00:00.000Z"</c>, what the live API actually
+/// emits). <see cref="ParseDate"/> handles both.
 /// </remarks>
 public sealed class ApiRentalRepository : IRentalRepository
 {
@@ -197,8 +199,41 @@ public sealed class ApiRentalRepository : IRentalRepository
         OwnerName = w.OwnerName ?? string.Empty,
     };
 
-    private static DateOnly ParseDate(string s) =>
-        DateOnly.ParseExact(s, "yyyy-MM-dd", CultureInfo.InvariantCulture);
+    /// <summary>
+    /// Date parser tolerant of the two formats the API has been observed
+    /// returning: the spec-stated <c>"yyyy-MM-dd"</c> and full ISO 8601
+    /// datetimes (e.g. <c>"2026-04-27T00:00:00.000Z"</c>) for items posted by
+    /// other clients. Falls back to a length-10 prefix slice so even unusual
+    /// ISO variants (e.g. mis-punctuated millisecond separators) still yield
+    /// the date.
+    /// </summary>
+    private static DateOnly ParseDate(string s)
+    {
+        if (DateOnly.TryParseExact(
+                s, "yyyy-MM-dd", CultureInfo.InvariantCulture, DateTimeStyles.None, out var d))
+        {
+            return d;
+        }
+
+        if (DateTimeOffset.TryParse(
+                s,
+                CultureInfo.InvariantCulture,
+                DateTimeStyles.AssumeUniversal | DateTimeStyles.AdjustToUniversal,
+                out var dto))
+        {
+            return DateOnly.FromDateTime(dto.UtcDateTime);
+        }
+
+        // Last-resort: any ISO-shaped string starts with "yyyy-MM-dd".
+        if (s.Length >= 10
+            && DateOnly.TryParseExact(
+                s[..10], "yyyy-MM-dd", CultureInfo.InvariantCulture, DateTimeStyles.None, out var prefix))
+        {
+            return prefix;
+        }
+
+        throw new InvalidDataException($"Could not parse '{s}' as a rental date.");
+    }
 
     /// <summary>
     /// Defensive enum parse. The API types <c>status</c> as bare string with no
