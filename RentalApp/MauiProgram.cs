@@ -106,6 +106,11 @@ public static class MauiProgram
         builder.Services.AddTransient<EditItemViewModel>();
         builder.Services.AddTransient<EditItemPage>();
 
+        // Phase 5b: Rental request flow. Transient — the form should always
+        // open with default dates and the right item id from the route.
+        builder.Services.AddTransient<RequestRentalViewModel>();
+        builder.Services.AddTransient<RequestRentalPage>();
+
 #if DEBUG
         builder.Logging.AddDebug();
 #endif

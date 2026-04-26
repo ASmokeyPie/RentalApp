@@ -52,6 +52,14 @@ public partial class ItemDetailsViewModel : BaseViewModel
     [ObservableProperty]
     private bool isOwner;
 
+    /// @brief True when the authenticated user can rent this item.
+    /// @details Computed from <see cref="IsLoaded"/>, <see cref="IsOwner"/>,
+    ///          and the item's availability + auth state. Drives the
+    ///          visibility of the "Rent this" button. Updated whenever any of
+    ///          its inputs change (see the partial methods below).
+    [ObservableProperty]
+    private bool canRent;
+
     /// @brief Default constructor for design-time support.
     public ItemDetailsViewModel()
     {
@@ -98,6 +106,7 @@ public partial class ItemDetailsViewModel : BaseViewModel
                 Item = null;
                 IsLoaded = false;
                 IsOwner = false;
+                CanRent = false;
                 SetError($"Item {ItemId} could not be found.");
                 Title = "Item";
                 return;
@@ -109,12 +118,17 @@ public partial class ItemDetailsViewModel : BaseViewModel
 
             var currentUserId = _auth?.CurrentUser?.Id ?? 0;
             IsOwner = currentUserId != 0 && loaded.OwnerId == currentUserId;
+            CanRent = IsLoaded
+                      && !IsOwner
+                      && loaded.IsAvailable
+                      && _auth?.IsAuthenticated == true;
         }
         catch (Exception ex)
         {
             Item = null;
             IsLoaded = false;
             IsOwner = false;
+            CanRent = false;
             SetError($"Could not load item: {ex.Message}");
         }
         finally
@@ -135,6 +149,21 @@ public partial class ItemDetailsViewModel : BaseViewModel
 
         await _navigation.NavigateToAsync(
             "EditItemPage",
+            new Dictionary<string, object> { ["itemId"] = Item.Id });
+    }
+
+    /// @brief Navigates to the request-rental page for the loaded item.
+    /// @details Guarded by <see cref="CanRent"/> at the binding level (button
+    ///          is hidden when false) and again here defensively. Authenticated
+    ///          non-owners only — owners can't rent their own items.
+    [RelayCommand]
+    public async Task RentItemAsync()
+    {
+        if (!CanRent || Item is null) return;
+        if (_navigation is null) return;
+
+        await _navigation.NavigateToAsync(
+            "RequestRentalPage",
             new Dictionary<string, object> { ["itemId"] = Item.Id });
     }
 

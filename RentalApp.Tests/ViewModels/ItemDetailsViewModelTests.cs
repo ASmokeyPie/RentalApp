@@ -170,6 +170,114 @@ public class ItemDetailsViewModelTests
             Times.Never);
     }
 
+    // ---- CanRent / RentItemAsync ------------------------------------------
+
+    [Fact]
+    public async Task LoadAsync_SetsCanRent_WhenAuthenticatedNonOwnerAvailableItem()
+    {
+        var (vm, repo, auth, _) = Build();
+        var item = SampleItem(42, "Drill", ownerId: 7);
+        item.IsAvailable = true;
+        repo.Setup(r => r.GetByIdAsync(42, default)).ReturnsAsync(item);
+        auth.SetupGet(a => a.IsAuthenticated).Returns(true);
+        auth.SetupGet(a => a.CurrentUser).Returns(
+            new User { Id = 99, Email = "z@b.c", FirstName = "Zed", LastName = "L" });
+
+        vm.ItemId = 42;
+        await vm.LoadAsync();
+
+        Assert.True(vm.CanRent);
+    }
+
+    [Fact]
+    public async Task LoadAsync_CanRentFalse_WhenViewerIsOwner()
+    {
+        var (vm, repo, auth, _) = Build();
+        repo.Setup(r => r.GetByIdAsync(42, default))
+            .ReturnsAsync(SampleItem(42, "Drill", ownerId: 7));
+        auth.SetupGet(a => a.IsAuthenticated).Returns(true);
+        auth.SetupGet(a => a.CurrentUser).Returns(
+            new User { Id = 7, Email = "a@b.c", FirstName = "Ada", LastName = "L" });
+
+        vm.ItemId = 42;
+        await vm.LoadAsync();
+
+        Assert.False(vm.CanRent);
+    }
+
+    [Fact]
+    public async Task LoadAsync_CanRentFalse_WhenItemNotAvailable()
+    {
+        var (vm, repo, auth, _) = Build();
+        var item = SampleItem(42, "Drill", ownerId: 7);
+        item.IsAvailable = false;
+        repo.Setup(r => r.GetByIdAsync(42, default)).ReturnsAsync(item);
+        auth.SetupGet(a => a.IsAuthenticated).Returns(true);
+        auth.SetupGet(a => a.CurrentUser).Returns(
+            new User { Id = 99, Email = "z@b.c", FirstName = "Zed", LastName = "L" });
+
+        vm.ItemId = 42;
+        await vm.LoadAsync();
+
+        Assert.False(vm.CanRent);
+    }
+
+    [Fact]
+    public async Task LoadAsync_CanRentFalse_WhenNotAuthenticated()
+    {
+        var (vm, repo, auth, _) = Build();
+        repo.Setup(r => r.GetByIdAsync(42, default))
+            .ReturnsAsync(SampleItem(42, "Drill", ownerId: 7));
+        auth.SetupGet(a => a.IsAuthenticated).Returns(false);
+        auth.SetupGet(a => a.CurrentUser).Returns((User?)null);
+
+        vm.ItemId = 42;
+        await vm.LoadAsync();
+
+        Assert.False(vm.CanRent);
+    }
+
+    [Fact]
+    public async Task RentItemAsync_NavigatesToRequestRentalPage_WhenCanRent()
+    {
+        var (vm, repo, auth, nav) = Build();
+        var item = SampleItem(42, "Drill", ownerId: 7);
+        item.IsAvailable = true;
+        repo.Setup(r => r.GetByIdAsync(42, default)).ReturnsAsync(item);
+        auth.SetupGet(a => a.IsAuthenticated).Returns(true);
+        auth.SetupGet(a => a.CurrentUser).Returns(
+            new User { Id = 99, Email = "z@b.c", FirstName = "Zed", LastName = "L" });
+
+        vm.ItemId = 42;
+        await vm.LoadAsync();
+        await vm.RentItemAsync();
+
+        nav.Verify(n => n.NavigateToAsync(
+                "RequestRentalPage",
+                It.Is<Dictionary<string, object>>(d =>
+                    d.ContainsKey("itemId") && (int)d["itemId"] == 42)),
+            Times.Once);
+    }
+
+    [Fact]
+    public async Task RentItemAsync_DoesNothing_WhenCannotRent()
+    {
+        var (vm, repo, auth, nav) = Build();
+        // Owner viewing own item — CanRent will be false
+        repo.Setup(r => r.GetByIdAsync(42, default))
+            .ReturnsAsync(SampleItem(42, "Drill", ownerId: 7));
+        auth.SetupGet(a => a.IsAuthenticated).Returns(true);
+        auth.SetupGet(a => a.CurrentUser).Returns(
+            new User { Id = 7, Email = "a@b.c", FirstName = "Ada", LastName = "L" });
+
+        vm.ItemId = 42;
+        await vm.LoadAsync();
+        await vm.RentItemAsync();
+
+        nav.Verify(n => n.NavigateToAsync("RequestRentalPage", It.IsAny<Dictionary<string, object>>()),
+            Times.Never);
+    }
+
     // ---- Helpers ----------------------------------------------------------
 
     private static (
