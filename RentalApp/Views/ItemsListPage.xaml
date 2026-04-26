@@ -56,7 +56,8 @@
                             SelectionMode="None">
 
                 <CollectionView.EmptyView>
-                    <Grid Padding="40" RowSpacing="12">
+                    <Grid Padding="40"
+                            RowSpacing="12">
                         <Grid.RowDefinitions>
                             <RowDefinition Height="Auto"/>
                             <RowDefinition Height="Auto"/>
@@ -92,28 +93,35 @@
                                     CommandParameter="{Binding .}"/>
                             </Border.GestureRecognizers>
 
-                            <Grid ColumnDefinitions="*,Auto" RowDefinitions="Auto,Auto,Auto" RowSpacing="2">
-                                <Label Grid.Row="0" Grid.Column="0"
+                            <Grid ColumnDefinitions="*,Auto"
+                                    RowDefinitions="Auto,Auto,Auto"
+                                    RowSpacing="2">
+                                <Label Grid.Row="0"
+                                        Grid.Column="0"
                                        Text="{Binding Title}"
                                        FontSize="16"
                                        FontAttributes="Bold"
                                        LineBreakMode="TailTruncation"/>
 
-                                <Label Grid.Row="0" Grid.Column="1"
+                                <Label Grid.Row="0"
+                                        Grid.Column="1"
                                        Text="{Binding DailyRate, StringFormat='£{0:F2}/day'}"
                                        FontSize="14"
                                        FontAttributes="Bold"
                                        TextColor="{AppThemeBinding Light={StaticResource Primary}, Dark={StaticResource PrimaryDark}}"/>
 
-                                <Label Grid.Row="1" Grid.ColumnSpan="2"
+                                <Label Grid.Row="1"
+                                        Grid.ColumnSpan="2"
                                        Text="{Binding CategoryName}"
                                        FontSize="12"
                                        TextColor="{AppThemeBinding Light={StaticResource Gray600}, Dark={StaticResource Gray400}}"/>
 
-                                <Label Grid.Row="2" Grid.ColumnSpan="2"
+                                <Label Grid.Row="2"
+                                        Grid.ColumnSpan="2"
                                        Text="{Binding OwnerName, StringFormat='Owner: {0}'}"
                                        FontSize="12"
                                        TextColor="{AppThemeBinding Light={StaticResource Gray600}, Dark={StaticResource Gray400}}"/>
+
                             </Grid>
                         </Border>
                     </DataTemplate>
@@ -123,7 +131,9 @@
 
         <!-- Footer: explicit Load-more button + status row.
              The button is hidden when there are no more pages to fetch. -->
-        <StackLayout Grid.Row="2" Padding="12" Spacing="6">
+        <StackLayout Grid.Row="2"
+                Padding="12"
+                Spacing="6">
             <Button Text="{Binding RemainingCount, StringFormat='Load more ({0} remaining)'}"
                     Command="{Binding LoadMoreCommand}"
                     IsVisible="{Binding HasMorePages}"

@@ -24,9 +24,11 @@ namespace RentalApp.ViewModels;
 /// @extends BaseViewModel
 public partial class CreateItemViewModel : BaseViewModel
 {
-    private readonly IItemRepository _items;
-    private readonly ICategoryRepository _categories;
-    private readonly INavigationService _navigation;
+    // null! suppresses CS8618 for the design-time parameterless ctor; the
+    // runtime DI ctor always assigns these before any command runs.
+    private readonly IItemRepository _items = null!;
+    private readonly ICategoryRepository _categories = null!;
+    private readonly INavigationService _navigation = null!;
 
     /// @brief Categories shown in the picker. Populated on first load.
     public ObservableCollection<Category> Categories { get; } = new();

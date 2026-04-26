@@ -170,10 +170,12 @@ public class ItemsListViewModelTests
     public async Task LoadMoreAsync_UpdatesRemainingCount()
     {
         // Drives the "Load more (N remaining)" button label.
+        // pageSize=2, total=5 → TotalPages=3, so two pages fit before exhaustion.
         var (vm, repo, _) = Build();
+        vm.PageSize = 2;
         repo.SetupSequence(r => r.SearchAsync(It.IsAny<ItemQuery>(), default))
-            .ReturnsAsync(Page(new[] { Item(1), Item(2) }, page: 1, pageSize: 50, total: 5))
-            .ReturnsAsync(Page(new[] { Item(3), Item(4) }, page: 2, pageSize: 50, total: 5));
+            .ReturnsAsync(Page(new[] { Item(1), Item(2) }, page: 1, pageSize: 2, total: 5))
+            .ReturnsAsync(Page(new[] { Item(3), Item(4) }, page: 2, pageSize: 2, total: 5));
 
         await vm.RefreshAsync();
         Assert.Equal(3, vm.RemainingCount);  // 5 total - 2 loaded

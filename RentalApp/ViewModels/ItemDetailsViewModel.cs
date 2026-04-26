@@ -24,7 +24,9 @@ namespace RentalApp.ViewModels;
 /// @extends BaseViewModel
 public partial class ItemDetailsViewModel : BaseViewModel
 {
-    private readonly IItemRepository _items;
+    // null! suppresses CS8618 for the design-time parameterless ctor; the
+    // runtime DI ctor always assigns these before any command runs.
+    private readonly IItemRepository _items = null!;
     private readonly IAuthenticationService? _auth;
     private readonly INavigationService? _navigation;
 

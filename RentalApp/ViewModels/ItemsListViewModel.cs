@@ -26,8 +26,10 @@ namespace RentalApp.ViewModels;
 /// @extends BaseViewModel
 public partial class ItemsListViewModel : BaseViewModel
 {
-    private readonly IItemRepository _items;
-    private readonly INavigationService _navigation;
+    // null! suppresses CS8618 for the design-time parameterless ctor; the
+    // runtime DI ctor always assigns these before any command runs.
+    private readonly IItemRepository _items = null!;
+    private readonly INavigationService _navigation = null!;
 
     /// @brief Items currently loaded into the list. Pages are appended in
     ///        load order. Page-level changes (CollectionChanged) refresh the
