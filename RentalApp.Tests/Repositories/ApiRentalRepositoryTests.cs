@@ -27,7 +27,7 @@ public class ApiRentalRepositoryTests
             ownerName = "Ada",
             startDate = "2026-05-01",
             endDate = "2026-05-03",
-            status = "Pending",
+            status = "Requested",
             totalPrice = 16.50m,
             createdAt = DateTime.UtcNow,
         }, HttpStatusCode.Created));
@@ -47,7 +47,7 @@ public class ApiRentalRepositoryTests
         Assert.Equal("2026-05-03", root.GetProperty("endDate").GetString());
 
         Assert.Equal(99, rental.Id);
-        Assert.Equal(RentalStatus.Pending, rental.Status);
+        Assert.Equal(RentalStatus.Requested, rental.Status);
         Assert.Equal("Drill", rental.ItemTitle);
         Assert.Equal("Bob", rental.BorrowerName);
         Assert.Equal("Ada", rental.OwnerName);
@@ -109,7 +109,7 @@ public class ApiRentalRepositoryTests
                     ownerName = "Ada",
                     startDate = "2026-05-01",
                     endDate = "2026-05-03",
-                    status = "Pending",
+                    status = "Requested",
                     totalPrice = 10m,
                     createdAt = DateTime.UtcNow,
                 },
@@ -204,11 +204,11 @@ public class ApiRentalRepositoryTests
     public async Task ParseStatus_ThrowsInvalidData_OnUnknownWireValue()
     {
         // Defensive parser: any wire status outside the enum throws so a
-        // Phase 5 discovery isn't silently swallowed.
+        // wire-vs-enum drift isn't silently swallowed.
         var stub = new StubHttpMessageHandler(TestResponses.Json(new
         {
             id = 7,
-            status = "OutForRent",   // not in our enum yet
+            status = "Acquired",   // not in our enum
             updatedAt = DateTime.UtcNow,
         }));
         var repo = BuildRepo(stub);

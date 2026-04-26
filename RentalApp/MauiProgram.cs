@@ -73,6 +73,11 @@ public static class MauiProgram
         }
         builder.Services.AddSingleton<INavigationService, NavigationService>();
 
+        // Phase 5a: rental domain service. Sits over IRentalRepository (which
+        // is registered above against either Api* or Db* per useSharedApi),
+        // so the service is data-source-agnostic by construction.
+        builder.Services.AddSingleton<IRentalService, RentalService>();
+
         builder.Services.AddSingleton<AppShellViewModel>();
         builder.Services.AddSingleton<AppShell>();
         builder.Services.AddSingleton<App>();

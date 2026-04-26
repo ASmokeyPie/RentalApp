@@ -5,19 +5,28 @@ using Microsoft.EntityFrameworkCore;
 namespace RentalApp.Database.Models;
 
 /// <summary>
-/// Lifecycle states for a Rental. The API's PATCH /rentals/{id}/status endpoint
-/// enforces a state machine — your service layer should validate legal transitions
-/// (e.g. Pending → Approved → Active → Completed, Pending → Rejected, etc.).
+/// Lifecycle states for a Rental, matching the requirements wording:
+/// <list type="bullet">
+///   <item><description><c>Requested</c> → <c>Approved</c> | <c>Rejected</c> | <c>Cancelled</c> (owner approves/rejects; borrower can cancel).</description></item>
+///   <item><description><c>Approved</c> → <c>OutForRent</c> | <c>Cancelled</c> (owner marks the item out at pickup; borrower may still cancel).</description></item>
+///   <item><description><c>OutForRent</c> → <c>Returned</c> (owner records that the item came back).</description></item>
+///   <item><description><c>Returned</c> → <c>Completed</c> (owner closes out the rental).</description></item>
+///   <item><description><c>Rejected</c>, <c>Cancelled</c>, <c>Completed</c> are terminal.</description></item>
+/// </list>
+/// The full transition table lives in <c>RentalApp.Services.RentalService</c>.
+/// The API's PATCH /rentals/{id}/status enforces the same rules server-side
+/// (returns 409 on illegal transitions); the service-layer check is for UX.
 /// Configure string persistence in DbContext:
 ///   modelBuilder.Entity&lt;Rental&gt;().Property(r => r.Status).HasConversion&lt;string&gt;();
 /// </summary>
 public enum RentalStatus
 {
-    Pending,
+    Requested,
     Approved,
     Rejected,
     Cancelled,
-    Active,
+    OutForRent,
+    Returned,
     Completed
 }
 
@@ -76,7 +85,7 @@ public class Rental
     /// Current status in the rental lifecycle
     /// </summary>
     [Required]
-    public RentalStatus Status { get; set; } = RentalStatus.Pending;
+    public RentalStatus Status { get; set; } = RentalStatus.Requested;
 
     /// <summary>
     /// Snapshot of total price at creation time (DailyRate × duration in days).

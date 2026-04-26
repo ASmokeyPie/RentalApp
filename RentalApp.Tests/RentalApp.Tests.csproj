@@ -50,6 +50,10 @@
     <Compile Include="..\RentalApp\Services\AuthStateChangedEventArgs.cs" Link="Services\AuthStateChangedEventArgs.cs" />
     <Compile Include="..\RentalApp\Services\ApiAuthenticationService.cs" Link="Services\ApiAuthenticationService.cs" />
 
+    <!-- Phase 5a: rental domain service. MAUI-free by design. -->
+    <Compile Include="..\RentalApp\Services\IRentalService.cs" Link="Services\IRentalService.cs" />
+    <Compile Include="..\RentalApp\Services\RentalService.cs" Link="Services\RentalService.cs" />
+
     <!-- Phase 3: item browsing read-path VMs. INavigationService is the
          interface (no MAUI deps); the NavigationService impl uses Shell.Current
          and is deliberately excluded. BaseViewModel is shared scaffolding and
