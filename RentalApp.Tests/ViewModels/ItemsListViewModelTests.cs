@@ -63,7 +63,7 @@ public class ItemsListViewModelTests
     }
 
     [Fact]
-    public async Task RefreshAsync_OnException_SetsErrorAndKeepsRunning()
+    public async Task RefreshAsync_OnException_SetsErrorAndClearsSpinner()
     {
         var (vm, repo, _) = Build();
         repo.Setup(r => r.SearchAsync(It.IsAny<ItemQuery>(), default))
@@ -73,8 +73,41 @@ public class ItemsListViewModelTests
 
         Assert.True(vm.HasError);
         Assert.Contains("network down", vm.ErrorMessage);
-        Assert.False(vm.IsBusy);
+        Assert.False(vm.IsRefreshing);
         Assert.True(vm.IsEmpty);
+    }
+
+    [Fact]
+    public async Task RefreshAsync_ProceedsEvenWhenIsRefreshingAlreadyTrue()
+    {
+        // Reproduces the regression: RefreshView toggles IsRefreshing=true
+        // BEFORE firing the command. An early-return on IsRefreshing would
+        // leave the spinner stuck. RefreshAsync must still run.
+        var (vm, repo, _) = Build();
+        repo.Setup(r => r.SearchAsync(It.IsAny<ItemQuery>(), default))
+            .ReturnsAsync(Page(new[] { Item(1) }));
+
+        vm.IsRefreshing = true;            // simulate the RefreshView's pre-set
+        await vm.RefreshAsync();
+
+        repo.Verify(r => r.SearchAsync(It.IsAny<ItemQuery>(), default), Times.Once);
+        Assert.False(vm.IsRefreshing);     // cleared in finally
+        Assert.Single(vm.Items);
+    }
+
+    [Fact]
+    public async Task RefreshAsync_DefaultsToPageSize50()
+    {
+        // Doc-test: confirms the default that drives Load-more cadence.
+        var (vm, repo, _) = Build();
+        ItemQuery? captured = null;
+        repo.Setup(r => r.SearchAsync(It.IsAny<ItemQuery>(), default))
+            .Callback<ItemQuery, CancellationToken>((q, _) => captured = q)
+            .ReturnsAsync(Page(Array.Empty<Item>(), page: 1, pageSize: 50, total: 0));
+
+        await vm.RefreshAsync();
+
+        Assert.Equal(50, captured!.PageSize);
     }
 
     [Fact]
@@ -131,6 +164,22 @@ public class ItemsListViewModelTests
 
         // No first page yet — HasMorePages is false, so LoadMore must not call.
         repo.Verify(r => r.SearchAsync(It.IsAny<ItemQuery>(), default), Times.Never);
+    }
+
+    [Fact]
+    public async Task LoadMoreAsync_UpdatesRemainingCount()
+    {
+        // Drives the "Load more (N remaining)" button label.
+        var (vm, repo, _) = Build();
+        repo.SetupSequence(r => r.SearchAsync(It.IsAny<ItemQuery>(), default))
+            .ReturnsAsync(Page(new[] { Item(1), Item(2) }, page: 1, pageSize: 50, total: 5))
+            .ReturnsAsync(Page(new[] { Item(3), Item(4) }, page: 2, pageSize: 50, total: 5));
+
+        await vm.RefreshAsync();
+        Assert.Equal(3, vm.RemainingCount);  // 5 total - 2 loaded
+
+        await vm.LoadMoreAsync();
+        Assert.Equal(1, vm.RemainingCount);  // 5 total - 4 loaded
     }
 
     // ---- SelectItemAsync --------------------------------------------------

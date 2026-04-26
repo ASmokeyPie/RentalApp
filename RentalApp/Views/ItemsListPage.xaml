@@ -46,15 +46,14 @@
             </Grid>
         </Border>
 
-        <!-- Items list with pull-to-refresh and infinite scroll -->
+        <!-- Items list with pull-to-refresh. No infinite-scroll trigger:
+             paging is driven by the explicit Load-more button below. -->
         <RefreshView Grid.Row="1"
-                     IsRefreshing="{Binding IsBusy}"
+                     IsRefreshing="{Binding IsRefreshing}"
                      Command="{Binding RefreshCommand}">
             <CollectionView x:Name="ItemsCollection"
                             ItemsSource="{Binding Items}"
-                            SelectionMode="None"
-                            RemainingItemsThreshold="3"
-                            RemainingItemsThresholdReachedCommand="{Binding LoadMoreCommand}">
+                            SelectionMode="None">
 
                 <CollectionView.EmptyView>
                     <Grid Padding="40" RowSpacing="12">
@@ -122,18 +121,26 @@
             </CollectionView>
         </RefreshView>
 
-        <!-- Footer: load-more spinner + total -->
-        <Grid Grid.Row="2" Padding="12" ColumnDefinitions="*,Auto">
-            <Label Grid.Column="0"
-                   Text="{Binding TotalCount, StringFormat='{0} items'}"
-                   VerticalOptions="Center"
-                   FontSize="12"
-                   TextColor="{AppThemeBinding Light={StaticResource Gray600}, Dark={StaticResource Gray400}}"/>
-            <ActivityIndicator Grid.Column="1"
-                               IsRunning="{Binding IsLoadingMore}"
-                               IsVisible="{Binding IsLoadingMore}"
-                               WidthRequest="20"
-                               HeightRequest="20"/>
-        </Grid>
+        <!-- Footer: explicit Load-more button + status row.
+             The button is hidden when there are no more pages to fetch. -->
+        <StackLayout Grid.Row="2" Padding="12" Spacing="6">
+            <Button Text="{Binding RemainingCount, StringFormat='Load more ({0} remaining)'}"
+                    Command="{Binding LoadMoreCommand}"
+                    IsVisible="{Binding HasMorePages}"
+                    IsEnabled="{Binding IsLoadingMore, Converter={StaticResource InvertedBoolConverter}}"/>
+
+            <Grid ColumnDefinitions="*,Auto">
+                <Label Grid.Column="0"
+                       Text="{Binding TotalCount, StringFormat='{0} items total'}"
+                       VerticalOptions="Center"
+                       FontSize="12"
+                       TextColor="{AppThemeBinding Light={StaticResource Gray600}, Dark={StaticResource Gray400}}"/>
+                <ActivityIndicator Grid.Column="1"
+                                   IsRunning="{Binding IsLoadingMore}"
+                                   IsVisible="{Binding IsLoadingMore}"
+                                   WidthRequest="20"
+                                   HeightRequest="20"/>
+            </Grid>
+        </StackLayout>
     </Grid>
 </ContentPage>
