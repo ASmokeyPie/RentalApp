@@ -58,6 +58,11 @@
     <Compile Include="..\RentalApp\ViewModels\BaseViewModel.cs" Link="ViewModels\BaseViewModel.cs" />
     <Compile Include="..\RentalApp\ViewModels\ItemsListViewModel.cs" Link="ViewModels\ItemsListViewModel.cs" />
     <Compile Include="..\RentalApp\ViewModels\ItemDetailsViewModel.cs" Link="ViewModels\ItemDetailsViewModel.cs" />
+
+    <!-- Phase 4: write-path VMs. Both are MAUI-free and inherit BaseViewModel
+         (already pulled in via the Phase 3 entry above). -->
+    <Compile Include="..\RentalApp\ViewModels\CreateItemViewModel.cs" Link="ViewModels\CreateItemViewModel.cs" />
+    <Compile Include="..\RentalApp\ViewModels\EditItemViewModel.cs" Link="ViewModels\EditItemViewModel.cs" />
   </ItemGroup>
 
 </Project>

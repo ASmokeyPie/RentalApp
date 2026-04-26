@@ -1,0 +1,83 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage x:Class="RentalApp.Views.EditItemPage"
+             xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:vm="clr-namespace:RentalApp.ViewModels"
+             x:DataType="vm:EditItemViewModel"
+             Title="{Binding Title}">
+
+    <ContentPage.BindingContext>
+        <vm:EditItemViewModel/>
+    </ContentPage.BindingContext>
+
+    <RefreshView IsRefreshing="{Binding IsBusy}"
+                 Command="{Binding LoadCommand}">
+        <ScrollView>
+            <StackLayout Padding="20" Spacing="14">
+
+                <!-- Error banner -->
+                <Border BackgroundColor="{AppThemeBinding Light=#FFEBEE, Dark=#1B0000}"
+                        Stroke="{AppThemeBinding Light=#F44336, Dark=#EF5350}"
+                        StrokeThickness="1"
+                        Padding="12"
+                        IsVisible="{Binding HasError}">
+                    <Border.StrokeShape>
+                        <RoundRectangle CornerRadius="8"/>
+                    </Border.StrokeShape>
+                    <Label Text="{Binding ErrorMessage}"
+                           TextColor="{AppThemeBinding Light=#D32F2F, Dark=#EF5350}"/>
+                </Border>
+
+                <!-- Read-only context: category + lat/lon -->
+                <Border BackgroundColor="{AppThemeBinding Light={StaticResource White}, Dark={StaticResource Gray900}}"
+                        Stroke="{AppThemeBinding Light={StaticResource Gray200}, Dark={StaticResource Gray700}}"
+                        StrokeThickness="1"
+                        Padding="14"
+                        IsVisible="{Binding CanEdit}">
+                    <Border.StrokeShape>
+                        <RoundRectangle CornerRadius="10"/>
+                    </Border.StrokeShape>
+                    <StackLayout Spacing="4">
+                        <Label Text="{Binding OriginalItem.CategoryName, StringFormat='Category: {0} (not editable)'}"
+                               FontSize="13"/>
+                        <Label Text="{Binding OriginalItem.Latitude, StringFormat='Latitude: {0:F4} (not editable)'}"
+                               FontSize="13"/>
+                        <Label Text="{Binding OriginalItem.Longitude, StringFormat='Longitude: {0:F4} (not editable)'}"
+                               FontSize="13"/>
+                    </StackLayout>
+                </Border>
+
+                <!-- Editable fields: only render when CanEdit is true -->
+                <StackLayout IsVisible="{Binding CanEdit}" Spacing="14">
+                    <Label Text="Title" FontAttributes="Bold"/>
+                    <Entry Text="{Binding ItemTitle}"/>
+
+                    <Label Text="Description" FontAttributes="Bold"/>
+                    <Editor Text="{Binding Description}"
+                            HeightRequest="120"
+                            AutoSize="TextChanges"/>
+
+                    <Label Text="Daily rate (£)" FontAttributes="Bold"/>
+                    <Entry Text="{Binding DailyRateText}"
+                           Keyboard="Numeric"/>
+
+                    <StackLayout Orientation="Horizontal" Spacing="12">
+                        <Label Text="Available for rent"
+                               VerticalOptions="Center"
+                               HorizontalOptions="StartAndExpand"/>
+                        <Switch IsToggled="{Binding IsAvailable}"/>
+                    </StackLayout>
+
+                    <Button Text="Save changes"
+                            Command="{Binding SubmitCommand}"
+                            IsEnabled="{Binding IsBusy, Converter={StaticResource InvertedBoolConverter}}"
+                            Margin="0,12,0,0"/>
+
+                    <ActivityIndicator IsRunning="{Binding IsBusy}"
+                                       IsVisible="{Binding IsBusy}"
+                                       HorizontalOptions="Center"/>
+                </StackLayout>
+            </StackLayout>
+        </ScrollView>
+    </RefreshView>
+</ContentPage>

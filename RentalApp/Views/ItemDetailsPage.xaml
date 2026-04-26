@@ -96,6 +96,12 @@
                     <Label Text="{Binding Item.Description}"
                            FontSize="14"
                            LineBreakMode="WordWrap"/>
+
+                    <!-- Owner-only: edit entry point -->
+                    <Button Text="Edit item"
+                            Command="{Binding EditItemCommand}"
+                            IsVisible="{Binding IsOwner}"
+                            Margin="0,16,0,0"/>
                 </StackLayout>
             </Grid>
         </ScrollView>

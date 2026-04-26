@@ -7,6 +7,7 @@ using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using RentalApp.Database.Models;
 using RentalApp.Database.Repositories;
+using RentalApp.Services;
 
 namespace RentalApp.ViewModels;
 
@@ -24,6 +25,8 @@ namespace RentalApp.ViewModels;
 public partial class ItemDetailsViewModel : BaseViewModel
 {
     private readonly IItemRepository _items;
+    private readonly IAuthenticationService? _auth;
+    private readonly INavigationService? _navigation;
 
     /// @brief The id of the item to load. Set by Shell navigation.
     /// @details Setting this property triggers an asynchronous load of the
@@ -42,6 +45,11 @@ public partial class ItemDetailsViewModel : BaseViewModel
     [ObservableProperty]
     private bool isLoaded;
 
+    /// @brief True when the authenticated user is the owner of the loaded
+    ///        item. Drives the visibility of the Edit entry point on the page.
+    [ObservableProperty]
+    private bool isOwner;
+
     /// @brief Default constructor for design-time support.
     public ItemDetailsViewModel()
     {
@@ -50,9 +58,16 @@ public partial class ItemDetailsViewModel : BaseViewModel
 
     /// @brief Initializes a new instance of the <see cref="ItemDetailsViewModel"/> class.
     /// @param items Item repository used to fetch the item by id.
-    public ItemDetailsViewModel(IItemRepository items)
+    /// @param auth Authentication service, used to check ownership.
+    /// @param navigation Navigation service, used by the EditCommand.
+    public ItemDetailsViewModel(
+        IItemRepository items,
+        IAuthenticationService auth,
+        INavigationService navigation)
     {
         _items = items;
+        _auth = auth;
+        _navigation = navigation;
         Title = "Item";
     }
 
@@ -80,6 +95,7 @@ public partial class ItemDetailsViewModel : BaseViewModel
             {
                 Item = null;
                 IsLoaded = false;
+                IsOwner = false;
                 SetError($"Item {ItemId} could not be found.");
                 Title = "Item";
                 return;
@@ -88,17 +104,36 @@ public partial class ItemDetailsViewModel : BaseViewModel
             Item = loaded;
             IsLoaded = true;
             Title = loaded.Title;
+
+            var currentUserId = _auth?.CurrentUser?.Id ?? 0;
+            IsOwner = currentUserId != 0 && loaded.OwnerId == currentUserId;
         }
         catch (Exception ex)
         {
             Item = null;
             IsLoaded = false;
+            IsOwner = false;
             SetError($"Could not load item: {ex.Message}");
         }
         finally
         {
             IsBusy = false;
         }
+    }
+
+    /// @brief Navigates to the edit-item page for the loaded item.
+    /// @details Owner-only — guarded by <see cref="IsOwner"/> at the binding
+    ///          level (button is hidden when false) and again here as a
+    ///          defensive check in case the command is invoked directly.
+    [RelayCommand]
+    public async Task EditItemAsync()
+    {
+        if (!IsOwner || Item is null) return;
+        if (_navigation is null) return;
+
+        await _navigation.NavigateToAsync(
+            "EditItemPage",
+            new Dictionary<string, object> { ["itemId"] = Item.Id });
     }
 
     // ---- Property change hooks --------------------------------------------

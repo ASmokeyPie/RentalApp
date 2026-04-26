@@ -1,0 +1,74 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage x:Class="RentalApp.Views.CreateItemPage"
+             xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:vm="clr-namespace:RentalApp.ViewModels"
+             xmlns:models="clr-namespace:RentalApp.Database.Models;assembly=RentalApp.Database"
+             x:DataType="vm:CreateItemViewModel"
+             Title="{Binding Title}">
+
+    <ContentPage.BindingContext>
+        <vm:CreateItemViewModel/>
+    </ContentPage.BindingContext>
+
+    <ScrollView>
+        <StackLayout Padding="20" Spacing="14">
+
+            <!-- Error banner -->
+            <Border BackgroundColor="{AppThemeBinding Light=#FFEBEE, Dark=#1B0000}"
+                    Stroke="{AppThemeBinding Light=#F44336, Dark=#EF5350}"
+                    StrokeThickness="1"
+                    Padding="12"
+                    IsVisible="{Binding HasError}">
+                <Border.StrokeShape>
+                    <RoundRectangle CornerRadius="8"/>
+                </Border.StrokeShape>
+                <Label Text="{Binding ErrorMessage}"
+                       TextColor="{AppThemeBinding Light=#D32F2F, Dark=#EF5350}"/>
+            </Border>
+
+            <Label Text="Title" FontAttributes="Bold"/>
+            <Entry Text="{Binding ItemTitle}"
+                   Placeholder="e.g. Cordless drill"/>
+
+            <Label Text="Description" FontAttributes="Bold"/>
+            <Editor Text="{Binding Description}"
+                    Placeholder="Optional. Up to 1000 characters."
+                    HeightRequest="120"
+                    AutoSize="TextChanges"/>
+
+            <Label Text="Daily rate (£)" FontAttributes="Bold"/>
+            <Entry Text="{Binding DailyRateText}"
+                   Placeholder="0.00"
+                   Keyboard="Numeric"/>
+
+            <Label Text="Category" FontAttributes="Bold"/>
+            <Picker ItemsSource="{Binding Categories}"
+                    SelectedItem="{Binding SelectedCategory}"
+                    ItemDisplayBinding="{Binding Name, x:DataType=models:Category}"
+                    Title="Select a category"/>
+            <ActivityIndicator IsRunning="{Binding IsLoadingCategories}"
+                               IsVisible="{Binding IsLoadingCategories}"
+                               HorizontalOptions="Start"/>
+
+            <Label Text="Latitude" FontAttributes="Bold"/>
+            <Entry Text="{Binding LatitudeText}"
+                   Placeholder="-90 to 90"
+                   Keyboard="Numeric"/>
+
+            <Label Text="Longitude" FontAttributes="Bold"/>
+            <Entry Text="{Binding LongitudeText}"
+                   Placeholder="-180 to 180"
+                   Keyboard="Numeric"/>
+
+            <Button Text="Create item"
+                    Command="{Binding SubmitCommand}"
+                    IsEnabled="{Binding IsBusy, Converter={StaticResource InvertedBoolConverter}}"
+                    Margin="0,12,0,0"/>
+
+            <ActivityIndicator IsRunning="{Binding IsBusy}"
+                               IsVisible="{Binding IsBusy}"
+                               HorizontalOptions="Center"/>
+        </StackLayout>
+    </ScrollView>
+</ContentPage>

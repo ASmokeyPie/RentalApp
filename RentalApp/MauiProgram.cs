@@ -94,6 +94,13 @@ public static class MauiProgram
         builder.Services.AddTransient<ItemDetailsViewModel>();
         builder.Services.AddTransient<ItemDetailsPage>();
 
+        // Phase 4: Item create + edit (write paths). Transient so each
+        // navigation gets a fresh form state.
+        builder.Services.AddTransient<CreateItemViewModel>();
+        builder.Services.AddTransient<CreateItemPage>();
+        builder.Services.AddTransient<EditItemViewModel>();
+        builder.Services.AddTransient<EditItemPage>();
+
 #if DEBUG
         builder.Logging.AddDebug();
 #endif
