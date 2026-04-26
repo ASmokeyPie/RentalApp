@@ -162,6 +162,16 @@ public partial class ItemsListViewModel : BaseViewModel
             new Dictionary<string, object> { ["itemId"] = item.Id });
     }
 
+    /// @brief Navigates to the create-item form.
+    /// @details Bound to the "+" toolbar item on the list page so users can
+    ///          jump straight from browsing to listing without first popping
+    ///          back to the dashboard.
+    [RelayCommand]
+    public async Task NavigateToCreateItemAsync()
+    {
+        await _navigation.NavigateToAsync("CreateItemPage");
+    }
+
     // ---- Property change hooks --------------------------------------------
 
     partial void OnCurrentPageChanged(int value) =>

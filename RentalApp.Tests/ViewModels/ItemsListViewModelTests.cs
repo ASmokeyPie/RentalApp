@@ -160,6 +160,18 @@ public class ItemsListViewModelTests
             Times.Never);
     }
 
+    // ---- NavigateToCreateItemAsync ----------------------------------------
+
+    [Fact]
+    public async Task NavigateToCreateItemAsync_HitsCreateItemRoute()
+    {
+        var (vm, _, nav) = Build();
+
+        await vm.NavigateToCreateItemAsync();
+
+        nav.Verify(n => n.NavigateToAsync("CreateItemPage"), Times.Once);
+    }
+
     // ---- Helpers ----------------------------------------------------------
 
     private static (ItemsListViewModel vm, Mock<IItemRepository> repo, Mock<INavigationService> nav) Build()

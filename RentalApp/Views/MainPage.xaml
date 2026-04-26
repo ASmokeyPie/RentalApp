@@ -10,6 +10,10 @@
     </ContentPage.BindingContext>
 
     <ContentPage.ToolbarItems>
+        <ToolbarItem Text="Browse"
+                     Command="{Binding NavigateToItemsListCommand}"/>
+        <ToolbarItem Text="+"
+                     Command="{Binding NavigateToCreateItemCommand}"/>
         <ToolbarItem Text="Profile"
                      Command="{Binding NavigateToProfileCommand}"
                      IconImageSource="user.png"/>

@@ -11,6 +11,11 @@
         <vm:ItemsListViewModel/>
     </ContentPage.BindingContext>
 
+    <ContentPage.ToolbarItems>
+        <ToolbarItem Text="+ New item"
+                     Command="{Binding NavigateToCreateItemCommand}"/>
+    </ContentPage.ToolbarItems>
+
     <Grid RowDefinitions="Auto,*,Auto">
 
         <!-- Error banner -->

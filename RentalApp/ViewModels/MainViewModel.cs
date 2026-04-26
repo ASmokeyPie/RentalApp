@@ -111,6 +111,15 @@ public partial class MainViewModel : BaseViewModel
         await _navigationService.NavigateToAsync("ItemsListPage");
     }
 
+    /// @brief Navigates to the new-item form
+    /// @details Relay command that opens <c>CreateItemPage</c>.
+    /// @return A task representing the asynchronous navigation operation
+    [RelayCommand]
+    private async Task NavigateToCreateItemAsync()
+    {
+        await _navigationService.NavigateToAsync("CreateItemPage");
+    }
+
 
     /// @brief Refreshes the dashboard data
     /// @details Relay command that reloads user data and simulates a refresh operation
