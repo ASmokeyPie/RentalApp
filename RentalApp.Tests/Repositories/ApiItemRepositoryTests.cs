@@ -26,6 +26,8 @@ public class ApiItemRepositoryTests
     [Fact]
     public async Task GetByIdAsync_ParsesFullDetail_On200()
     {
+        // Spec: GET /items/{id} returns latitude/longitude (not lat/lon),
+        // plus totalReviews and an inline reviews array.
         var stub = new StubHttpMessageHandler(TestResponses.Json(new
         {
             id = 42,
@@ -34,15 +36,16 @@ public class ApiItemRepositoryTests
             dailyRate = 5.50m,
             categoryId = 1,
             category = "Power Tools",
-            categorySlug = "power-tools",
             ownerId = 7,
             ownerName = "Ada L.",
             ownerRating = 4.7,
-            lat = 55.95,
-            lon = -3.19,
+            latitude = 55.95,
+            longitude = -3.19,
             isAvailable = true,
             averageRating = 4.5,
+            totalReviews = 8,
             createdAt = DateTime.UtcNow,
+            reviews = Array.Empty<object>(),
         }));
         var repo = BuildRepo(stub);
 
@@ -58,7 +61,6 @@ public class ApiItemRepositoryTests
         Assert.Equal(4.7, item.OwnerRating);
         Assert.Equal(4.5, item.AverageRating);
         Assert.Equal("Power Tools", item.CategoryName);
-        Assert.Equal("power-tools", item.CategorySlug);
     }
 
     // ---- SearchAsync (paginated GET /items) -------------------------------
@@ -66,21 +68,28 @@ public class ApiItemRepositoryTests
     [Fact]
     public async Task SearchAsync_BuildsQueryString_AndParsesPagedEnvelope()
     {
+        // Spec: GET /items list response is { items, totalItems, page, pageSize, totalPages }
+        // and the items in the list have NO latitude/longitude.
         var stub = new StubHttpMessageHandler(TestResponses.Json(new
         {
             items = new[]
             {
                 new
                 {
-                    id = 1, title = "Drill", dailyRate = 5m,
-                    categoryId = 1, ownerId = 7,
-                    lat = 0.0, lon = 0.0, isAvailable = true,
+                    id = 1, title = "Drill", description = (string?)null,
+                    dailyRate = 5m,
+                    categoryId = 1, category = "Power Tools",
+                    ownerId = 7, ownerName = "Ada",
+                    ownerRating = (double?)null,
+                    isAvailable = true,
+                    averageRating = (double?)null,
                     createdAt = DateTime.UtcNow,
                 },
             },
+            totalItems = 17,
             page = 2,
             pageSize = 10,
-            totalCount = 17,
+            totalPages = 2,
         }));
         var repo = BuildRepo(stub);
 
@@ -111,9 +120,10 @@ public class ApiItemRepositoryTests
         var stub = new StubHttpMessageHandler(TestResponses.Json(new
         {
             items = Array.Empty<object>(),
+            totalItems = 0,
             page = 1,
             pageSize = 20,
-            totalCount = 0,
+            totalPages = 0,
         }));
         var repo = BuildRepo(stub);
 
@@ -131,13 +141,21 @@ public class ApiItemRepositoryTests
     [Fact]
     public async Task GetNearbyAsync_BuildsLatLonRadiusInvariantCulture()
     {
-        var stub = new StubHttpMessageHandler(TestResponses.Json(Array.Empty<object>()));
+        // Spec: GET /items/nearby returns an envelope with searchLocation/radius/totalResults.
+        var stub = new StubHttpMessageHandler(TestResponses.Json(new
+        {
+            items = Array.Empty<object>(),
+            searchLocation = new { latitude = 55.95, longitude = -3.19 },
+            radius = 5.0,
+            totalResults = 0,
+        }));
         var repo = BuildRepo(stub);
 
         await repo.GetNearbyAsync(55.95, -3.19, 5.0, "power-tools");
 
         var uri = stub.Requests.Single().RequestUri!;
         Assert.Equal("/items/nearby", uri.AbsolutePath);
+        // Query params use the short names per spec (lat/lon/radius/category).
         Assert.Contains("lat=55.95", uri.Query);
         Assert.Contains("lon=-3.19", uri.Query);
         Assert.Contains("radius=5", uri.Query);
@@ -145,19 +163,28 @@ public class ApiItemRepositoryTests
     }
 
     [Fact]
-    public async Task GetNearbyAsync_PopulatesDistanceKmFromWire()
+    public async Task GetNearbyAsync_PopulatesDistanceFromWire()
     {
-        var stub = new StubHttpMessageHandler(TestResponses.Json(new[]
+        // Spec: nearby items use latitude/longitude and 'distance' (not distanceKm).
+        var stub = new StubHttpMessageHandler(TestResponses.Json(new
         {
-            new
+            items = new[]
             {
-                id = 1, title = "Drill", dailyRate = 5m,
-                categoryId = 1, ownerId = 7,
-                lat = 55.95, lon = -3.19,
-                isAvailable = true,
-                distanceKm = 0.42,
-                createdAt = DateTime.UtcNow,
+                new
+                {
+                    id = 1, title = "Drill", description = (string?)null,
+                    dailyRate = 5m,
+                    categoryId = 1, category = "Power Tools",
+                    ownerId = 7, ownerName = "Ada",
+                    latitude = 55.95, longitude = -3.19,
+                    distance = 0.42,
+                    isAvailable = true,
+                    averageRating = (double?)null,
+                },
             },
+            searchLocation = new { latitude = 55.95, longitude = -3.19 },
+            radius = 5.0,
+            totalResults = 1,
         }));
         var repo = BuildRepo(stub);
 
@@ -165,6 +192,8 @@ public class ApiItemRepositoryTests
 
         Assert.Single(result);
         Assert.Equal(0.42, result[0].DistanceKm);
+        Assert.Equal(55.95, result[0].Latitude);
+        Assert.Equal(-3.19, result[0].Longitude);
     }
 
     // ---- CreateAsync ------------------------------------------------------
@@ -172,15 +201,20 @@ public class ApiItemRepositoryTests
     [Fact]
     public async Task CreateAsync_PostsExpectedBody_AndParsesResponse()
     {
+        // Spec: POST /items takes latitude/longitude (full names) in the body
+        // and ownerId is implicit from the JWT — must NOT be in the body.
         var stub = new StubHttpMessageHandler(TestResponses.Json(new
         {
             id = 99,
             title = "New Item",
+            description = "desc",
             dailyRate = 12.5m,
             categoryId = 3,
+            category = "Power Tools",
             ownerId = 7,
-            lat = 1.0,
-            lon = 2.0,
+            ownerName = "Ada",
+            latitude = 1.0,
+            longitude = 2.0,
             isAvailable = true,
             createdAt = DateTime.UtcNow,
         }, HttpStatusCode.Created));
@@ -207,29 +241,34 @@ public class ApiItemRepositoryTests
         Assert.Equal("desc",     root.GetProperty("description").GetString());
         Assert.Equal(12.5m,      root.GetProperty("dailyRate").GetDecimal());
         Assert.Equal(3,          root.GetProperty("categoryId").GetInt32());
-        Assert.Equal(1.0,        root.GetProperty("lat").GetDouble());
-        Assert.Equal(2.0,        root.GetProperty("lon").GetDouble());
+        Assert.Equal(1.0,        root.GetProperty("latitude").GetDouble());
+        Assert.Equal(2.0,        root.GetProperty("longitude").GetDouble());
         // OwnerId is implicit from JWT — must NOT be in the body
         Assert.False(root.TryGetProperty("ownerId", out _));
+        // The short forms must NOT be in the body either.
+        Assert.False(root.TryGetProperty("lat", out _));
+        Assert.False(root.TryGetProperty("lon", out _));
 
         Assert.Equal(99, created.Id);
+        Assert.Equal(1.0, created.Latitude);
+        Assert.Equal(2.0, created.Longitude);
     }
 
     // ---- UpdateAsync ------------------------------------------------------
 
     [Fact]
-    public async Task UpdateAsync_PutsAllowedFields_OnIdRoute()
+    public async Task UpdateAsync_PutsAllowedFields_OnIdRoute_AndMergesSlimResponse()
     {
+        // Spec: PUT /items/{id} returns a slim 5-field response.
+        // The repo merges those fields onto the entity caller passed in
+        // rather than fabricating a full Item from the slim shape.
         var stub = new StubHttpMessageHandler(TestResponses.Json(new
         {
             id = 42,
             title = "Renamed",
+            description = (string?)null,
             dailyRate = 7m,
-            categoryId = 1,
-            ownerId = 7,
-            lat = 0.0, lon = 0.0,
             isAvailable = false,
-            createdAt = DateTime.UtcNow,
         }));
         var repo = BuildRepo(stub);
 
@@ -239,7 +278,9 @@ public class ApiItemRepositoryTests
             Title = "Renamed",
             Description = "x",
             DailyRate = 7m,
-            CategoryId = 1,    // not allowed in PUT — should be silently dropped
+            CategoryId = 1,    // not allowed in PUT — should be silently dropped from body
+            Latitude = 55.95,  // not allowed in PUT — should be silently dropped from body
+            Longitude = -3.19,
             IsAvailable = false,
         });
 
@@ -253,31 +294,41 @@ public class ApiItemRepositoryTests
         Assert.Equal("Renamed", root.GetProperty("title").GetString());
         Assert.False(root.GetProperty("isAvailable").GetBoolean());
         Assert.False(root.TryGetProperty("categoryId", out _));
-        Assert.False(root.TryGetProperty("lat", out _));
+        Assert.False(root.TryGetProperty("latitude", out _));
+        Assert.False(root.TryGetProperty("longitude", out _));
 
+        // Merged confirmed fields from server response.
         Assert.Equal("Renamed", updated.Title);
+        Assert.False(updated.IsAvailable);
+        // Caller-supplied fields preserved (server doesn't echo these on PUT).
+        Assert.Equal(1, updated.CategoryId);
+        Assert.Equal(55.95, updated.Latitude);
     }
 
     // ---- GetReviewsAsync --------------------------------------------------
 
     [Fact]
-    public async Task GetReviewsAsync_HitsItemsIdReviewsEndpoint_WithPaging()
+    public async Task GetReviewsAsync_HitsItemsIdReviewsEndpoint_WithEnvelope()
     {
+        // Spec: GET /items/{id}/reviews returns
+        // { reviews, averageRating, totalReviews, page, pageSize, totalPages }.
         var stub = new StubHttpMessageHandler(TestResponses.Json(new
         {
-            items = new[]
+            reviews = new[]
             {
                 new
                 {
                     id = 1, rentalId = 10, reviewerId = 5,
-                    reviewerName = "Bob", itemTitle = "Drill",
+                    reviewerName = "Bob",
                     rating = 5, comment = "Great",
                     createdAt = DateTime.UtcNow,
                 },
             },
+            averageRating = 4.5,
+            totalReviews = 1,
             page = 1,
             pageSize = 20,
-            totalCount = 1,
+            totalPages = 1,
         }));
         var repo = BuildRepo(stub);
 
@@ -290,6 +341,7 @@ public class ApiItemRepositoryTests
 
         Assert.Single(result.Items);
         Assert.Equal("Bob", result.Items[0].ReviewerName);
+        Assert.Equal(1, result.TotalCount);
     }
 
     // ---- DeleteAsync ------------------------------------------------------

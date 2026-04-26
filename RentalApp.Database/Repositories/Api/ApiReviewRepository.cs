@@ -109,7 +109,7 @@ public sealed class ApiReviewRepository : IReviewRepository
     private static Review ToModel(ReviewWire w) => new()
     {
         Id = w.Id,
-        RentalId = w.RentalId,
+        RentalId = w.RentalId ?? 0,
         ReviewerId = w.ReviewerId,
         Rating = w.Rating,
         Comment = w.Comment,

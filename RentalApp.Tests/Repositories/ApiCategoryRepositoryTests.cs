@@ -8,12 +8,16 @@ namespace RentalApp.Tests.Repositories;
 public class ApiCategoryRepositoryTests
 {
     [Fact]
-    public async Task ListAsync_HitsCategoriesEndpoint_AndParsesArray()
+    public async Task ListAsync_HitsCategoriesEndpoint_AndParsesEnvelope()
     {
-        var stub = new StubHttpMessageHandler(TestResponses.Json(new[]
+        // Spec: GET /categories returns { categories: [...] }, NOT a bare array.
+        var stub = new StubHttpMessageHandler(TestResponses.Json(new
         {
-            new { id = 1, name = "Power Tools",  slug = "power-tools",  itemCount = 5 },
-            new { id = 2, name = "Camping Gear", slug = "camping-gear", itemCount = 3 },
+            categories = new[]
+            {
+                new { id = 1, name = "Power Tools",  slug = "power-tools",  itemCount = 5 },
+                new { id = 2, name = "Camping Gear", slug = "camping-gear", itemCount = 3 },
+            },
         }));
         var repo = BuildRepo(stub);
 
@@ -29,12 +33,15 @@ public class ApiCategoryRepositoryTests
     }
 
     [Fact]
-    public async Task GetByIdAsync_FindsMatchingCategoryFromList()
+    public async Task GetByIdAsync_FindsMatchingCategoryFromEnvelope()
     {
-        var stub = new StubHttpMessageHandler(TestResponses.Json(new[]
+        var stub = new StubHttpMessageHandler(TestResponses.Json(new
         {
-            new { id = 1, name = "Power Tools",  slug = "power-tools",  itemCount = 5 },
-            new { id = 2, name = "Camping Gear", slug = "camping-gear", itemCount = 3 },
+            categories = new[]
+            {
+                new { id = 1, name = "Power Tools",  slug = "power-tools",  itemCount = 5 },
+                new { id = 2, name = "Camping Gear", slug = "camping-gear", itemCount = 3 },
+            },
         }));
         var repo = BuildRepo(stub);
 
@@ -45,9 +52,12 @@ public class ApiCategoryRepositoryTests
     }
 
     [Fact]
-    public async Task GetByIdAsync_ReturnsNull_WhenNotInList()
+    public async Task GetByIdAsync_ReturnsNull_WhenNotInEnvelope()
     {
-        var stub = new StubHttpMessageHandler(TestResponses.Json(Array.Empty<object>()));
+        var stub = new StubHttpMessageHandler(TestResponses.Json(new
+        {
+            categories = Array.Empty<object>(),
+        }));
         var repo = BuildRepo(stub);
 
         var category = await repo.GetByIdAsync(99);

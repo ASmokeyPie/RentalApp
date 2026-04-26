@@ -13,13 +13,14 @@ public class ApiReviewRepositoryTests
     [Fact]
     public async Task CreateAsync_PostsReviewsWithExpectedBody()
     {
+        // Spec: POST /reviews response is the bare review object with
+        // { id, rentalId, reviewerId, reviewerName, rating, comment, createdAt }.
         var stub = new StubHttpMessageHandler(TestResponses.Json(new
         {
             id = 1,
             rentalId = 10,
             reviewerId = 5,
             reviewerName = "Ada",
-            itemTitle = "Drill",
             rating = 5,
             comment = "Loved it",
             createdAt = DateTime.UtcNow,
@@ -41,7 +42,6 @@ public class ApiReviewRepositoryTests
 
         Assert.Equal(1, review.Id);
         Assert.Equal("Ada", review.ReviewerName);
-        Assert.Equal("Drill", review.ItemTitle);
     }
 
     [Fact]
@@ -52,6 +52,7 @@ public class ApiReviewRepositoryTests
             id = 1,
             rentalId = 10,
             reviewerId = 5,
+            reviewerName = "Ada",
             rating = 4,
             createdAt = DateTime.UtcNow,
         }, HttpStatusCode.Created));
@@ -70,7 +71,7 @@ public class ApiReviewRepositoryTests
     {
         var stub = new StubHttpMessageHandler(TestResponses.Json(new
         {
-            id = 2, rentalId = 7, reviewerId = 3,
+            id = 2, rentalId = 7, reviewerId = 3, reviewerName = "Ada",
             rating = 3, createdAt = DateTime.UtcNow,
         }, HttpStatusCode.Created));
         var repo = BuildRepo(stub);
@@ -89,14 +90,18 @@ public class ApiReviewRepositoryTests
     // ---- GetForUserAsync / GetForItemAsync --------------------------------
 
     [Fact]
-    public async Task GetForUserAsync_HitsUserReviewsEndpoint_WithPaging()
+    public async Task GetForUserAsync_HitsUserReviewsEndpoint_WithEnvelope()
     {
+        // Spec: GET /users/{id}/reviews returns
+        // { reviews, averageRating, totalReviews, page, pageSize, totalPages }.
         var stub = new StubHttpMessageHandler(TestResponses.Json(new
         {
-            items = Array.Empty<object>(),
+            reviews = Array.Empty<object>(),
+            averageRating = (double?)null,
+            totalReviews = 0,
             page = 1,
             pageSize = 20,
-            totalCount = 0,
+            totalPages = 0,
         }));
         var repo = BuildRepo(stub);
 
@@ -109,19 +114,24 @@ public class ApiReviewRepositoryTests
     }
 
     [Fact]
-    public async Task GetForItemAsync_HitsItemReviewsEndpoint()
+    public async Task GetForItemAsync_HitsItemReviewsEndpoint_AndParsesEnvelope()
     {
         var stub = new StubHttpMessageHandler(TestResponses.Json(new
         {
-            items = new[]
+            reviews = new[]
             {
                 new
                 {
-                    id = 1, rentalId = 10, reviewerId = 5,
-                    rating = 5, createdAt = DateTime.UtcNow,
+                    id = 1, rentalId = 10, reviewerId = 5, reviewerName = "Bob",
+                    rating = 5, comment = (string?)null,
+                    createdAt = DateTime.UtcNow,
                 },
             },
-            page = 1, pageSize = 20, totalCount = 1,
+            averageRating = 5.0,
+            totalReviews = 1,
+            page = 1,
+            pageSize = 20,
+            totalPages = 1,
         }));
         var repo = BuildRepo(stub);
 

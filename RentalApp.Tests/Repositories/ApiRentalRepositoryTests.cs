@@ -14,6 +14,8 @@ public class ApiRentalRepositoryTests
     [Fact]
     public async Task RequestAsync_PostsRentalsWithExpectedBody()
     {
+        // Spec: POST /rentals body is { itemId, startDate, endDate } (date strings),
+        // response is the full rental shape with createdAt.
         var stub = new StubHttpMessageHandler(TestResponses.Json(new
         {
             id = 99,
@@ -49,6 +51,7 @@ public class ApiRentalRepositoryTests
         Assert.Equal("Drill", rental.ItemTitle);
         Assert.Equal("Bob", rental.BorrowerName);
         Assert.Equal("Ada", rental.OwnerName);
+        Assert.Equal(new DateOnly(2026, 5, 1), rental.StartDate);
     }
 
     // ---- Incoming / Outgoing ---------------------------------------------
@@ -56,7 +59,12 @@ public class ApiRentalRepositoryTests
     [Fact]
     public async Task GetIncomingAsync_HitsIncomingEndpoint_NoFilter()
     {
-        var stub = new StubHttpMessageHandler(TestResponses.Json(Array.Empty<object>()));
+        // Spec: response wraps in { rentals, totalRentals }.
+        var stub = new StubHttpMessageHandler(TestResponses.Json(new
+        {
+            rentals = Array.Empty<object>(),
+            totalRentals = 0,
+        }));
         var repo = BuildRepo(stub);
 
         await repo.GetIncomingAsync();
@@ -69,7 +77,11 @@ public class ApiRentalRepositoryTests
     [Fact]
     public async Task GetIncomingAsync_AppendsStatusFilter_WhenProvided()
     {
-        var stub = new StubHttpMessageHandler(TestResponses.Json(Array.Empty<object>()));
+        var stub = new StubHttpMessageHandler(TestResponses.Json(new
+        {
+            rentals = Array.Empty<object>(),
+            totalRentals = 0,
+        }));
         var repo = BuildRepo(stub);
 
         await repo.GetIncomingAsync(new RentalQuery { Status = RentalStatus.Approved });
@@ -80,15 +92,38 @@ public class ApiRentalRepositoryTests
     }
 
     [Fact]
-    public async Task GetOutgoingAsync_HitsOutgoingEndpoint()
+    public async Task GetOutgoingAsync_HitsOutgoingEndpoint_AndParsesEnvelope()
     {
-        var stub = new StubHttpMessageHandler(TestResponses.Json(Array.Empty<object>()));
+        var stub = new StubHttpMessageHandler(TestResponses.Json(new
+        {
+            rentals = new[]
+            {
+                new
+                {
+                    id = 1,
+                    itemId = 7,
+                    itemTitle = "Drill",
+                    borrowerId = 3,
+                    borrowerName = "Bob",
+                    ownerId = 1,
+                    ownerName = "Ada",
+                    startDate = "2026-05-01",
+                    endDate = "2026-05-03",
+                    status = "Pending",
+                    totalPrice = 10m,
+                    createdAt = DateTime.UtcNow,
+                },
+            },
+            totalRentals = 1,
+        }));
         var repo = BuildRepo(stub);
 
-        await repo.GetOutgoingAsync();
+        var result = await repo.GetOutgoingAsync();
 
         var uri = stub.Requests.Single().RequestUri!;
         Assert.Equal("/rentals/outgoing", uri.AbsolutePath);
+        Assert.Single(result);
+        Assert.Equal("Drill", result[0].ItemTitle);
     }
 
     // ---- GetByIdAsync -----------------------------------------------------
@@ -105,18 +140,25 @@ public class ApiRentalRepositoryTests
     }
 
     [Fact]
-    public async Task GetByIdAsync_Parses200()
+    public async Task GetByIdAsync_Parses200_WithRequestedAtAndItemDescription()
     {
+        // Spec: GET /rentals/{id} uses 'requestedAt' (not createdAt)
+        // and includes 'itemDescription'.
         var stub = new StubHttpMessageHandler(TestResponses.Json(new
         {
             id = 7,
             itemId = 1,
+            itemTitle = "Drill",
+            itemDescription = "An 18V drill",
             borrowerId = 2,
+            borrowerName = "Bob",
+            ownerId = 1,
+            ownerName = "Ada",
             startDate = "2026-04-01",
             endDate = "2026-04-02",
             status = "Approved",
             totalPrice = 10m,
-            createdAt = DateTime.UtcNow,
+            requestedAt = DateTime.UtcNow,
         }));
         var repo = BuildRepo(stub);
 
@@ -125,27 +167,26 @@ public class ApiRentalRepositoryTests
         Assert.NotNull(rental);
         Assert.Equal(RentalStatus.Approved, rental!.Status);
         Assert.Equal(new DateOnly(2026, 4, 1), rental.StartDate);
+        Assert.Equal("Drill", rental.ItemTitle);
     }
 
     // ---- UpdateStatusAsync ------------------------------------------------
 
     [Fact]
-    public async Task UpdateStatusAsync_PatchesIdRoute_WithStatusBody()
+    public async Task UpdateStatusAsync_PatchesIdRoute_AndReturnsSlimUpdate()
     {
+        // Spec: PATCH /rentals/{id}/status returns { id, status, updatedAt }.
+        // The repo returns a RentalStatusUpdate (not a full Rental) to match.
+        var updatedAt = DateTime.UtcNow;
         var stub = new StubHttpMessageHandler(TestResponses.Json(new
         {
             id = 7,
-            itemId = 1,
-            borrowerId = 2,
-            startDate = "2026-04-01",
-            endDate = "2026-04-02",
             status = "Approved",
-            totalPrice = 10m,
-            createdAt = DateTime.UtcNow,
+            updatedAt = updatedAt,
         }));
         var repo = BuildRepo(stub);
 
-        var rental = await repo.UpdateStatusAsync(7, RentalStatus.Approved);
+        var result = await repo.UpdateStatusAsync(7, RentalStatus.Approved);
 
         var request = stub.Requests.Single();
         Assert.Equal(HttpMethod.Patch, request.Method);
@@ -155,7 +196,25 @@ public class ApiRentalRepositoryTests
         using var doc = JsonDocument.Parse(body);
         Assert.Equal("Approved", doc.RootElement.GetProperty("status").GetString());
 
-        Assert.Equal(RentalStatus.Approved, rental.Status);
+        Assert.Equal(7, result.Id);
+        Assert.Equal(RentalStatus.Approved, result.Status);
+    }
+
+    [Fact]
+    public async Task ParseStatus_ThrowsInvalidData_OnUnknownWireValue()
+    {
+        // Defensive parser: any wire status outside the enum throws so a
+        // Phase 5 discovery isn't silently swallowed.
+        var stub = new StubHttpMessageHandler(TestResponses.Json(new
+        {
+            id = 7,
+            status = "OutForRent",   // not in our enum yet
+            updatedAt = DateTime.UtcNow,
+        }));
+        var repo = BuildRepo(stub);
+
+        await Assert.ThrowsAsync<InvalidDataException>(
+            () => repo.UpdateStatusAsync(7, RentalStatus.Approved));
     }
 
     // ---- Generic CRUD methods that don't fit the API ---------------------
