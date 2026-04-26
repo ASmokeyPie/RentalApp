@@ -86,6 +86,14 @@ public static class MauiProgram
         builder.Services.AddSingleton<TempViewModel>();
         builder.Services.AddTransient<TempPage>();
 
+        // Phase 3: Item browsing (read paths). Both VMs are transient because
+        // each navigation should start with a fresh state — list page resets
+        // pagination on entry, detail page is loaded fresh per item id.
+        builder.Services.AddTransient<ItemsListViewModel>();
+        builder.Services.AddTransient<ItemsListPage>();
+        builder.Services.AddTransient<ItemDetailsViewModel>();
+        builder.Services.AddTransient<ItemDetailsPage>();
+
 #if DEBUG
         builder.Logging.AddDebug();
 #endif
