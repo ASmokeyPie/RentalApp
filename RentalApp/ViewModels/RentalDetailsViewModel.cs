@@ -76,7 +76,10 @@ public partial class RentalDetailsViewModel : BaseViewModel
     public bool CanApprove        => IsOwner    && Rental?.Status == RentalStatus.Requested;
     public bool CanReject         => IsOwner    && Rental?.Status == RentalStatus.Requested;
     public bool CanMarkOutForRent => IsOwner    && Rental?.Status == RentalStatus.Approved;
-    public bool CanMarkReturned   => IsOwner    && Rental?.Status == RentalStatus.OutForRent;
+    // Borrower marks Returned per server rule "only the borrower can perform
+    // this transition" (they're physically returning the item). Owner then
+    // inspects and marks Completed below.
+    public bool CanMarkReturned   => IsBorrower && Rental?.Status == RentalStatus.OutForRent;
     public bool CanMarkCompleted  => IsOwner    && Rental?.Status == RentalStatus.Returned;
     public bool CanCancel         => IsBorrower
                                      && Rental?.Status is RentalStatus.Requested or RentalStatus.Approved;

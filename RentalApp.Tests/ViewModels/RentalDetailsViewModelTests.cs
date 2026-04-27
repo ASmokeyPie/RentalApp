@@ -110,19 +110,19 @@ public class RentalDetailsViewModelTests
     // ---- Owner action permissions (truth table) --------------------------
 
     [Theory]
-    [InlineData(RentalStatus.Requested,  true,  true,  false, false, false)]
-    [InlineData(RentalStatus.Approved,   false, false, true,  false, false)]
-    [InlineData(RentalStatus.OutForRent, false, false, false, true,  false)]
-    [InlineData(RentalStatus.Returned,   false, false, false, false, true)]
-    [InlineData(RentalStatus.Completed,  false, false, false, false, false)]
-    [InlineData(RentalStatus.Cancelled,  false, false, false, false, false)]
-    [InlineData(RentalStatus.Rejected,   false, false, false, false, false)]
+    // status,                          canApprove, canReject, canMarkOut, canMarkCompleted
+    [InlineData(RentalStatus.Requested,  true,  true,  false, false)]
+    [InlineData(RentalStatus.Approved,   false, false, true,  false)]
+    [InlineData(RentalStatus.OutForRent, false, false, false, false)]   // Mark Returned is borrower-only
+    [InlineData(RentalStatus.Returned,   false, false, false, true)]
+    [InlineData(RentalStatus.Completed,  false, false, false, false)]
+    [InlineData(RentalStatus.Cancelled,  false, false, false, false)]
+    [InlineData(RentalStatus.Rejected,   false, false, false, false)]
     public async Task OwnerActionFlags_FollowStatus(
         RentalStatus status,
         bool canApprove,
         bool canReject,
         bool canMarkOutForRent,
-        bool canMarkReturned,
         bool canMarkCompleted)
     {
         var (vm, rentals, auth) = Build();
@@ -136,20 +136,26 @@ public class RentalDetailsViewModelTests
         Assert.Equal(canApprove,        vm.CanApprove);
         Assert.Equal(canReject,         vm.CanReject);
         Assert.Equal(canMarkOutForRent, vm.CanMarkOutForRent);
-        Assert.Equal(canMarkReturned,   vm.CanMarkReturned);
         Assert.Equal(canMarkCompleted,  vm.CanMarkCompleted);
-        Assert.False(vm.CanCancel); // owner can't cancel
+        // Owner does NOT mark Returned (the borrower does, per server rule)
+        // and cannot Cancel.
+        Assert.False(vm.CanMarkReturned);
+        Assert.False(vm.CanCancel);
     }
 
     [Theory]
-    [InlineData(RentalStatus.Requested,  true)]
-    [InlineData(RentalStatus.Approved,   true)]
-    [InlineData(RentalStatus.OutForRent, false)]
-    [InlineData(RentalStatus.Returned,   false)]
-    [InlineData(RentalStatus.Completed,  false)]
-    [InlineData(RentalStatus.Rejected,   false)]
-    [InlineData(RentalStatus.Cancelled,  false)]
-    public async Task BorrowerCancelFlag_FollowsStatus(RentalStatus status, bool canCancel)
+    // status,                          canCancel, canMarkReturned
+    [InlineData(RentalStatus.Requested,  true,  false)]
+    [InlineData(RentalStatus.Approved,   true,  false)]
+    [InlineData(RentalStatus.OutForRent, false, true)]   // ← borrower marks Returned
+    [InlineData(RentalStatus.Returned,   false, false)]
+    [InlineData(RentalStatus.Completed,  false, false)]
+    [InlineData(RentalStatus.Rejected,   false, false)]
+    [InlineData(RentalStatus.Cancelled,  false, false)]
+    public async Task BorrowerActionFlags_FollowStatus(
+        RentalStatus status,
+        bool canCancel,
+        bool canMarkReturned)
     {
         var (vm, rentals, auth) = Build();
         rentals.Setup(s => s.GetRentalAsync(7, default))
@@ -159,12 +165,12 @@ public class RentalDetailsViewModelTests
         vm.RentalId = 7;
         await vm.LoadAsync();
 
-        Assert.Equal(canCancel, vm.CanCancel);
+        Assert.Equal(canCancel,       vm.CanCancel);
+        Assert.Equal(canMarkReturned, vm.CanMarkReturned);
         // Borrower has none of the owner-only flags.
         Assert.False(vm.CanApprove);
         Assert.False(vm.CanReject);
         Assert.False(vm.CanMarkOutForRent);
-        Assert.False(vm.CanMarkReturned);
         Assert.False(vm.CanMarkCompleted);
     }
 
@@ -229,9 +235,14 @@ public class RentalDetailsViewModelTests
     }
 
     [Fact]
-    public async Task FullOwnerWorkflow_StateTransitionsThroughEveryStep()
+    public async Task FullWorkflow_StateTransitionsThroughEveryStep()
     {
         // Walks the full happy-path: Requested → Approved → OutForRent → Returned → Completed.
+        // The action commands themselves don't gate on the Can* flags (those
+        // drive UI button visibility); they delegate straight to the service.
+        // So this test verifies the state-mutation chain regardless of which
+        // role would actually trigger each step in the real UI (Mark Returned
+        // is borrower-only, the rest are owner).
         var (vm, rentals, auth) = Build();
         var sample = SampleRental(7, "Drill", RentalStatus.Requested, ownerId: 1, borrowerId: 2);
         rentals.Setup(s => s.GetRentalAsync(7, default)).ReturnsAsync(sample);
