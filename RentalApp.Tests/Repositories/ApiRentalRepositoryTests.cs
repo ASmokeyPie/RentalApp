@@ -228,6 +228,86 @@ public class ApiRentalRepositoryTests
     }
 
     [Fact]
+    public async Task UpdateStatusAsync_SendsSpacedWireString_ForOutForRent()
+    {
+        // Regression: server rejected "OutForRent" with 409. The requirements
+        // doc and (presumably) server use "Out for Rent" with spaces. We must
+        // translate the enum on the way out.
+        var stub = new StubHttpMessageHandler(TestResponses.Json(new
+        {
+            id = 7,
+            status = "Out for Rent",
+            updatedAt = DateTime.UtcNow,
+        }));
+        var repo = BuildRepo(stub);
+
+        var result = await repo.UpdateStatusAsync(7, RentalStatus.OutForRent);
+
+        var body = await stub.Requests.Single().Content!.ReadAsStringAsync();
+        using var doc = JsonDocument.Parse(body);
+        Assert.Equal("Out for Rent", doc.RootElement.GetProperty("status").GetString());
+        Assert.Equal(RentalStatus.OutForRent, result.Status);
+    }
+
+    [Theory]
+    [InlineData("Out for Rent")]   // requirements wording (canonical)
+    [InlineData("Out For Rent")]   // full title case
+    [InlineData("OutForRent")]     // CamelCase (our enum name)
+    [InlineData("out_for_rent")]   // snake_case
+    public async Task ParseStatus_TolerantOfOutForRentWireVariants(string wireStatus)
+    {
+        var stub = new StubHttpMessageHandler(TestResponses.Json(new
+        {
+            id = 7,
+            status = wireStatus,
+            updatedAt = DateTime.UtcNow,
+        }));
+        var repo = BuildRepo(stub);
+
+        var result = await repo.UpdateStatusAsync(7, RentalStatus.OutForRent);
+
+        Assert.Equal(RentalStatus.OutForRent, result.Status);
+    }
+
+    [Fact]
+    public async Task GetIncomingAsync_StatusFilter_UsesWireString()
+    {
+        // The status= query parameter must use the same wire string as
+        // PATCH body, otherwise the server's filter won't match anything.
+        var stub = new StubHttpMessageHandler(TestResponses.Json(new
+        {
+            rentals = Array.Empty<object>(),
+            totalRentals = 0,
+        }));
+        var repo = BuildRepo(stub);
+
+        await repo.GetIncomingAsync(new RentalQuery { Status = RentalStatus.OutForRent });
+
+        var uri = stub.Requests.Single().RequestUri!;
+        // URL-encoded spaces become %20.
+        Assert.Equal("?status=Out%20for%20Rent", uri.Query);
+    }
+
+    [Fact]
+    public async Task UpdateStatusAsync_SurfacesServerErrorMessage_On409()
+    {
+        // Regression: live API was returning 409 with a meaningful body
+        // (e.g. "Rental cannot be marked OutForRent past its end date") but the
+        // repo was throwing a generic "status code does not indicate success"
+        // exception. The helper should now propagate the server's 'message'.
+        var stub = new StubHttpMessageHandler(TestResponses.Json(
+            new { error = "Conflict", message = "End date has already passed." },
+            HttpStatusCode.Conflict));
+        var repo = BuildRepo(stub);
+
+        var ex = await Assert.ThrowsAsync<HttpRequestException>(
+            () => repo.UpdateStatusAsync(7, RentalStatus.OutForRent));
+
+        Assert.Equal("End date has already passed.", ex.Message);
+        Assert.Equal(HttpStatusCode.Conflict, ex.StatusCode);
+    }
+
+    [Fact]
     public async Task ParseStatus_ThrowsInvalidData_OnUnknownWireValue()
     {
         // Defensive parser: any wire status outside the enum throws so a

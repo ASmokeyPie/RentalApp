@@ -35,7 +35,7 @@ public sealed class ApiRentalRepository : IRentalRepository
         {
             return null;
         }
-        response.EnsureSuccessStatusCode();
+        await response.EnsureSuccessOrThrowApiErrorAsync(ct);
         var wire = await response.Content.ReadFromJsonAsync<RentalDetailWire>(ApiJsonOptions.Default, ct);
         return wire is null ? null : ToModel(wire);
     }
@@ -65,7 +65,7 @@ public sealed class ApiRentalRepository : IRentalRepository
             EndDate: endDate.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture));
 
         var response = await _http.PostAsJsonAsync("rentals", body, ApiJsonOptions.Default, ct);
-        response.EnsureSuccessStatusCode();
+        await response.EnsureSuccessOrThrowApiErrorAsync(ct);
         var wire = await response.Content.ReadFromJsonAsync<RentalSummaryWire>(ApiJsonOptions.Default, ct)
                    ?? throw new InvalidOperationException("Empty response body from POST /rentals.");
         return ToModel(wire);
@@ -79,13 +79,13 @@ public sealed class ApiRentalRepository : IRentalRepository
 
     public async Task<RentalStatusUpdate> UpdateStatusAsync(int rentalId, RentalStatus newStatus, CancellationToken ct = default)
     {
-        var body = new UpdateStatusBody(newStatus.ToString());
+        var body = new UpdateStatusBody(ToWireString(newStatus));
         var request = new HttpRequestMessage(HttpMethod.Patch, $"rentals/{rentalId}/status")
         {
             Content = JsonContent.Create(body, options: ApiJsonOptions.Default),
         };
         var response = await _http.SendAsync(request, ct);
-        response.EnsureSuccessStatusCode();
+        await response.EnsureSuccessOrThrowApiErrorAsync(ct);
         var wire = await response.Content.ReadFromJsonAsync<UpdateStatusResponseWire>(ApiJsonOptions.Default, ct)
                    ?? throw new InvalidOperationException("Empty response body from PATCH /rentals/{id}/status.");
         return new RentalStatusUpdate(wire.Id, ParseStatus(wire.Status), wire.UpdatedAt);
@@ -96,7 +96,7 @@ public sealed class ApiRentalRepository : IRentalRepository
         var url = baseUrl;
         if (query?.Status is RentalStatus s)
         {
-            url += $"?status={s}";
+            url += $"?status={Uri.EscapeDataString(ToWireString(s))}";
         }
         var wire = await _http.GetFromJsonAsync<RentalsEnvelopeWire>(url, ApiJsonOptions.Default, ct);
         return (wire?.Rentals ?? Array.Empty<RentalSummaryWire>()).Select(ToModel).ToList();
@@ -178,6 +178,7 @@ public sealed class ApiRentalRepository : IRentalRepository
         ItemTitle = w.ItemTitle ?? string.Empty,
         ItemDailyRate = w.ItemDailyRate,
         BorrowerName = w.BorrowerName ?? string.Empty,
+        OwnerId = w.OwnerId ?? 0,
         OwnerName = w.OwnerName ?? string.Empty,
     };
 
@@ -196,6 +197,7 @@ public sealed class ApiRentalRepository : IRentalRepository
         ItemTitle = w.ItemTitle ?? string.Empty,
         ItemDailyRate = null,
         BorrowerName = w.BorrowerName ?? string.Empty,
+        OwnerId = w.OwnerId ?? 0,
         OwnerName = w.OwnerName ?? string.Empty,
     };
 
@@ -235,16 +237,63 @@ public sealed class ApiRentalRepository : IRentalRepository
         throw new InvalidDataException($"Could not parse '{s}' as a rental date.");
     }
 
+    // ---- Status enum ↔ wire-string translation ---------------------------
+    //
+    // The hosted API uses the requirements-doc wording for rental statuses,
+    // which means "Out for Rent" with spaces — not "OutForRent". Most other
+    // status names happen to be a single word and round-trip identically, but
+    // the moment we ignore the translation we get 409s like "Cannot transition
+    // from Approved to OutForRent" because the server doesn't recognise the
+    // CamelCased form.
+
     /// <summary>
-    /// Defensive enum parse. The API types <c>status</c> as bare string with no
-    /// enum constraint, and the requirements wording ("Out for Rent",
-    /// "Returned") doesn't perfectly match our <see cref="RentalStatus"/> enum
-    /// names. If a wire value can't be matched, throw a clear error so Phase 5
-    /// work can pin the canonical strings rather than silently mapping to
-    /// Pending and hiding the bug.
+    /// Returns the wire string the server expects for a given enum value.
+    /// </summary>
+    private static string ToWireString(RentalStatus s) => s switch
+    {
+        RentalStatus.Requested  => "Requested",
+        RentalStatus.Approved   => "Approved",
+        RentalStatus.Rejected   => "Rejected",
+        RentalStatus.Cancelled  => "Cancelled",
+        RentalStatus.OutForRent => "Out for Rent",
+        RentalStatus.Returned   => "Returned",
+        RentalStatus.Completed  => "Completed",
+        _ => s.ToString(),
+    };
+
+    /// <summary>
+    /// Wire-string → enum, tolerant of casing and a couple of plausible
+    /// variants (CamelCase, Title Case, snake_case) so the parser doesn't
+    /// throw if a sister client sends a slightly different form.
+    /// </summary>
+    private static readonly IReadOnlyDictionary<string, RentalStatus> FromWire =
+        new Dictionary<string, RentalStatus>(StringComparer.OrdinalIgnoreCase)
+        {
+            ["Requested"]    = RentalStatus.Requested,
+            ["Approved"]     = RentalStatus.Approved,
+            ["Rejected"]     = RentalStatus.Rejected,
+            ["Cancelled"]    = RentalStatus.Cancelled,
+            ["Out for Rent"] = RentalStatus.OutForRent,
+            ["Out For Rent"] = RentalStatus.OutForRent,
+            ["OutForRent"]   = RentalStatus.OutForRent,
+            ["out_for_rent"] = RentalStatus.OutForRent,
+            ["Returned"]     = RentalStatus.Returned,
+            ["Completed"]    = RentalStatus.Completed,
+        };
+
+    /// <summary>
+    /// Defensive enum parse. Honours <see cref="FromWire"/> first (so spaced
+    /// forms like "Out for Rent" map correctly) and falls back to a strict
+    /// enum-name parse for robustness. Throws on anything we don't recognise
+    /// so wire-vs-enum drift surfaces loudly rather than silently mapping to
+    /// a default.
     /// </summary>
     private static RentalStatus ParseStatus(string s)
     {
+        if (FromWire.TryGetValue(s, out var fromTable))
+        {
+            return fromTable;
+        }
         if (Enum.TryParse<RentalStatus>(s, ignoreCase: true, out var v) && Enum.IsDefined(v))
         {
             return v;

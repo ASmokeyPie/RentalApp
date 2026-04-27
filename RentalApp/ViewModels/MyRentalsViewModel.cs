@@ -121,16 +121,16 @@ public partial class MyRentalsViewModel : BaseViewModel
     [RelayCommand]
     public void SelectOutgoing() => SelectedTab = "Outgoing";
 
-    /// @brief Navigates to the rental's item detail page.
-    /// @details Phase 5d will swap this to a dedicated rental-detail page.
+    /// @brief Navigates to the rental detail page (where the user can see
+    ///        full info and take owner/borrower actions).
     [RelayCommand]
     public async Task SelectRentalAsync(Rental? rental)
     {
         if (rental is null) return;
 
         await _navigation.NavigateToAsync(
-            "ItemDetailsPage",
-            new Dictionary<string, object> { ["itemId"] = rental.ItemId });
+            "RentalDetailsPage",
+            new Dictionary<string, object> { ["rentalId"] = rental.Id });
     }
 
     // ---- Property change hooks --------------------------------------------

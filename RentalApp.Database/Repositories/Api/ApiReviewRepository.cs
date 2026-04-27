@@ -46,7 +46,7 @@ public sealed class ApiReviewRepository : IReviewRepository
     {
         var body = new CreateReviewBody(rentalId, rating, comment);
         var response = await _http.PostAsJsonAsync("reviews", body, ApiJsonOptions.Default, ct);
-        response.EnsureSuccessStatusCode();
+        await response.EnsureSuccessOrThrowApiErrorAsync(ct);
         var wire = await response.Content.ReadFromJsonAsync<ReviewWire>(ApiJsonOptions.Default, ct)
                    ?? throw new InvalidOperationException("Empty response body from POST /reviews.");
         return ToModel(wire);
