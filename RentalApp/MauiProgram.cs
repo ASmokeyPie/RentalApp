@@ -115,6 +115,10 @@ public static class MauiProgram
         builder.Services.AddTransient<MyRentalsViewModel>();
         builder.Services.AddTransient<MyRentalsPage>();
 
+        // Phase 5d: Rental detail + owner/borrower workflow actions.
+        builder.Services.AddTransient<RentalDetailsViewModel>();
+        builder.Services.AddTransient<RentalDetailsPage>();
+
 #if DEBUG
         builder.Logging.AddDebug();
 #endif

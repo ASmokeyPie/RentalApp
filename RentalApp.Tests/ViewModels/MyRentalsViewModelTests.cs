@@ -125,18 +125,17 @@ public class MyRentalsViewModelTests
     // ---- SelectRentalAsync ------------------------------------------------
 
     [Fact]
-    public async Task SelectRentalAsync_NavigatesToItemDetail()
+    public async Task SelectRentalAsync_NavigatesToRentalDetail()
     {
         var (vm, _, nav) = Build();
         var rental = Rental(7, "Drill", RentalStatus.Approved);
-        rental.ItemId = 42;
 
         await vm.SelectRentalAsync(rental);
 
         nav.Verify(n => n.NavigateToAsync(
-                "ItemDetailsPage",
+                "RentalDetailsPage",
                 It.Is<Dictionary<string, object>>(d =>
-                    d.ContainsKey("itemId") && (int)d["itemId"] == 42)),
+                    d.ContainsKey("rentalId") && (int)d["rentalId"] == 7)),
             Times.Once);
     }
 

@@ -1,0 +1,140 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage x:Class="RentalApp.Views.RentalDetailsPage"
+             xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:vm="clr-namespace:RentalApp.ViewModels"
+             x:DataType="vm:RentalDetailsViewModel"
+             Title="{Binding Title}">
+
+    <ContentPage.BindingContext>
+        <vm:RentalDetailsViewModel/>
+    </ContentPage.BindingContext>
+
+    <RefreshView IsRefreshing="{Binding IsRefreshing}"
+                 Command="{Binding LoadCommand}">
+        <ScrollView>
+            <StackLayout Padding="20" Spacing="14">
+
+                <!-- Error banner -->
+                <Border BackgroundColor="{AppThemeBinding Light=#FFEBEE, Dark=#1B0000}"
+                        Stroke="{AppThemeBinding Light=#F44336, Dark=#EF5350}"
+                        StrokeThickness="1"
+                        Padding="12"
+                        IsVisible="{Binding HasError}">
+                    <Border.StrokeShape>
+                        <RoundRectangle CornerRadius="8"/>
+                    </Border.StrokeShape>
+                    <Grid ColumnDefinitions="*,Auto">
+                        <Label Grid.Column="0"
+                               Text="{Binding ErrorMessage}"
+                               TextColor="{AppThemeBinding Light=#D32F2F, Dark=#EF5350}"
+                               VerticalOptions="Center"/>
+                        <Button Grid.Column="1"
+                                Text="×"
+                                Command="{Binding ClearErrorCommand}"
+                                BackgroundColor="Transparent"
+                                TextColor="{AppThemeBinding Light=#D32F2F, Dark=#EF5350}"
+                                FontSize="18"
+                                Padding="4"
+                                WidthRequest="32"
+                                HeightRequest="32"/>
+                    </Grid>
+                </Border>
+
+                <!-- Loading placeholder -->
+                <ActivityIndicator IsRunning="{Binding IsRefreshing}"
+                                   IsVisible="{Binding IsRefreshing}"
+                                   HorizontalOptions="Center"/>
+
+                <!-- Rental detail body -->
+                <StackLayout Spacing="14" IsVisible="{Binding IsLoaded}">
+
+                    <!-- Item summary -->
+                    <Label Text="{Binding Rental.ItemTitle}"
+                           FontSize="22"
+                           FontAttributes="Bold"/>
+
+                    <!-- Status + price card -->
+                    <Border BackgroundColor="{AppThemeBinding Light={StaticResource White}, Dark={StaticResource Gray900}}"
+                            Stroke="{AppThemeBinding Light={StaticResource Gray200}, Dark={StaticResource Gray700}}"
+                            StrokeThickness="1"
+                            Padding="14">
+                        <Border.StrokeShape>
+                            <RoundRectangle CornerRadius="10"/>
+                        </Border.StrokeShape>
+                        <StackLayout Spacing="6">
+                            <Label Text="{Binding Rental.Status, StringFormat='Status: {0}'}"
+                                   FontSize="16"
+                                   FontAttributes="Bold"/>
+                            <Label Text="{Binding Rental.StartDate, StringFormat='Start: {0:d MMM yyyy}'}"
+                                   FontSize="13"/>
+                            <Label Text="{Binding Rental.EndDate,   StringFormat='End:   {0:d MMM yyyy}'}"
+                                   FontSize="13"/>
+                            <Label Text="{Binding Rental.TotalPrice, StringFormat='Total: £{0:F2}'}"
+                                   FontSize="14"
+                                   FontAttributes="Bold"
+                                   TextColor="{AppThemeBinding Light={StaticResource Primary}, Dark={StaticResource PrimaryDark}}"/>
+                        </StackLayout>
+                    </Border>
+
+                    <!-- Parties -->
+                    <Border BackgroundColor="{AppThemeBinding Light={StaticResource White}, Dark={StaticResource Gray900}}"
+                            Stroke="{AppThemeBinding Light={StaticResource Gray200}, Dark={StaticResource Gray700}}"
+                            StrokeThickness="1"
+                            Padding="14">
+                        <Border.StrokeShape>
+                            <RoundRectangle CornerRadius="10"/>
+                        </Border.StrokeShape>
+                        <StackLayout Spacing="4">
+                            <Label Text="{Binding Rental.OwnerName,    StringFormat='Owner: {0}'}"
+                                   FontSize="13"/>
+                            <Label Text="{Binding Rental.BorrowerName, StringFormat='Borrower: {0}'}"
+                                   FontSize="13"/>
+                        </StackLayout>
+                    </Border>
+
+                    <!-- Actions -->
+                    <Label Text="Actions"
+                           FontSize="16"
+                           FontAttributes="Bold"
+                           Margin="0,8,0,0"
+                           IsVisible="{Binding HasAnyAction}"/>
+
+                    <Button Text="Approve"
+                            Command="{Binding ApproveCommand}"
+                            IsVisible="{Binding CanApprove}"
+                            IsEnabled="{Binding IsWorking, Converter={StaticResource InvertedBoolConverter}}"/>
+
+                    <Button Text="Reject"
+                            Command="{Binding RejectCommand}"
+                            IsVisible="{Binding CanReject}"
+                            IsEnabled="{Binding IsWorking, Converter={StaticResource InvertedBoolConverter}}"/>
+
+                    <Button Text="Mark out for rent"
+                            Command="{Binding MarkOutForRentCommand}"
+                            IsVisible="{Binding CanMarkOutForRent}"
+                            IsEnabled="{Binding IsWorking, Converter={StaticResource InvertedBoolConverter}}"/>
+
+                    <Button Text="Mark returned"
+                            Command="{Binding MarkReturnedCommand}"
+                            IsVisible="{Binding CanMarkReturned}"
+                            IsEnabled="{Binding IsWorking, Converter={StaticResource InvertedBoolConverter}}"/>
+
+                    <Button Text="Mark completed"
+                            Command="{Binding MarkCompletedCommand}"
+                            IsVisible="{Binding CanMarkCompleted}"
+                            IsEnabled="{Binding IsWorking, Converter={StaticResource InvertedBoolConverter}}"/>
+
+                    <Button Text="Cancel rental"
+                            Command="{Binding CancelCommand}"
+                            IsVisible="{Binding CanCancel}"
+                            IsEnabled="{Binding IsWorking, Converter={StaticResource InvertedBoolConverter}}"/>
+
+                    <ActivityIndicator IsRunning="{Binding IsWorking}"
+                                       IsVisible="{Binding IsWorking}"
+                                       HorizontalOptions="Center"/>
+                </StackLayout>
+            </StackLayout>
+        </ScrollView>
+    </RefreshView>
+</ContentPage>

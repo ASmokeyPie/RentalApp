@@ -135,6 +135,12 @@ public class Rental
     [NotMapped]
     public string BorrowerName { get; set; } = string.Empty;
 
+    /// <summary>Item owner's id, surfaced from the rental wire response so
+    /// callers don't need to load <see cref="Item"/> separately to know
+    /// who owns it. Zero when the wire didn't populate it.</summary>
+    [NotMapped]
+    public int OwnerId { get; set; }
+
     /// <summary>Display name of the owner (the item's owner).</summary>
     [NotMapped]
     public string OwnerName { get; set; } = string.Empty;

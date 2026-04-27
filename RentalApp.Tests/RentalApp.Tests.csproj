@@ -73,6 +73,9 @@
 
     <!-- Phase 5c: my-rentals tabbed list VM. -->
     <Compile Include="..\RentalApp\ViewModels\MyRentalsViewModel.cs" Link="ViewModels\MyRentalsViewModel.cs" />
+
+    <!-- Phase 5d: rental detail + workflow actions. -->
+    <Compile Include="..\RentalApp\ViewModels\RentalDetailsViewModel.cs" Link="ViewModels\RentalDetailsViewModel.cs" />
   </ItemGroup>
 
 </Project>

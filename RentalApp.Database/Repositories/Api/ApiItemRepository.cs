@@ -36,7 +36,7 @@ public sealed class ApiItemRepository : IItemRepository
         {
             return null;
         }
-        response.EnsureSuccessStatusCode();
+        await response.EnsureSuccessOrThrowApiErrorAsync(ct);
         var wire = await response.Content.ReadFromJsonAsync<ItemDetailWire>(ApiJsonOptions.Default, ct);
         return wire is null ? null : ToModel(wire);
     }
@@ -60,7 +60,7 @@ public sealed class ApiItemRepository : IItemRepository
             Longitude: entity.Longitude);
 
         var response = await _http.PostAsJsonAsync("items", body, ApiJsonOptions.Default, ct);
-        response.EnsureSuccessStatusCode();
+        await response.EnsureSuccessOrThrowApiErrorAsync(ct);
 
         // POST /items returns a "create response" shape which mostly overlaps
         // with the detail shape but doesn't carry reviews/totalReviews; reusing
@@ -81,7 +81,7 @@ public sealed class ApiItemRepository : IItemRepository
             IsAvailable: entity.IsAvailable);
 
         var response = await _http.PutAsJsonAsync($"items/{entity.Id}", body, ApiJsonOptions.Default, ct);
-        response.EnsureSuccessStatusCode();
+        await response.EnsureSuccessOrThrowApiErrorAsync(ct);
 
         // The API returns a slim 5-field shape on PUT. Don't try to
         // reconstruct a full Item from it — instead merge the confirmed
