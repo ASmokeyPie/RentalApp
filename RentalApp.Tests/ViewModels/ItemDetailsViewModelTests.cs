@@ -9,6 +9,24 @@ namespace RentalApp.Tests.ViewModels;
 public class ItemDetailsViewModelTests
 {
     [Fact]
+    public async Task LoadAsync_ProceedsEvenWhenIsRefreshingAlreadyTrue()
+    {
+        // Regression: RefreshView toggles IsRefreshing=true BEFORE firing the
+        // command. An early-return on IsRefreshing would leave the spinner
+        // stuck. LoadAsync must still run and clear the flag in finally.
+        var (vm, repo, _, _) = Build();
+        repo.Setup(r => r.GetByIdAsync(42, default))
+            .ReturnsAsync(SampleItem(42, "Drill"));
+
+        vm.IsRefreshing = true;            // simulate the RefreshView pre-set
+        vm.ItemId = 42;
+        await vm.LoadAsync();
+
+        Assert.False(vm.IsRefreshing);     // cleared in finally
+        Assert.True(vm.IsLoaded);
+    }
+
+    [Fact]
     public async Task LoadAsync_NoOps_WhenItemIdIsZero()
     {
         var (vm, repo, _, _) = Build();

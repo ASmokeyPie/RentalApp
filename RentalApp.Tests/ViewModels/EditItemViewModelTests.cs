@@ -11,6 +11,25 @@ public class EditItemViewModelTests
     // ---- LoadAsync --------------------------------------------------------
 
     [Fact]
+    public async Task LoadAsync_ProceedsEvenWhenIsRefreshingAlreadyTrue()
+    {
+        // Regression: RefreshView toggles IsRefreshing=true BEFORE firing the
+        // command. An early-return on IsRefreshing would leave the spinner
+        // stuck. LoadAsync must still run and clear the flag in finally.
+        var (vm, items, auth, _) = Build();
+        items.Setup(i => i.GetByIdAsync(42, default))
+             .ReturnsAsync(SampleItem(42, ownerId: 7));
+        auth.SetupGet(a => a.CurrentUser).Returns(new User { Id = 7, Email = "a@b.c", FirstName = "Ada", LastName = "L" });
+
+        vm.IsRefreshing = true;
+        vm.ItemId = 42;
+        await vm.LoadAsync();
+
+        Assert.False(vm.IsRefreshing);
+        Assert.True(vm.CanEdit);
+    }
+
+    [Fact]
     public async Task LoadAsync_PopulatesForm_AndSetsCanEdit_WhenOwner()
     {
         var (vm, items, auth, _) = Build();

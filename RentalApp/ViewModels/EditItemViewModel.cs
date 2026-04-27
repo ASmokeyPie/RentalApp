@@ -57,6 +57,15 @@ public partial class EditItemViewModel : BaseViewModel
     [ObservableProperty]
     private bool isAvailable = true;
 
+    /// @brief True while the RefreshView spinner should be active.
+    /// @details Bound two-way to <c>RefreshView.IsRefreshing</c>. The
+    ///          RefreshView toggles this <i>before</i> firing
+    ///          <see cref="LoadCommand"/>, so <see cref="LoadAsync"/> must NOT
+    ///          early-return on it. <c>IsBusy</c> stays as the submit-in-flight
+    ///          flag (drives the Save button's IsEnabled binding).
+    [ObservableProperty]
+    private bool isRefreshing;
+
     /// @brief Default constructor for design-time support.
     public EditItemViewModel()
     {
@@ -82,11 +91,11 @@ public partial class EditItemViewModel : BaseViewModel
     public async Task LoadAsync()
     {
         if (ItemId <= 0) return;
-        if (IsBusy) return;
+        // No early-return on IsRefreshing — RefreshView pre-toggles it.
 
         try
         {
-            IsBusy = true;
+            IsRefreshing = true;
             ClearError();
 
             var loaded = await _items.GetByIdAsync(ItemId);
@@ -125,7 +134,7 @@ public partial class EditItemViewModel : BaseViewModel
         }
         finally
         {
-            IsBusy = false;
+            IsRefreshing = false;
         }
     }
 

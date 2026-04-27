@@ -10,7 +10,7 @@
         <vm:ItemDetailsViewModel/>
     </ContentPage.BindingContext>
 
-    <RefreshView IsRefreshing="{Binding IsBusy}"
+    <RefreshView IsRefreshing="{Binding IsRefreshing}"
                  Command="{Binding LoadCommand}">
         <ScrollView>
             <Grid Padding="20" RowSpacing="16">
@@ -49,8 +49,8 @@
 
                 <!-- Loading placeholder -->
                 <ActivityIndicator Grid.Row="1"
-                                   IsRunning="{Binding IsBusy}"
-                                   IsVisible="{Binding IsBusy}"
+                                   IsRunning="{Binding IsRefreshing}"
+                                   IsVisible="{Binding IsRefreshing}"
                                    HorizontalOptions="Center"
                                    Margin="0,40,0,0"/>
 

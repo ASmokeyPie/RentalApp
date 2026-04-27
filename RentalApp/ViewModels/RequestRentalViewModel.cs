@@ -50,6 +50,15 @@ public partial class RequestRentalViewModel : BaseViewModel
     [ObservableProperty]
     private DateTime endDate = DateTime.Today.AddDays(1);
 
+    /// @brief True while the RefreshView spinner should be active.
+    /// @details Bound two-way to <c>RefreshView.IsRefreshing</c>. The
+    ///          RefreshView toggles this <i>before</i> firing
+    ///          <see cref="LoadCommand"/>, so <see cref="LoadAsync"/> must NOT
+    ///          early-return on it. <c>IsBusy</c> stays as the submit-in-flight
+    ///          flag (drives the Submit button's IsEnabled binding).
+    [ObservableProperty]
+    private bool isRefreshing;
+
     /// @brief Earliest selectable start date (today). Bound to DatePicker.MinimumDate.
     public DateTime MinimumStartDate { get; } = DateTime.Today;
 
@@ -104,11 +113,11 @@ public partial class RequestRentalViewModel : BaseViewModel
     public async Task LoadAsync()
     {
         if (ItemId <= 0) return;
-        if (IsBusy) return;
+        // No early-return on IsRefreshing — RefreshView pre-toggles it.
 
         try
         {
-            IsBusy = true;
+            IsRefreshing = true;
             ClearError();
 
             var loaded = await _items.GetByIdAsync(ItemId);
@@ -132,7 +141,7 @@ public partial class RequestRentalViewModel : BaseViewModel
         }
         finally
         {
-            IsBusy = false;
+            IsRefreshing = false;
         }
     }
 

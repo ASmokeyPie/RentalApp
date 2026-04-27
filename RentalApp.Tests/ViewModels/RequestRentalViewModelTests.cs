@@ -11,6 +11,24 @@ public class RequestRentalViewModelTests
     // ---- LoadAsync --------------------------------------------------------
 
     [Fact]
+    public async Task LoadAsync_ProceedsEvenWhenIsRefreshingAlreadyTrue()
+    {
+        // Regression: RefreshView toggles IsRefreshing=true BEFORE firing the
+        // command. An early-return on IsRefreshing would leave the spinner
+        // stuck. LoadAsync must still run and clear the flag in finally.
+        var (vm, items, _, _) = Build();
+        items.Setup(r => r.GetByIdAsync(42, default))
+             .ReturnsAsync(SampleItem(42, "Drill", dailyRate: 5m));
+
+        vm.IsRefreshing = true;
+        vm.ItemId = 42;
+        await vm.LoadAsync();
+
+        Assert.False(vm.IsRefreshing);
+        Assert.True(vm.IsLoaded);
+    }
+
+    [Fact]
     public async Task LoadAsync_PopulatesItem_AndUpdatesTitle_OnSuccess()
     {
         var (vm, items, _, _) = Build();

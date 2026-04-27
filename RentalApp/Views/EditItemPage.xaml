@@ -10,7 +10,7 @@
         <vm:EditItemViewModel/>
     </ContentPage.BindingContext>
 
-    <RefreshView IsRefreshing="{Binding IsBusy}"
+    <RefreshView IsRefreshing="{Binding IsRefreshing}"
                  Command="{Binding LoadCommand}">
         <ScrollView>
             <StackLayout Padding="20" Spacing="14">

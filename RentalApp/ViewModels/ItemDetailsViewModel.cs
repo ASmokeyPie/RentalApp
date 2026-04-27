@@ -60,6 +60,13 @@ public partial class ItemDetailsViewModel : BaseViewModel
     [ObservableProperty]
     private bool canRent;
 
+    /// @brief True while the RefreshView spinner should be active.
+    /// @details Bound two-way to <c>RefreshView.IsRefreshing</c>. The
+    ///          RefreshView toggles this <i>before</i> firing the command,
+    ///          so <see cref="LoadAsync"/> must NOT early-return on it.
+    [ObservableProperty]
+    private bool isRefreshing;
+
     /// @brief Default constructor for design-time support.
     public ItemDetailsViewModel()
     {
@@ -93,11 +100,13 @@ public partial class ItemDetailsViewModel : BaseViewModel
             // Shell may set ItemId=0 transiently before the real value arrives.
             return;
         }
-        if (IsBusy) return;
+        // No early-return on IsRefreshing: the RefreshView pre-toggles it
+        // before firing this command, so bailing here would leave the spinner
+        // stuck. Concurrent loads are harmless — at worst one redundant fetch.
 
         try
         {
-            IsBusy = true;
+            IsRefreshing = true;
             ClearError();
 
             var loaded = await _items.GetByIdAsync(ItemId);
@@ -133,7 +142,7 @@ public partial class ItemDetailsViewModel : BaseViewModel
         }
         finally
         {
-            IsBusy = false;
+            IsRefreshing = false;
         }
     }
 
