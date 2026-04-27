@@ -14,6 +14,8 @@
                      Command="{Binding NavigateToItemsListCommand}"/>
         <ToolbarItem Text="+"
                      Command="{Binding NavigateToCreateItemCommand}"/>
+        <ToolbarItem Text="Rentals"
+                     Command="{Binding NavigateToMyRentalsCommand}"/>
         <ToolbarItem Text="Profile"
                      Command="{Binding NavigateToProfileCommand}"
                      IconImageSource="user.png"/>

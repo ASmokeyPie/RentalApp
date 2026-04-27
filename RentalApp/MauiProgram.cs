@@ -111,6 +111,10 @@ public static class MauiProgram
         builder.Services.AddTransient<RequestRentalViewModel>();
         builder.Services.AddTransient<RequestRentalPage>();
 
+        // Phase 5c: My Rentals (incoming + outgoing tabbed list).
+        builder.Services.AddTransient<MyRentalsViewModel>();
+        builder.Services.AddTransient<MyRentalsPage>();
+
 #if DEBUG
         builder.Logging.AddDebug();
 #endif

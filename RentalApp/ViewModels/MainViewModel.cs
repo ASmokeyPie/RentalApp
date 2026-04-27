@@ -120,6 +120,15 @@ public partial class MainViewModel : BaseViewModel
         await _navigationService.NavigateToAsync("CreateItemPage");
     }
 
+    /// @brief Navigates to the My Rentals page (Incoming / Outgoing tabs)
+    /// @details Relay command that opens <c>MyRentalsPage</c>.
+    /// @return A task representing the asynchronous navigation operation
+    [RelayCommand]
+    private async Task NavigateToMyRentalsAsync()
+    {
+        await _navigationService.NavigateToAsync("MyRentalsPage");
+    }
+
 
     /// @brief Refreshes the dashboard data
     /// @details Relay command that reloads user data and simulates a refresh operation

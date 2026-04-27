@@ -1,0 +1,172 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage x:Class="RentalApp.Views.MyRentalsPage"
+             xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:vm="clr-namespace:RentalApp.ViewModels"
+             xmlns:models="clr-namespace:RentalApp.Database.Models;assembly=RentalApp.Database"
+             x:DataType="vm:MyRentalsViewModel"
+             Title="{Binding Title}">
+
+    <ContentPage.BindingContext>
+        <vm:MyRentalsViewModel/>
+    </ContentPage.BindingContext>
+
+    <Grid RowDefinitions="Auto,Auto,*">
+
+        <!-- Error banner -->
+        <Border Grid.Row="0"
+                BackgroundColor="{AppThemeBinding Light=#FFEBEE, Dark=#1B0000}"
+                Stroke="{AppThemeBinding Light=#F44336, Dark=#EF5350}"
+                StrokeThickness="1"
+                Padding="12"
+                Margin="12,12,12,0"
+                IsVisible="{Binding HasError}">
+            <Border.StrokeShape>
+                <RoundRectangle CornerRadius="8"/>
+            </Border.StrokeShape>
+            <Grid ColumnDefinitions="*,Auto">
+                <Label Grid.Column="0"
+                       Text="{Binding ErrorMessage}"
+                       TextColor="{AppThemeBinding Light=#D32F2F, Dark=#EF5350}"
+                       VerticalOptions="Center"/>
+                <Button Grid.Column="1"
+                        Text="×"
+                        Command="{Binding ClearErrorCommand}"
+                        BackgroundColor="Transparent"
+                        TextColor="{AppThemeBinding Light=#D32F2F, Dark=#EF5350}"
+                        FontSize="18"
+                        Padding="4"
+                        WidthRequest="32"
+                        HeightRequest="32"/>
+            </Grid>
+        </Border>
+
+        <!-- Tabs (segmented selector via two buttons; the active tab is
+             "disabled" so it renders greyed-out, giving visual feedback). -->
+        <Grid Grid.Row="1" ColumnDefinitions="*,*" ColumnSpacing="8" Padding="12,12,12,0">
+            <Button Grid.Column="0"
+                    Text="Incoming"
+                    Command="{Binding SelectIncomingCommand}"
+                    IsEnabled="{Binding IsOutgoingSelected}"/>
+            <Button Grid.Column="1"
+                    Text="Outgoing"
+                    Command="{Binding SelectOutgoingCommand}"
+                    IsEnabled="{Binding IsIncomingSelected}"/>
+        </Grid>
+
+        <!-- Pull-to-refresh + the two tab-bound lists -->
+        <RefreshView Grid.Row="2"
+                     IsRefreshing="{Binding IsRefreshing}"
+                     Command="{Binding RefreshCommand}">
+            <Grid>
+                <!-- Incoming list -->
+                <CollectionView x:Name="IncomingCollection"
+                                ItemsSource="{Binding Incoming}"
+                                SelectionMode="None"
+                                IsVisible="{Binding IsIncomingSelected}">
+                    <CollectionView.EmptyView>
+                        <Label Text="No incoming rentals yet."
+                               FontSize="16"
+                               HorizontalOptions="Center"
+                               Margin="40"/>
+                    </CollectionView.EmptyView>
+                    <CollectionView.ItemTemplate>
+                        <DataTemplate x:DataType="models:Rental">
+                            <Border Margin="12,6"
+                                    Padding="12"
+                                    BackgroundColor="{AppThemeBinding Light={StaticResource White}, Dark={StaticResource Gray900}}"
+                                    Stroke="{AppThemeBinding Light={StaticResource Gray200}, Dark={StaticResource Gray700}}"
+                                    StrokeThickness="1">
+                                <Border.StrokeShape>
+                                    <RoundRectangle CornerRadius="10"/>
+                                </Border.StrokeShape>
+                                <Border.GestureRecognizers>
+                                    <TapGestureRecognizer
+                                        Command="{Binding Source={x:Reference IncomingCollection}, Path=BindingContext.SelectRentalCommand}"
+                                        CommandParameter="{Binding .}"/>
+                                </Border.GestureRecognizers>
+                                <Grid ColumnDefinitions="*,Auto" RowDefinitions="Auto,Auto,Auto" RowSpacing="2">
+                                    <Label Grid.Row="0" Grid.Column="0"
+                                           Text="{Binding ItemTitle}"
+                                           FontSize="16"
+                                           FontAttributes="Bold"/>
+                                    <Label Grid.Row="0" Grid.Column="1"
+                                           Text="{Binding Status}"
+                                           FontSize="12"
+                                           FontAttributes="Bold"/>
+                                    <Label Grid.Row="1" Grid.ColumnSpan="2"
+                                           Text="{Binding BorrowerName, StringFormat='Borrower: {0}'}"
+                                           FontSize="12"
+                                           TextColor="{AppThemeBinding Light={StaticResource Gray600}, Dark={StaticResource Gray400}}"/>
+                                    <Grid Grid.Row="2" Grid.ColumnSpan="2" ColumnDefinitions="*,Auto">
+                                        <Label Grid.Column="0"
+                                               Text="{Binding StartDate, StringFormat='{0:d MMM yyyy}'}"
+                                               FontSize="12"/>
+                                        <Label Grid.Column="1"
+                                               Text="{Binding TotalPrice, StringFormat='£{0:F2}'}"
+                                               FontSize="12"
+                                               FontAttributes="Bold"/>
+                                    </Grid>
+                                </Grid>
+                            </Border>
+                        </DataTemplate>
+                    </CollectionView.ItemTemplate>
+                </CollectionView>
+
+                <!-- Outgoing list -->
+                <CollectionView x:Name="OutgoingCollection"
+                                ItemsSource="{Binding Outgoing}"
+                                SelectionMode="None"
+                                IsVisible="{Binding IsOutgoingSelected}">
+                    <CollectionView.EmptyView>
+                        <Label Text="No outgoing rental requests yet."
+                               FontSize="16"
+                               HorizontalOptions="Center"
+                               Margin="40"/>
+                    </CollectionView.EmptyView>
+                    <CollectionView.ItemTemplate>
+                        <DataTemplate x:DataType="models:Rental">
+                            <Border Margin="12,6"
+                                    Padding="12"
+                                    BackgroundColor="{AppThemeBinding Light={StaticResource White}, Dark={StaticResource Gray900}}"
+                                    Stroke="{AppThemeBinding Light={StaticResource Gray200}, Dark={StaticResource Gray700}}"
+                                    StrokeThickness="1">
+                                <Border.StrokeShape>
+                                    <RoundRectangle CornerRadius="10"/>
+                                </Border.StrokeShape>
+                                <Border.GestureRecognizers>
+                                    <TapGestureRecognizer
+                                        Command="{Binding Source={x:Reference OutgoingCollection}, Path=BindingContext.SelectRentalCommand}"
+                                        CommandParameter="{Binding .}"/>
+                                </Border.GestureRecognizers>
+                                <Grid ColumnDefinitions="*,Auto" RowDefinitions="Auto,Auto,Auto" RowSpacing="2">
+                                    <Label Grid.Row="0" Grid.Column="0"
+                                           Text="{Binding ItemTitle}"
+                                           FontSize="16"
+                                           FontAttributes="Bold"/>
+                                    <Label Grid.Row="0" Grid.Column="1"
+                                           Text="{Binding Status}"
+                                           FontSize="12"
+                                           FontAttributes="Bold"/>
+                                    <Label Grid.Row="1" Grid.ColumnSpan="2"
+                                           Text="{Binding OwnerName, StringFormat='Owner: {0}'}"
+                                           FontSize="12"
+                                           TextColor="{AppThemeBinding Light={StaticResource Gray600}, Dark={StaticResource Gray400}}"/>
+                                    <Grid Grid.Row="2" Grid.ColumnSpan="2" ColumnDefinitions="*,Auto">
+                                        <Label Grid.Column="0"
+                                               Text="{Binding StartDate, StringFormat='{0:d MMM yyyy}'}"
+                                               FontSize="12"/>
+                                        <Label Grid.Column="1"
+                                               Text="{Binding TotalPrice, StringFormat='£{0:F2}'}"
+                                               FontSize="12"
+                                               FontAttributes="Bold"/>
+                                    </Grid>
+                                </Grid>
+                            </Border>
+                        </DataTemplate>
+                    </CollectionView.ItemTemplate>
+                </CollectionView>
+            </Grid>
+        </RefreshView>
+    </Grid>
+</ContentPage>

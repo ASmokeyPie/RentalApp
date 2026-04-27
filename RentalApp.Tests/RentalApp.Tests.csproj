@@ -70,6 +70,9 @@
 
     <!-- Phase 5b: rental request VM. -->
     <Compile Include="..\RentalApp\ViewModels\RequestRentalViewModel.cs" Link="ViewModels\RequestRentalViewModel.cs" />
+
+    <!-- Phase 5c: my-rentals tabbed list VM. -->
+    <Compile Include="..\RentalApp\ViewModels\MyRentalsViewModel.cs" Link="ViewModels\MyRentalsViewModel.cs" />
   </ItemGroup>
 
 </Project>
