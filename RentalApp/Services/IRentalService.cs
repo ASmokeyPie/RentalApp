@@ -51,7 +51,6 @@ public interface IRentalService
     // Convenience wrappers around TransitionAsync — same rules, named call sites.
     Task<RentalStatusUpdate> ApproveAsync(int rentalId, RentalStatus currentStatus, CancellationToken ct = default);
     Task<RentalStatusUpdate> RejectAsync(int rentalId, RentalStatus currentStatus, CancellationToken ct = default);
-    Task<RentalStatusUpdate> CancelAsync(int rentalId, RentalStatus currentStatus, CancellationToken ct = default);
     Task<RentalStatusUpdate> MarkOutForRentAsync(int rentalId, RentalStatus currentStatus, CancellationToken ct = default);
     Task<RentalStatusUpdate> MarkReturnedAsync(int rentalId, RentalStatus currentStatus, CancellationToken ct = default);
     Task<RentalStatusUpdate> MarkCompletedAsync(int rentalId, RentalStatus currentStatus, CancellationToken ct = default);
@@ -74,7 +73,7 @@ public interface IRentalService
     /// <summary>
     /// True if any non-terminal rental in <paramref name="existing"/> overlaps
     /// the inclusive range <paramref name="startDate"/>..<paramref name="endDate"/>.
-    /// Terminal states (Rejected / Cancelled / Completed) are skipped.
+    /// Terminal states (Rejected / Completed) are skipped.
     /// </summary>
     bool HasOverlap(IEnumerable<Rental> existing, DateOnly startDate, DateOnly endDate);
 }

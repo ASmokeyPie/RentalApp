@@ -116,7 +116,6 @@ public class RentalDetailsViewModelTests
     [InlineData(RentalStatus.OutForRent, false, false, false, false)]   // Mark Returned is borrower-only
     [InlineData(RentalStatus.Returned,   false, false, false, true)]
     [InlineData(RentalStatus.Completed,  false, false, false, false)]
-    [InlineData(RentalStatus.Cancelled,  false, false, false, false)]
     [InlineData(RentalStatus.Rejected,   false, false, false, false)]
     public async Task OwnerActionFlags_FollowStatus(
         RentalStatus status,
@@ -137,24 +136,20 @@ public class RentalDetailsViewModelTests
         Assert.Equal(canReject,         vm.CanReject);
         Assert.Equal(canMarkOutForRent, vm.CanMarkOutForRent);
         Assert.Equal(canMarkCompleted,  vm.CanMarkCompleted);
-        // Owner does NOT mark Returned (the borrower does, per server rule)
-        // and cannot Cancel.
+        // Owner does NOT mark Returned (the borrower does, per server rule).
         Assert.False(vm.CanMarkReturned);
-        Assert.False(vm.CanCancel);
     }
 
     [Theory]
-    // status,                          canCancel, canMarkReturned
-    [InlineData(RentalStatus.Requested,  true,  false)]
-    [InlineData(RentalStatus.Approved,   true,  false)]
-    [InlineData(RentalStatus.OutForRent, false, true)]   // ← borrower marks Returned
-    [InlineData(RentalStatus.Returned,   false, false)]
-    [InlineData(RentalStatus.Completed,  false, false)]
-    [InlineData(RentalStatus.Rejected,   false, false)]
-    [InlineData(RentalStatus.Cancelled,  false, false)]
+    // status,                          canMarkReturned
+    [InlineData(RentalStatus.Requested,  false)]
+    [InlineData(RentalStatus.Approved,   false)]
+    [InlineData(RentalStatus.OutForRent, true)]   // ← borrower marks Returned
+    [InlineData(RentalStatus.Returned,   false)]
+    [InlineData(RentalStatus.Completed,  false)]
+    [InlineData(RentalStatus.Rejected,   false)]
     public async Task BorrowerActionFlags_FollowStatus(
         RentalStatus status,
-        bool canCancel,
         bool canMarkReturned)
     {
         var (vm, rentals, auth) = Build();
@@ -165,7 +160,6 @@ public class RentalDetailsViewModelTests
         vm.RentalId = 7;
         await vm.LoadAsync();
 
-        Assert.Equal(canCancel,       vm.CanCancel);
         Assert.Equal(canMarkReturned, vm.CanMarkReturned);
         // Borrower has none of the owner-only flags.
         Assert.False(vm.CanApprove);
@@ -193,25 +187,6 @@ public class RentalDetailsViewModelTests
         Assert.Equal(RentalStatus.Approved, vm.Rental!.Status);
         Assert.True(vm.CanMarkOutForRent);   // derived flags re-evaluated
         Assert.False(vm.CanApprove);
-    }
-
-    [Fact]
-    public async Task CancelAsync_BorrowerPath_Works()
-    {
-        var (vm, rentals, auth) = Build();
-        rentals.Setup(s => s.GetRentalAsync(7, default))
-               .ReturnsAsync(SampleRental(7, "Drill", RentalStatus.Requested, ownerId: 1, borrowerId: 2));
-        auth.SetupGet(a => a.CurrentUser).Returns(User(2));
-        rentals.Setup(s => s.CancelAsync(7, RentalStatus.Requested, default))
-               .ReturnsAsync(new RentalStatusUpdate(7, RentalStatus.Cancelled, DateTime.UtcNow));
-
-        vm.RentalId = 7;
-        await vm.LoadAsync();
-        await vm.CancelAsync();
-
-        Assert.Equal(RentalStatus.Cancelled, vm.Rental!.Status);
-        Assert.False(vm.CanCancel);          // can't cancel a cancelled rental
-        Assert.False(vm.HasAnyAction);
     }
 
     [Fact]

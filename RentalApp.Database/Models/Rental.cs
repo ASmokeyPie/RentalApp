@@ -5,13 +5,14 @@ using Microsoft.EntityFrameworkCore;
 namespace RentalApp.Database.Models;
 
 /// <summary>
-/// Lifecycle states for a Rental, matching the requirements wording:
+/// Lifecycle states for a Rental, matching the requirements wording AND the
+/// hosted API's state machine:
 /// <list type="bullet">
-///   <item><description><c>Requested</c> → <c>Approved</c> | <c>Rejected</c> | <c>Cancelled</c> (owner approves/rejects; borrower can cancel).</description></item>
-///   <item><description><c>Approved</c> → <c>OutForRent</c> | <c>Cancelled</c> (owner marks the item out at pickup; borrower may still cancel).</description></item>
-///   <item><description><c>OutForRent</c> → <c>Returned</c> (owner records that the item came back).</description></item>
+///   <item><description><c>Requested</c> → <c>Approved</c> | <c>Rejected</c> (owner decides).</description></item>
+///   <item><description><c>Approved</c> → <c>OutForRent</c> (owner marks the item out at pickup).</description></item>
+///   <item><description><c>OutForRent</c> → <c>Returned</c> (borrower records the item is back).</description></item>
 ///   <item><description><c>Returned</c> → <c>Completed</c> (owner closes out the rental).</description></item>
-///   <item><description><c>Rejected</c>, <c>Cancelled</c>, <c>Completed</c> are terminal.</description></item>
+///   <item><description><c>Rejected</c>, <c>Completed</c> are terminal.</description></item>
 /// </list>
 /// The full transition table lives in <c>RentalApp.Services.RentalService</c>.
 /// The API's PATCH /rentals/{id}/status enforces the same rules server-side
@@ -24,7 +25,6 @@ public enum RentalStatus
     Requested,
     Approved,
     Rejected,
-    Cancelled,
     OutForRent,
     Returned,
     Completed

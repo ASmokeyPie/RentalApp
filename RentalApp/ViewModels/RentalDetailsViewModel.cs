@@ -81,12 +81,10 @@ public partial class RentalDetailsViewModel : BaseViewModel
     // inspects and marks Completed below.
     public bool CanMarkReturned   => IsBorrower && Rental?.Status == RentalStatus.OutForRent;
     public bool CanMarkCompleted  => IsOwner    && Rental?.Status == RentalStatus.Returned;
-    public bool CanCancel         => IsBorrower
-                                     && Rental?.Status is RentalStatus.Requested or RentalStatus.Approved;
 
     /// @brief True when at least one action button should appear.
     public bool HasAnyAction =>
-        CanApprove || CanReject || CanMarkOutForRent || CanMarkReturned || CanMarkCompleted || CanCancel;
+        CanApprove || CanReject || CanMarkOutForRent || CanMarkReturned || CanMarkCompleted;
 
     private int? CurrentUserId => _auth?.CurrentUser?.Id;
 
@@ -168,10 +166,6 @@ public partial class RentalDetailsViewModel : BaseViewModel
     public Task MarkCompletedAsync() =>
         InvokeActionAsync(svc => svc.MarkCompletedAsync(Rental!.Id, Rental!.Status));
 
-    [RelayCommand]
-    public Task CancelAsync() =>
-        InvokeActionAsync(svc => svc.CancelAsync(Rental!.Id, Rental!.Status));
-
     /// @brief Shared shell for action commands. Guards against double-taps
     ///        and missing rental, surfaces errors, and patches the in-memory
     ///        rental's Status from the returned <see cref="RentalStatusUpdate"/>
@@ -218,7 +212,6 @@ public partial class RentalDetailsViewModel : BaseViewModel
         OnPropertyChanged(nameof(CanMarkOutForRent));
         OnPropertyChanged(nameof(CanMarkReturned));
         OnPropertyChanged(nameof(CanMarkCompleted));
-        OnPropertyChanged(nameof(CanCancel));
         OnPropertyChanged(nameof(HasAnyAction));
     }
 
