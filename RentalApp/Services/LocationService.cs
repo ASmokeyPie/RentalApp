@@ -1,15 +1,22 @@
 using System.Diagnostics;
+using RentalApp.Database.Repositories;
 
 namespace RentalApp.Services;
 
 /// <summary>
 /// MAUI-backed implementation of <see cref="ILocationService"/>. Uses
-/// <see cref="Geolocation.Default"/> for the GPS read and the
-/// <see cref="Permissions.LocationWhenInUse"/> API for the runtime prompt.
-/// MAUI-only — kept out of the test project's compile unit.
+/// <see cref="Geolocation.Default"/> for the GPS read,
+/// <see cref="Permissions.LocationWhenInUse"/> for the runtime prompt, and
+/// <see cref="IItemRepository.GetNearbyAsync"/> for the radius query — the
+/// PostGIS work itself happens server-side. MAUI-only — kept out of the
+/// test project's compile unit.
 /// </summary>
 public sealed class LocationService : ILocationService
 {
+    private readonly IItemRepository _items;
+
+    public LocationService(IItemRepository items) => _items = items;
+
     public async Task<(double Latitude, double Longitude)?> GetCurrentLocationAsync(CancellationToken ct = default)
     {
         try
@@ -62,5 +69,18 @@ public sealed class LocationService : ILocationService
             Debug.WriteLine($"LocationService.GetCurrentLocationAsync failed: {ex}");
             return null;
         }
+    }
+
+    public async Task<NearbySearchResult?> FindNearbyItemsAsync(
+        double radiusKm,
+        string? categorySlug = null,
+        CancellationToken ct = default)
+    {
+        var location = await GetCurrentLocationAsync(ct);
+        if (location is null) return null;
+
+        var (lat, lon) = location.Value;
+        var items = await _items.GetNearbyAsync(lat, lon, radiusKm, categorySlug, ct);
+        return new NearbySearchResult(lat, lon, items);
     }
 }

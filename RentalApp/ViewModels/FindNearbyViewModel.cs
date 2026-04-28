@@ -13,22 +13,25 @@ using RentalApp.Services;
 namespace RentalApp.ViewModels;
 
 /// @brief View model for the location-based browse page.
-/// @details Reads the device's current GPS coordinates via
-///          <see cref="ILocationService"/>, then queries
-///          <see cref="IItemRepository.GetNearbyAsync"/> for items within
-///          the user-configured radius. The PostGIS work happens server-side
-///          (<c>ST_DWithin</c>, <c>ST_MakePoint</c> against the
-///          <c>GEOGRAPHY(POINT, 4326)</c> column on the items table); the
-///          client just hands lat/lon/radius over the wire.
-///          MAUI-free for testability — the GPS call is behind the service
-///          interface, the UI radius slider stays in XAML.
+/// @details Delegates the entire spatial-discovery workflow to
+///          <see cref="ILocationService.FindNearbyItemsAsync"/> — the service
+///          reads the device's GPS coordinates and queries the items API for
+///          everything within the user-configured radius. The PostGIS work
+///          happens server-side (<c>ST_DWithin</c>, <c>ST_MakePoint</c>
+///          against the <c>GEOGRAPHY(POINT, 4326)</c> column on the items
+///          table). The VM never sees lat/lon during the search itself; it
+///          only stores the <c>SearchLatitude</c>/<c>SearchLongitude</c>
+///          returned by the service so the page can render an info line.
+///          MAUI-free for testability.
 /// @extends BaseViewModel
 public partial class FindNearbyViewModel : BaseViewModel
 {
     // null! suppresses CS8618 for the design-time parameterless ctor; the
     // runtime DI ctor always assigns these before any command runs.
+    // The VM intentionally does NOT depend on IItemRepository — the spatial
+    // workflow (GPS + radius query) is owned by ILocationService, keeping
+    // coordinates out of the view layer per the project's spatial-logic rule.
     private readonly ILocationService _location = null!;
-    private readonly IItemRepository _items = null!;
     private readonly ICategoryRepository _categories = null!;
     private readonly INavigationService _navigation = null!;
 
@@ -82,13 +85,11 @@ public partial class FindNearbyViewModel : BaseViewModel
 
     public FindNearbyViewModel(
         ILocationService location,
-        IItemRepository items,
         ICategoryRepository categories,
         INavigationService navigation)
         : this()
     {
         _location = location;
-        _items = items;
         _categories = categories;
         _navigation = navigation;
     }
@@ -125,23 +126,21 @@ public partial class FindNearbyViewModel : BaseViewModel
             IsRefreshing = true;
             ClearError();
 
-            var location = await _location.GetCurrentLocationAsync();
-            if (location is null)
+            var slug = SelectedCategory is { Id: > 0 } c ? c.Slug : null;
+            var result = await _location.FindNearbyItemsAsync(RadiusKm, slug);
+
+            if (result is null)
             {
                 SetError("Couldn't read your location. Check that location is enabled and the app has permission.");
                 IsEmpty = Items.Count == 0;
                 return;
             }
 
-            var (lat, lon) = location.Value;
-            SearchLatitude = lat;
-            SearchLongitude = lon;
-
-            var slug = SelectedCategory is { Id: > 0 } c ? c.Slug : null;
-            var nearby = await _items.GetNearbyAsync(lat, lon, RadiusKm, slug);
+            SearchLatitude = result.Latitude;
+            SearchLongitude = result.Longitude;
 
             Items.Clear();
-            foreach (var item in nearby) Items.Add(item);
+            foreach (var item in result.Items) Items.Add(item);
             IsEmpty = Items.Count == 0;
         }
         catch (Exception ex)

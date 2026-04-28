@@ -13,7 +13,7 @@ public class FindNearbyViewModelTests
     [Fact]
     public async Task LoadCategoriesAsync_PopulatesPicker_WithSyntheticAllOptionFirst()
     {
-        var (vm, _, _, cats, _) = Build();
+        var (vm, _, cats, _) = Build();
         cats.Setup(c => c.ListAsync(default))
             .ReturnsAsync(new List<Category>
             {
@@ -32,13 +32,11 @@ public class FindNearbyViewModelTests
     // ---- RefreshAsync ----------------------------------------------------
 
     [Fact]
-    public async Task RefreshAsync_ReadsGps_ThenQueriesNearby()
+    public async Task RefreshAsync_DelegatesToLocationService_AndPopulatesItems()
     {
-        var (vm, location, items, _, _) = Build();
-        location.Setup(l => l.GetCurrentLocationAsync(default))
-                .ReturnsAsync((55.95, -3.19));
-        items.Setup(i => i.GetNearbyAsync(55.95, -3.19, It.IsAny<double>(), null, default))
-             .ReturnsAsync(new[] { Item(1, distance: 0.5) });
+        var (vm, location, _, _) = Build();
+        location.Setup(l => l.FindNearbyItemsAsync(It.IsAny<double>(), null, default))
+                .ReturnsAsync(new NearbySearchResult(55.95, -3.19, new[] { Item(1, distance: 0.5) }));
 
         await vm.RefreshAsync();
 
@@ -49,15 +47,13 @@ public class FindNearbyViewModelTests
     }
 
     [Fact]
-    public async Task RefreshAsync_PassesRadiusToRepo()
+    public async Task RefreshAsync_PassesRadiusToService()
     {
-        var (vm, location, items, _, _) = Build();
-        location.Setup(l => l.GetCurrentLocationAsync(default))
-                .ReturnsAsync((55.95, -3.19));
+        var (vm, location, _, _) = Build();
         double? capturedRadius = null;
-        items.Setup(i => i.GetNearbyAsync(It.IsAny<double>(), It.IsAny<double>(), It.IsAny<double>(), null, default))
-             .Callback<double, double, double, string?, CancellationToken>((_, _, r, _, _) => capturedRadius = r)
-             .ReturnsAsync(Array.Empty<Item>());
+        location.Setup(l => l.FindNearbyItemsAsync(It.IsAny<double>(), It.IsAny<string?>(), default))
+                .Callback<double, string?, CancellationToken>((r, _, _) => capturedRadius = r)
+                .ReturnsAsync(new NearbySearchResult(0, 0, Array.Empty<Item>()));
 
         vm.RadiusKm = 12;
         await vm.RefreshAsync();
@@ -68,13 +64,11 @@ public class FindNearbyViewModelTests
     [Fact]
     public async Task RefreshAsync_OmitsCategorySlug_WhenAllOptionSelected()
     {
-        var (vm, location, items, _, _) = Build();
-        location.Setup(l => l.GetCurrentLocationAsync(default))
-                .ReturnsAsync((55.95, -3.19));
+        var (vm, location, _, _) = Build();
         string? capturedSlug = "(unset)";
-        items.Setup(i => i.GetNearbyAsync(It.IsAny<double>(), It.IsAny<double>(), It.IsAny<double>(), It.IsAny<string?>(), default))
-             .Callback<double, double, double, string?, CancellationToken>((_, _, _, s, _) => capturedSlug = s)
-             .ReturnsAsync(Array.Empty<Item>());
+        location.Setup(l => l.FindNearbyItemsAsync(It.IsAny<double>(), It.IsAny<string?>(), default))
+                .Callback<double, string?, CancellationToken>((_, s, _) => capturedSlug = s)
+                .ReturnsAsync(new NearbySearchResult(0, 0, Array.Empty<Item>()));
 
         // SelectedCategory defaults to AllCategoriesOption (Id=0).
         await vm.RefreshAsync();
@@ -85,13 +79,11 @@ public class FindNearbyViewModelTests
     [Fact]
     public async Task RefreshAsync_PassesCategorySlug_WhenRealCategoryPicked()
     {
-        var (vm, location, items, _, _) = Build();
-        location.Setup(l => l.GetCurrentLocationAsync(default))
-                .ReturnsAsync((55.95, -3.19));
+        var (vm, location, _, _) = Build();
         string? capturedSlug = null;
-        items.Setup(i => i.GetNearbyAsync(It.IsAny<double>(), It.IsAny<double>(), It.IsAny<double>(), It.IsAny<string?>(), default))
-             .Callback<double, double, double, string?, CancellationToken>((_, _, _, s, _) => capturedSlug = s)
-             .ReturnsAsync(Array.Empty<Item>());
+        location.Setup(l => l.FindNearbyItemsAsync(It.IsAny<double>(), It.IsAny<string?>(), default))
+                .Callback<double, string?, CancellationToken>((_, s, _) => capturedSlug = s)
+                .ReturnsAsync(new NearbySearchResult(0, 0, Array.Empty<Item>()));
 
         vm.SelectedCategory = new Category { Id = 1, Name = "Power Tools", Slug = "power-tools" };
         await vm.RefreshAsync();
@@ -100,29 +92,26 @@ public class FindNearbyViewModelTests
     }
 
     [Fact]
-    public async Task RefreshAsync_OnPermissionDenied_SetsError_AndDoesNotQuery()
+    public async Task RefreshAsync_OnNullResult_SetsError()
     {
-        var (vm, location, items, _, _) = Build();
-        location.Setup(l => l.GetCurrentLocationAsync(default))
-                .ReturnsAsync((((double, double)?)null));
+        // A null result from the service means the GPS read failed (no
+        // permission / no fix). VM surfaces a friendly error.
+        var (vm, location, _, _) = Build();
+        location.Setup(l => l.FindNearbyItemsAsync(It.IsAny<double>(), It.IsAny<string?>(), default))
+                .ReturnsAsync((NearbySearchResult?)null);
 
         await vm.RefreshAsync();
 
-        items.Verify(i => i.GetNearbyAsync(
-                It.IsAny<double>(), It.IsAny<double>(), It.IsAny<double>(), It.IsAny<string?>(), default),
-            Times.Never);
         Assert.True(vm.HasError);
         Assert.Contains("location", vm.ErrorMessage, StringComparison.OrdinalIgnoreCase);
     }
 
     [Fact]
-    public async Task RefreshAsync_OnRepoException_SetsError_AndClearsSpinner()
+    public async Task RefreshAsync_OnException_SetsError_AndClearsSpinner()
     {
-        var (vm, location, items, _, _) = Build();
-        location.Setup(l => l.GetCurrentLocationAsync(default))
-                .ReturnsAsync((55.95, -3.19));
-        items.Setup(i => i.GetNearbyAsync(It.IsAny<double>(), It.IsAny<double>(), It.IsAny<double>(), null, default))
-             .ThrowsAsync(new HttpRequestException("server down"));
+        var (vm, location, _, _) = Build();
+        location.Setup(l => l.FindNearbyItemsAsync(It.IsAny<double>(), It.IsAny<string?>(), default))
+                .ThrowsAsync(new HttpRequestException("server down"));
 
         await vm.RefreshAsync();
 
@@ -134,11 +123,9 @@ public class FindNearbyViewModelTests
     [Fact]
     public async Task RefreshAsync_OnEmptyResult_SetsIsEmpty()
     {
-        var (vm, location, items, _, _) = Build();
-        location.Setup(l => l.GetCurrentLocationAsync(default))
-                .ReturnsAsync((55.95, -3.19));
-        items.Setup(i => i.GetNearbyAsync(It.IsAny<double>(), It.IsAny<double>(), It.IsAny<double>(), null, default))
-             .ReturnsAsync(Array.Empty<Item>());
+        var (vm, location, _, _) = Build();
+        location.Setup(l => l.FindNearbyItemsAsync(It.IsAny<double>(), It.IsAny<string?>(), default))
+                .ReturnsAsync(new NearbySearchResult(55.95, -3.19, Array.Empty<Item>()));
 
         await vm.RefreshAsync();
 
@@ -150,7 +137,7 @@ public class FindNearbyViewModelTests
     [Fact]
     public async Task SelectItemAsync_NavigatesToItemDetail()
     {
-        var (vm, _, _, _, nav) = Build();
+        var (vm, _, _, nav) = Build();
 
         await vm.SelectItemAsync(Item(42, distance: 1.2));
 
@@ -166,16 +153,14 @@ public class FindNearbyViewModelTests
     private static (
         FindNearbyViewModel vm,
         Mock<ILocationService> location,
-        Mock<IItemRepository> items,
         Mock<ICategoryRepository> categories,
         Mock<INavigationService> navigation) Build()
     {
         var location = new Mock<ILocationService>();
-        var items = new Mock<IItemRepository>();
         var cats = new Mock<ICategoryRepository>();
         var nav = new Mock<INavigationService>();
-        var vm = new FindNearbyViewModel(location.Object, items.Object, cats.Object, nav.Object);
-        return (vm, location, items, cats, nav);
+        var vm = new FindNearbyViewModel(location.Object, cats.Object, nav.Object);
+        return (vm, location, cats, nav);
     }
 
     private static Item Item(int id, double distance) => new()
