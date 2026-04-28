@@ -49,25 +49,21 @@ public class RentalServiceTests
     // From Requested
     [InlineData(RentalStatus.Requested, RentalStatus.Approved,    true)]
     [InlineData(RentalStatus.Requested, RentalStatus.Rejected,    true)]
-    [InlineData(RentalStatus.Requested, RentalStatus.Cancelled,   true)]
     [InlineData(RentalStatus.Requested, RentalStatus.OutForRent,  false)]
     [InlineData(RentalStatus.Requested, RentalStatus.Returned,    false)]
     [InlineData(RentalStatus.Requested, RentalStatus.Completed,   false)]
     // From Approved
     [InlineData(RentalStatus.Approved,  RentalStatus.OutForRent,  true)]
-    [InlineData(RentalStatus.Approved,  RentalStatus.Cancelled,   true)]
     [InlineData(RentalStatus.Approved,  RentalStatus.Rejected,    false)]
     [InlineData(RentalStatus.Approved,  RentalStatus.Completed,   false)]
     // From OutForRent
     [InlineData(RentalStatus.OutForRent, RentalStatus.Returned,   true)]
-    [InlineData(RentalStatus.OutForRent, RentalStatus.Cancelled,  false)]
     [InlineData(RentalStatus.OutForRent, RentalStatus.Completed,  false)]
     // From Returned
     [InlineData(RentalStatus.Returned, RentalStatus.Completed,    true)]
     [InlineData(RentalStatus.Returned, RentalStatus.OutForRent,   false)]
     // Terminal states have no outgoing edges
     [InlineData(RentalStatus.Rejected,  RentalStatus.Approved,    false)]
-    [InlineData(RentalStatus.Cancelled, RentalStatus.Approved,    false)]
     [InlineData(RentalStatus.Completed, RentalStatus.Approved,    false)]
     // Self-transition not legal
     [InlineData(RentalStatus.Requested, RentalStatus.Requested,   false)]
@@ -129,7 +125,6 @@ public class RentalServiceTests
 
     [Theory]
     [InlineData(RentalStatus.Rejected)]
-    [InlineData(RentalStatus.Cancelled)]
     [InlineData(RentalStatus.Completed)]
     public void HasOverlap_IgnoresTerminalStateRentals(RentalStatus terminalStatus)
     {
@@ -286,18 +281,6 @@ public class RentalServiceTests
         await svc.MarkCompletedAsync(7, RentalStatus.Returned);
 
         repo.Verify(r => r.UpdateStatusAsync(7, RentalStatus.Completed, default), Times.Once);
-    }
-
-    [Fact]
-    public async Task CancelAsync_TransitionsFromRequested()
-    {
-        var (svc, repo) = BuildWithMock();
-        repo.Setup(r => r.UpdateStatusAsync(7, RentalStatus.Cancelled, default))
-            .ReturnsAsync(new RentalStatusUpdate(7, RentalStatus.Cancelled, DateTime.UtcNow));
-
-        await svc.CancelAsync(7, RentalStatus.Requested);
-
-        repo.Verify(r => r.UpdateStatusAsync(7, RentalStatus.Cancelled, default), Times.Once);
     }
 
     // ---- Read pass-through -----------------------------------------------

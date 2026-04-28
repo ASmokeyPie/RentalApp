@@ -125,11 +125,6 @@
                             IsVisible="{Binding CanMarkCompleted}"
                             IsEnabled="{Binding IsWorking, Converter={StaticResource InvertedBoolConverter}}"/>
 
-                    <Button Text="Cancel rental"
-                            Command="{Binding CancelCommand}"
-                            IsVisible="{Binding CanCancel}"
-                            IsEnabled="{Binding IsWorking, Converter={StaticResource InvertedBoolConverter}}"/>
-
                     <ActivityIndicator IsRunning="{Binding IsWorking}"
                                        IsVisible="{Binding IsWorking}"
                                        HorizontalOptions="Center"/>

@@ -66,9 +66,6 @@ public sealed class RentalService : IRentalService
     public Task<RentalStatusUpdate> RejectAsync(int rentalId, RentalStatus currentStatus, CancellationToken ct = default) =>
         TransitionAsync(rentalId, currentStatus, RentalStatus.Rejected, ct);
 
-    public Task<RentalStatusUpdate> CancelAsync(int rentalId, RentalStatus currentStatus, CancellationToken ct = default) =>
-        TransitionAsync(rentalId, currentStatus, RentalStatus.Cancelled, ct);
-
     public Task<RentalStatusUpdate> MarkOutForRentAsync(int rentalId, RentalStatus currentStatus, CancellationToken ct = default) =>
         TransitionAsync(rentalId, currentStatus, RentalStatus.OutForRent, ct);
 
@@ -123,11 +120,9 @@ public sealed class RentalService : IRentalService
         // From Requested
         (RentalStatus.Requested, RentalStatus.Approved),
         (RentalStatus.Requested, RentalStatus.Rejected),
-        (RentalStatus.Requested, RentalStatus.Cancelled),
 
         // From Approved
         (RentalStatus.Approved,  RentalStatus.OutForRent),
-        (RentalStatus.Approved,  RentalStatus.Cancelled),
 
         // From OutForRent
         (RentalStatus.OutForRent, RentalStatus.Returned),
@@ -135,9 +130,9 @@ public sealed class RentalService : IRentalService
         // From Returned
         (RentalStatus.Returned, RentalStatus.Completed),
 
-        // Rejected, Cancelled, Completed are terminal — no outgoing edges.
+        // Rejected, Completed are terminal — no outgoing edges.
     };
 
     private static bool IsTerminal(RentalStatus s) =>
-        s is RentalStatus.Rejected or RentalStatus.Cancelled or RentalStatus.Completed;
+        s is RentalStatus.Rejected or RentalStatus.Completed;
 }
