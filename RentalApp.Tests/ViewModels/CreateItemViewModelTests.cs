@@ -173,6 +173,39 @@ public class CreateItemViewModelTests
         Assert.Contains("server fire", vm.ErrorMessage);
     }
 
+    // ---- UseCurrentLocationAsync -----------------------------------------
+
+    [Fact]
+    public async Task UseCurrentLocationAsync_FillsLatLon_OnSuccess()
+    {
+        var (vm, _, _, _, location) = BuildAll();
+        location.Setup(l => l.GetCurrentLocationAsync(default))
+                .ReturnsAsync((55.95, -3.19));
+
+        await vm.UseCurrentLocationAsync();
+
+        Assert.Equal("55.95", vm.LatitudeText);
+        Assert.Equal("-3.19", vm.LongitudeText);
+        Assert.False(vm.HasError);
+        Assert.False(vm.IsFetchingLocation);
+    }
+
+    [Fact]
+    public async Task UseCurrentLocationAsync_OnPermissionDenied_SetsError_AndLeavesFieldsBlank()
+    {
+        var (vm, _, _, _, location) = BuildAll();
+        location.Setup(l => l.GetCurrentLocationAsync(default))
+                .ReturnsAsync((((double, double)?)null));
+
+        await vm.UseCurrentLocationAsync();
+
+        Assert.Equal(string.Empty, vm.LatitudeText);
+        Assert.Equal(string.Empty, vm.LongitudeText);
+        Assert.True(vm.HasError);
+        Assert.Contains("location", vm.ErrorMessage, StringComparison.OrdinalIgnoreCase);
+        Assert.False(vm.IsFetchingLocation);
+    }
+
     // ---- Helpers ----------------------------------------------------------
 
     private static (
@@ -181,11 +214,23 @@ public class CreateItemViewModelTests
         Mock<ICategoryRepository> categories,
         Mock<INavigationService> navigation) Build()
     {
+        var (vm, items, cats, nav, _) = BuildAll();
+        return (vm, items, cats, nav);
+    }
+
+    private static (
+        CreateItemViewModel vm,
+        Mock<IItemRepository> items,
+        Mock<ICategoryRepository> categories,
+        Mock<INavigationService> navigation,
+        Mock<ILocationService> location) BuildAll()
+    {
         var items = new Mock<IItemRepository>();
         var cats = new Mock<ICategoryRepository>();
         var nav = new Mock<INavigationService>();
-        var vm = new CreateItemViewModel(items.Object, cats.Object, nav.Object);
-        return (vm, items, cats, nav);
+        var location = new Mock<ILocationService>();
+        var vm = new CreateItemViewModel(items.Object, cats.Object, nav.Object, location.Object);
+        return (vm, items, cats, nav, location);
     }
 
     private static void SetValidDefaults(CreateItemViewModel vm)

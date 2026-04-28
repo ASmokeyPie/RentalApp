@@ -12,6 +12,8 @@
     <ContentPage.ToolbarItems>
         <ToolbarItem Text="Browse"
                      Command="{Binding NavigateToItemsListCommand}"/>
+        <ToolbarItem Text="Nearby"
+                     Command="{Binding NavigateToFindNearbyCommand}"/>
         <ToolbarItem Text="+"
                      Command="{Binding NavigateToCreateItemCommand}"/>
         <ToolbarItem Text="Rentals"

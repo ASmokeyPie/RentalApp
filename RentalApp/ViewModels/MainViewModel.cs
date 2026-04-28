@@ -129,6 +129,15 @@ public partial class MainViewModel : BaseViewModel
         await _navigationService.NavigateToAsync("MyRentalsPage");
     }
 
+    /// @brief Navigates to the location-based browse page.
+    /// @details Relay command that opens <c>FindNearbyPage</c>.
+    /// @return A task representing the asynchronous navigation operation
+    [RelayCommand]
+    private async Task NavigateToFindNearbyAsync()
+    {
+        await _navigationService.NavigateToAsync("FindNearbyPage");
+    }
+
 
     /// @brief Refreshes the dashboard data
     /// @details Relay command that reloads user data and simulates a refresh operation

@@ -1,0 +1,145 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage x:Class="RentalApp.Views.FindNearbyPage"
+             xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:vm="clr-namespace:RentalApp.ViewModels"
+             xmlns:models="clr-namespace:RentalApp.Database.Models;assembly=RentalApp.Database"
+             x:DataType="vm:FindNearbyViewModel"
+             Title="{Binding Title}">
+
+    <ContentPage.BindingContext>
+        <vm:FindNearbyViewModel/>
+    </ContentPage.BindingContext>
+
+    <Grid RowDefinitions="Auto,Auto,*">
+
+        <!-- Error banner -->
+        <Border Grid.Row="0"
+                BackgroundColor="{AppThemeBinding Light=#FFEBEE, Dark=#1B0000}"
+                Stroke="{AppThemeBinding Light=#F44336, Dark=#EF5350}"
+                StrokeThickness="1"
+                Padding="12"
+                Margin="12,12,12,0"
+                IsVisible="{Binding HasError}">
+            <Border.StrokeShape>
+                <RoundRectangle CornerRadius="8"/>
+            </Border.StrokeShape>
+            <Grid ColumnDefinitions="*,Auto">
+                <Label Grid.Column="0"
+                       Text="{Binding ErrorMessage}"
+                       TextColor="{AppThemeBinding Light=#D32F2F, Dark=#EF5350}"
+                       VerticalOptions="Center"/>
+                <Button Grid.Column="1"
+                        Text="×"
+                        Command="{Binding ClearErrorCommand}"
+                        BackgroundColor="Transparent"
+                        TextColor="{AppThemeBinding Light=#D32F2F, Dark=#EF5350}"
+                        FontSize="18"
+                        Padding="4"
+                        WidthRequest="32"
+                        HeightRequest="32"/>
+            </Grid>
+        </Border>
+
+        <!-- Filter controls: radius slider + category picker + search button -->
+        <StackLayout Grid.Row="1" Padding="12,12,12,0" Spacing="6">
+            <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="8">
+                <Label Grid.Column="0"
+                       Text="Radius:"
+                       VerticalOptions="Center"
+                       FontAttributes="Bold"/>
+                <Slider Grid.Column="1"
+                        Minimum="1"
+                        Maximum="50"
+                        Value="{Binding RadiusKm}"
+                        VerticalOptions="Center"/>
+                <Label Grid.Column="2"
+                       Text="{Binding RadiusKm, StringFormat='{0:F0} km'}"
+                       VerticalOptions="Center"
+                       MinimumWidthRequest="48"/>
+            </Grid>
+
+            <Picker ItemsSource="{Binding Categories}"
+                    SelectedItem="{Binding SelectedCategory}"
+                    ItemDisplayBinding="{Binding Name, x:DataType=models:Category}"
+                    Title="Filter by category"/>
+
+            <Button Text="Find nearby items"
+                    Command="{Binding RefreshCommand}"
+                    Margin="0,4,0,0"/>
+        </StackLayout>
+
+        <!-- Results list with pull-to-refresh -->
+        <RefreshView Grid.Row="2"
+                     IsRefreshing="{Binding IsRefreshing}"
+                     Command="{Binding RefreshCommand}">
+            <CollectionView x:Name="NearbyCollection"
+                            ItemsSource="{Binding Items}"
+                            SelectionMode="None">
+                <CollectionView.EmptyView>
+                    <Grid Padding="40" RowSpacing="8">
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
+                        </Grid.RowDefinitions>
+                        <Label Grid.Row="0"
+                               Text="No items found nearby"
+                               FontSize="18"
+                               FontAttributes="Bold"
+                               HorizontalOptions="Center"/>
+                        <Label Grid.Row="1"
+                               Text="Try a larger radius or a different category."
+                               FontSize="14"
+                               TextColor="{AppThemeBinding Light={StaticResource Gray600}, Dark={StaticResource Gray400}}"
+                               HorizontalOptions="Center"/>
+                    </Grid>
+                </CollectionView.EmptyView>
+
+                <CollectionView.ItemTemplate>
+                    <DataTemplate x:DataType="models:Item">
+                        <Border Margin="12,6"
+                                Padding="12"
+                                BackgroundColor="{AppThemeBinding Light={StaticResource White}, Dark={StaticResource Gray900}}"
+                                Stroke="{AppThemeBinding Light={StaticResource Gray200}, Dark={StaticResource Gray700}}"
+                                StrokeThickness="1">
+                            <Border.StrokeShape>
+                                <RoundRectangle CornerRadius="10"/>
+                            </Border.StrokeShape>
+                            <Border.GestureRecognizers>
+                                <TapGestureRecognizer
+                                    Command="{Binding Source={x:Reference NearbyCollection}, Path=BindingContext.SelectItemCommand}"
+                                    CommandParameter="{Binding .}"/>
+                            </Border.GestureRecognizers>
+
+                            <Grid ColumnDefinitions="*,Auto" RowDefinitions="Auto,Auto,Auto" RowSpacing="2">
+                                <Label Grid.Row="0" Grid.Column="0"
+                                       Text="{Binding Title}"
+                                       FontSize="16"
+                                       FontAttributes="Bold"/>
+                                <Label Grid.Row="0" Grid.Column="1"
+                                       Text="{Binding DistanceKm, StringFormat='{0:F1} km'}"
+                                       FontSize="13"
+                                       FontAttributes="Bold"
+                                       TextColor="{AppThemeBinding Light={StaticResource Primary}, Dark={StaticResource PrimaryDark}}"/>
+                                <Label Grid.Row="1" Grid.ColumnSpan="2"
+                                       Text="{Binding CategoryName}"
+                                       FontSize="12"
+                                       TextColor="{AppThemeBinding Light={StaticResource Gray600}, Dark={StaticResource Gray400}}"/>
+                                <Grid Grid.Row="2" Grid.ColumnSpan="2" ColumnDefinitions="*,Auto">
+                                    <Label Grid.Column="0"
+                                           Text="{Binding OwnerName, StringFormat='Owner: {0}'}"
+                                           FontSize="12"
+                                           TextColor="{AppThemeBinding Light={StaticResource Gray600}, Dark={StaticResource Gray400}}"/>
+                                    <Label Grid.Column="1"
+                                           Text="{Binding DailyRate, StringFormat='£{0:F2}/day'}"
+                                           FontSize="12"
+                                           FontAttributes="Bold"/>
+                                </Grid>
+                            </Grid>
+                        </Border>
+                    </DataTemplate>
+                </CollectionView.ItemTemplate>
+            </CollectionView>
+        </RefreshView>
+    </Grid>
+</ContentPage>

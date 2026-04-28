@@ -51,12 +51,21 @@
                                IsVisible="{Binding IsLoadingCategories}"
                                HorizontalOptions="Start"/>
 
-            <Label Text="Latitude" FontAttributes="Bold"/>
+            <Label Text="Location" FontAttributes="Bold"/>
+            <Button Text="Use my current location"
+                    Command="{Binding UseCurrentLocationCommand}"
+                    IsEnabled="{Binding IsFetchingLocation, Converter={StaticResource InvertedBoolConverter}}"
+                    Margin="0,0,0,4"/>
+            <ActivityIndicator IsRunning="{Binding IsFetchingLocation}"
+                               IsVisible="{Binding IsFetchingLocation}"
+                               HorizontalOptions="Start"/>
+
+            <Label Text="Latitude"/>
             <Entry Text="{Binding LatitudeText}"
                    Placeholder="-90 to 90"
                    Keyboard="Numeric"/>
 
-            <Label Text="Longitude" FontAttributes="Bold"/>
+            <Label Text="Longitude"/>
             <Entry Text="{Binding LongitudeText}"
                    Placeholder="-180 to 180"
                    Keyboard="Numeric"/>

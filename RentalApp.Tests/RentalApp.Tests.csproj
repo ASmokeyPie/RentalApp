@@ -76,6 +76,11 @@
 
     <!-- Phase 5d: rental detail + workflow actions. -->
     <Compile Include="..\RentalApp\ViewModels\RentalDetailsViewModel.cs" Link="ViewModels\RentalDetailsViewModel.cs" />
+
+    <!-- Phase 6: location-based discovery. The interface is MAUI-free; the
+         LocationService impl uses Geolocation.Default and is excluded. -->
+    <Compile Include="..\RentalApp\Services\ILocationService.cs" Link="Services\ILocationService.cs" />
+    <Compile Include="..\RentalApp\ViewModels\FindNearbyViewModel.cs" Link="ViewModels\FindNearbyViewModel.cs" />
   </ItemGroup>
 
 </Project>

@@ -29,6 +29,7 @@ public partial class CreateItemViewModel : BaseViewModel
     private readonly IItemRepository _items = null!;
     private readonly ICategoryRepository _categories = null!;
     private readonly INavigationService _navigation = null!;
+    private readonly ILocationService? _location;
 
     /// @brief Categories shown in the picker. Populated on first load.
     public ObservableCollection<Category> Categories { get; } = new();
@@ -67,13 +68,21 @@ public partial class CreateItemViewModel : BaseViewModel
     public CreateItemViewModel(
         IItemRepository items,
         ICategoryRepository categories,
-        INavigationService navigation)
+        INavigationService navigation,
+        ILocationService location)
     {
         _items = items;
         _categories = categories;
         _navigation = navigation;
+        _location = location;
         Title = "New Item";
     }
+
+    /// @brief True while a GPS fetch is in flight.
+    /// @details Drives the "Use my location" button's disabled state so the
+    ///          user can't double-tap.
+    [ObservableProperty]
+    private bool isFetchingLocation;
 
     /// @brief Loads (or reloads) the categories list for the picker.
     /// @details Called by the page on first appearance. Safe to call multiple
@@ -99,6 +108,44 @@ public partial class CreateItemViewModel : BaseViewModel
         finally
         {
             IsLoadingCategories = false;
+        }
+    }
+
+    /// @brief Fills <see cref="LatitudeText"/> and <see cref="LongitudeText"/>
+    ///        from the device's current GPS reading.
+    /// @details Behind <see cref="ILocationService"/>, which prompts for the
+    ///          runtime permission on first use. Sets an error message if the
+    ///          read fails (no permission, GPS off, no fix). User can still
+    ///          enter coordinates manually if the auto-fill doesn't work.
+    [RelayCommand]
+    public async Task UseCurrentLocationAsync()
+    {
+        if (_location is null) return;        // design-time
+        if (IsFetchingLocation) return;
+
+        try
+        {
+            IsFetchingLocation = true;
+            ClearError();
+
+            var location = await _location.GetCurrentLocationAsync();
+            if (location is null)
+            {
+                SetError("Couldn't read your location. Check that location is enabled and the app has permission.");
+                return;
+            }
+
+            var (lat, lon) = location.Value;
+            LatitudeText  = lat.ToString("0.######", System.Globalization.CultureInfo.InvariantCulture);
+            LongitudeText = lon.ToString("0.######", System.Globalization.CultureInfo.InvariantCulture);
+        }
+        catch (Exception ex)
+        {
+            SetError($"Could not read location: {ex.Message}");
+        }
+        finally
+        {
+            IsFetchingLocation = false;
         }
     }
 

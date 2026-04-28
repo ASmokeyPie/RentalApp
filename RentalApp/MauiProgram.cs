@@ -73,6 +73,11 @@ public static class MauiProgram
         }
         builder.Services.AddSingleton<INavigationService, NavigationService>();
 
+        // Phase 6: GPS-backed location service. Singleton (stateless wrapper
+        // around Geolocation.Default). Used by FindNearbyViewModel and the
+        // "Use my location" button on CreateItemViewModel.
+        builder.Services.AddSingleton<ILocationService, LocationService>();
+
         // Phase 5a: rental domain service. Sits over IRentalRepository (which
         // is registered above against either Api* or Db* per useSharedApi),
         // so the service is data-source-agnostic by construction.
@@ -118,6 +123,10 @@ public static class MauiProgram
         // Phase 5d: Rental detail + owner/borrower workflow actions.
         builder.Services.AddTransient<RentalDetailsViewModel>();
         builder.Services.AddTransient<RentalDetailsPage>();
+
+        // Phase 6: Location-based discovery.
+        builder.Services.AddTransient<FindNearbyViewModel>();
+        builder.Services.AddTransient<FindNearbyPage>();
 
 #if DEBUG
         builder.Logging.AddDebug();

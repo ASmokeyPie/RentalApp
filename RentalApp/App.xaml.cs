@@ -23,6 +23,7 @@ public partial class App : Application
 		Routing.RegisterRoute(nameof(Views.RequestRentalPage), typeof(Views.RequestRentalPage));
 		Routing.RegisterRoute(nameof(Views.MyRentalsPage), typeof(Views.MyRentalsPage));
 		Routing.RegisterRoute(nameof(Views.RentalDetailsPage), typeof(Views.RentalDetailsPage));
+		Routing.RegisterRoute(nameof(Views.FindNearbyPage), typeof(Views.FindNearbyPage));
 	}
 
 	protected override Window CreateWindow(IActivationState? activationState)
