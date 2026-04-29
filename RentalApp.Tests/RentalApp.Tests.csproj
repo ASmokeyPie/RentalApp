@@ -50,13 +50,16 @@
     <Compile Include="..\RentalApp\Services\AuthStateChangedEventArgs.cs" Link="Services\AuthStateChangedEventArgs.cs" />
     <Compile Include="..\RentalApp\Services\ApiAuthenticationService.cs" Link="Services\ApiAuthenticationService.cs" />
 
-    <!-- Phase 5a: rental domain service. MAUI-free by design. -->
+    <!-- Phase 5a: rental domain service. -->
     <Compile Include="..\RentalApp\Services\IRentalService.cs" Link="Services\IRentalService.cs" />
     <Compile Include="..\RentalApp\Services\RentalService.cs" Link="Services\RentalService.cs" />
 
+    <!-- Phase 7a: review domain service. -->
+    <Compile Include="..\RentalApp\Services\IReviewService.cs" Link="Services\IReviewService.cs" />
+    <Compile Include="..\RentalApp\Services\ReviewService.cs" Link="Services\ReviewService.cs" />
+
     <!-- Phase 3: item browsing read-path VMs. INavigationService is the
-         interface (no MAUI deps); the NavigationService impl uses Shell.Current
-         and is deliberately excluded. BaseViewModel is shared scaffolding and
+         interface. BaseViewModel is shared scaffolding and
          needs to compile here so the Phase 3 VMs (which inherit it) can too. -->
     <Compile Include="..\RentalApp\Services\INavigationService.cs" Link="Services\INavigationService.cs" />
     <Compile Include="..\RentalApp\ViewModels\BaseViewModel.cs" Link="ViewModels\BaseViewModel.cs" />
@@ -81,6 +84,9 @@
          LocationService impl uses Geolocation.Default and is excluded. -->
     <Compile Include="..\RentalApp\Services\ILocationService.cs" Link="Services\ILocationService.cs" />
     <Compile Include="..\RentalApp\ViewModels\FindNearbyViewModel.cs" Link="ViewModels\FindNearbyViewModel.cs" />
+
+    <!-- Phase 7a: review submission VM. -->
+    <Compile Include="..\RentalApp\ViewModels\WriteReviewViewModel.cs" Link="ViewModels\WriteReviewViewModel.cs" />
   </ItemGroup>
 
 </Project>

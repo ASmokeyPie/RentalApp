@@ -125,6 +125,11 @@
                             IsVisible="{Binding CanMarkCompleted}"
                             IsEnabled="{Binding IsWorking, Converter={StaticResource InvertedBoolConverter}}"/>
 
+                    <Button Text="Leave a review"
+                            Command="{Binding LeaveReviewCommand}"
+                            IsVisible="{Binding CanLeaveReview}"
+                            IsEnabled="{Binding IsWorking, Converter={StaticResource InvertedBoolConverter}}"/>
+
                     <ActivityIndicator IsRunning="{Binding IsWorking}"
                                        IsVisible="{Binding IsWorking}"
                                        HorizontalOptions="Center"/>

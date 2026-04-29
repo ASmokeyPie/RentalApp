@@ -249,6 +249,92 @@ public class RentalDetailsViewModelTests
         Assert.False(vm.HasAnyAction);  // terminal — no further moves
     }
 
+    // ---- CanLeaveReview / LeaveReviewAsync -------------------------------
+
+    [Fact]
+    public async Task CanLeaveReview_True_ForBorrowerOnCompletedRental()
+    {
+        var (vm, rentals, auth) = Build();
+        rentals.Setup(s => s.GetRentalAsync(7, default))
+               .ReturnsAsync(SampleRental(7, "Drill", RentalStatus.Completed, ownerId: 1, borrowerId: 2));
+        auth.SetupGet(a => a.CurrentUser).Returns(User(2));
+
+        vm.RentalId = 7;
+        await vm.LoadAsync();
+
+        Assert.True(vm.CanLeaveReview);
+        Assert.True(vm.HasAnyAction);
+    }
+
+    [Theory]
+    [InlineData(RentalStatus.Requested)]
+    [InlineData(RentalStatus.Approved)]
+    [InlineData(RentalStatus.OutForRent)]
+    [InlineData(RentalStatus.Returned)]
+    [InlineData(RentalStatus.Rejected)]
+    public async Task CanLeaveReview_False_ForBorrowerOnNonCompletedRental(RentalStatus status)
+    {
+        var (vm, rentals, auth) = Build();
+        rentals.Setup(s => s.GetRentalAsync(7, default))
+               .ReturnsAsync(SampleRental(7, "Drill", status, ownerId: 1, borrowerId: 2));
+        auth.SetupGet(a => a.CurrentUser).Returns(User(2));
+
+        vm.RentalId = 7;
+        await vm.LoadAsync();
+
+        Assert.False(vm.CanLeaveReview);
+    }
+
+    [Fact]
+    public async Task CanLeaveReview_False_ForOwnerOnCompletedRental()
+    {
+        var (vm, rentals, auth) = Build();
+        rentals.Setup(s => s.GetRentalAsync(7, default))
+               .ReturnsAsync(SampleRental(7, "Drill", RentalStatus.Completed, ownerId: 1, borrowerId: 2));
+        auth.SetupGet(a => a.CurrentUser).Returns(User(1));
+
+        vm.RentalId = 7;
+        await vm.LoadAsync();
+
+        Assert.False(vm.CanLeaveReview);
+    }
+
+    [Fact]
+    public async Task LeaveReviewAsync_NavigatesToWriteReviewPage_WhenAllowed()
+    {
+        var (vm, rentals, auth, nav) = BuildWithNav();
+        rentals.Setup(s => s.GetRentalAsync(7, default))
+               .ReturnsAsync(SampleRental(7, "Drill", RentalStatus.Completed, ownerId: 1, borrowerId: 2));
+        auth.SetupGet(a => a.CurrentUser).Returns(User(2));
+
+        vm.RentalId = 7;
+        await vm.LoadAsync();
+        await vm.LeaveReviewAsync();
+
+        nav.Verify(n => n.NavigateToAsync(
+                "WriteReviewPage",
+                It.Is<Dictionary<string, object>>(d =>
+                    d.ContainsKey("rentalId") && (int)d["rentalId"] == 7)),
+            Times.Once);
+    }
+
+    [Fact]
+    public async Task LeaveReviewAsync_DoesNothing_WhenNotAllowed()
+    {
+        // Owner viewing own rental — CanLeaveReview is false.
+        var (vm, rentals, auth, nav) = BuildWithNav();
+        rentals.Setup(s => s.GetRentalAsync(7, default))
+               .ReturnsAsync(SampleRental(7, "Drill", RentalStatus.Completed, ownerId: 1, borrowerId: 2));
+        auth.SetupGet(a => a.CurrentUser).Returns(User(1));
+
+        vm.RentalId = 7;
+        await vm.LoadAsync();
+        await vm.LeaveReviewAsync();
+
+        nav.Verify(n => n.NavigateToAsync("WriteReviewPage", It.IsAny<Dictionary<string, object>>()),
+            Times.Never);
+    }
+
     // ---- Helpers ----------------------------------------------------------
 
     private static (
@@ -256,10 +342,21 @@ public class RentalDetailsViewModelTests
         Mock<IRentalService> rentals,
         Mock<IAuthenticationService> auth) Build()
     {
+        var (vm, rentals, auth, _) = BuildWithNav();
+        return (vm, rentals, auth);
+    }
+
+    private static (
+        RentalDetailsViewModel vm,
+        Mock<IRentalService> rentals,
+        Mock<IAuthenticationService> auth,
+        Mock<INavigationService> navigation) BuildWithNav()
+    {
         var rentals = new Mock<IRentalService>();
         var auth = new Mock<IAuthenticationService>();
-        var vm = new RentalDetailsViewModel(rentals.Object, auth.Object);
-        return (vm, rentals, auth);
+        var nav = new Mock<INavigationService>();
+        var vm = new RentalDetailsViewModel(rentals.Object, auth.Object, nav.Object);
+        return (vm, rentals, auth, nav);
     }
 
     private static User User(int id) => new()

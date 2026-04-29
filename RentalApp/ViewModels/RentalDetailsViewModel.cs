@@ -35,6 +35,7 @@ public partial class RentalDetailsViewModel : BaseViewModel
     // runtime DI ctor always assigns these before any command runs.
     private readonly IRentalService _rentals = null!;
     private readonly IAuthenticationService? _auth;
+    private readonly INavigationService? _navigation;
 
     /// @brief Set by the page from the Shell route parameter.
     [ObservableProperty]
@@ -82,9 +83,15 @@ public partial class RentalDetailsViewModel : BaseViewModel
     public bool CanMarkReturned   => IsBorrower && Rental?.Status == RentalStatus.OutForRent;
     public bool CanMarkCompleted  => IsOwner    && Rental?.Status == RentalStatus.Returned;
 
+    /// @brief Borrower can leave a review once the rental is Completed.
+    /// @details The "no duplicate review" rule lives server-side; if the
+    ///          borrower already reviewed this rental, tapping the button
+    ///          will result in a 409 surfaced via the error banner.
+    public bool CanLeaveReview    => IsBorrower && Rental?.Status == RentalStatus.Completed;
+
     /// @brief True when at least one action button should appear.
     public bool HasAnyAction =>
-        CanApprove || CanReject || CanMarkOutForRent || CanMarkReturned || CanMarkCompleted;
+        CanApprove || CanReject || CanMarkOutForRent || CanMarkReturned || CanMarkCompleted || CanLeaveReview;
 
     private int? CurrentUserId => _auth?.CurrentUser?.Id;
 
@@ -94,10 +101,14 @@ public partial class RentalDetailsViewModel : BaseViewModel
         Title = "Rental";
     }
 
-    public RentalDetailsViewModel(IRentalService rentals, IAuthenticationService auth)
+    public RentalDetailsViewModel(
+        IRentalService rentals,
+        IAuthenticationService auth,
+        INavigationService navigation)
     {
         _rentals = rentals;
         _auth = auth;
+        _navigation = navigation;
         Title = "Rental";
     }
 
@@ -166,6 +177,22 @@ public partial class RentalDetailsViewModel : BaseViewModel
     public Task MarkCompletedAsync() =>
         InvokeActionAsync(svc => svc.MarkCompletedAsync(Rental!.Id, Rental!.Status));
 
+    /// @brief Navigates to the leave-a-review form for this rental.
+    /// @details Borrower-only — guarded by <see cref="CanLeaveReview"/> at the
+    ///          binding level (button hidden when false) and again here as a
+    ///          defensive check. The actual submission happens on
+    ///          <c>WriteReviewPage</c> via <see cref="IReviewService"/>.
+    [RelayCommand]
+    public async Task LeaveReviewAsync()
+    {
+        if (!CanLeaveReview || Rental is null) return;
+        if (_navigation is null) return;
+
+        await _navigation.NavigateToAsync(
+            "WriteReviewPage",
+            new Dictionary<string, object> { ["rentalId"] = Rental.Id });
+    }
+
     /// @brief Shared shell for action commands. Guards against double-taps
     ///        and missing rental, surfaces errors, and patches the in-memory
     ///        rental's Status from the returned <see cref="RentalStatusUpdate"/>
@@ -212,6 +239,7 @@ public partial class RentalDetailsViewModel : BaseViewModel
         OnPropertyChanged(nameof(CanMarkOutForRent));
         OnPropertyChanged(nameof(CanMarkReturned));
         OnPropertyChanged(nameof(CanMarkCompleted));
+        OnPropertyChanged(nameof(CanLeaveReview));
         OnPropertyChanged(nameof(HasAnyAction));
     }
 

@@ -83,6 +83,10 @@ public static class MauiProgram
         // so the service is data-source-agnostic by construction.
         builder.Services.AddSingleton<IRentalService, RentalService>();
 
+        // Phase 7a: review domain service. Same pattern — sits over the
+        // review repo and adds the "borrower of a Completed rental" rules.
+        builder.Services.AddSingleton<IReviewService, ReviewService>();
+
         builder.Services.AddSingleton<AppShellViewModel>();
         builder.Services.AddSingleton<AppShell>();
         builder.Services.AddSingleton<App>();
@@ -127,6 +131,10 @@ public static class MauiProgram
         // Phase 6: Location-based discovery.
         builder.Services.AddTransient<FindNearbyViewModel>();
         builder.Services.AddTransient<FindNearbyPage>();
+
+        // Phase 7a: review submission flow.
+        builder.Services.AddTransient<WriteReviewViewModel>();
+        builder.Services.AddTransient<WriteReviewPage>();
 
 #if DEBUG
         builder.Logging.AddDebug();

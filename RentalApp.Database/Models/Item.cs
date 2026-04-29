@@ -103,4 +103,21 @@ public class Item
     /// </summary>
     [NotMapped]
     public double? DistanceKm { get; set; }
+
+    /// <summary>
+    /// Inline reviews surfaced by <c>GET /items/{id}</c>. Empty when the item
+    /// is loaded from a list endpoint that doesn't include them, or when the
+    /// item has no reviews yet. The dedicated paged endpoint
+    /// <c>GET /items/{id}/reviews</c> can be used for a fuller list when
+    /// <see cref="TotalReviews"/> exceeds what's inline here.
+    /// </summary>
+    [NotMapped]
+    public List<Review> Reviews { get; set; } = new();
+
+    /// <summary>
+    /// Total number of reviews on this item across all pages. Reported by
+    /// <c>GET /items/{id}</c> alongside the inline reviews.
+    /// </summary>
+    [NotMapped]
+    public int TotalReviews { get; set; }
 }

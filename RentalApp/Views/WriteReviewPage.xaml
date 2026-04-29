@@ -1,0 +1,124 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage x:Class="RentalApp.Views.WriteReviewPage"
+             xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:vm="clr-namespace:RentalApp.ViewModels"
+             x:DataType="vm:WriteReviewViewModel"
+             Title="{Binding Title}">
+
+    <ContentPage.BindingContext>
+        <vm:WriteReviewViewModel/>
+    </ContentPage.BindingContext>
+
+    <RefreshView IsRefreshing="{Binding IsRefreshing}"
+                 Command="{Binding LoadCommand}">
+        <ScrollView>
+            <StackLayout Padding="20" Spacing="16">
+
+                <!-- Error banner -->
+                <Border BackgroundColor="{AppThemeBinding Light=#FFEBEE, Dark=#1B0000}"
+                        Stroke="{AppThemeBinding Light=#F44336, Dark=#EF5350}"
+                        StrokeThickness="1"
+                        Padding="12"
+                        IsVisible="{Binding HasError}">
+                    <Border.StrokeShape>
+                        <RoundRectangle CornerRadius="8"/>
+                    </Border.StrokeShape>
+                    <Grid ColumnDefinitions="*,Auto">
+                        <Label Grid.Column="0"
+                               Text="{Binding ErrorMessage}"
+                               TextColor="{AppThemeBinding Light=#D32F2F, Dark=#EF5350}"
+                               VerticalOptions="Center"/>
+                        <Button Grid.Column="1"
+                                Text="×"
+                                Command="{Binding ClearErrorCommand}"
+                                BackgroundColor="Transparent"
+                                TextColor="{AppThemeBinding Light=#D32F2F, Dark=#EF5350}"
+                                FontSize="18"
+                                Padding="4"
+                                WidthRequest="32"
+                                HeightRequest="32"/>
+                    </Grid>
+                </Border>
+
+                <!-- Rental summary -->
+                <Border BackgroundColor="{AppThemeBinding Light={StaticResource White}, Dark={StaticResource Gray900}}"
+                        Stroke="{AppThemeBinding Light={StaticResource Gray200}, Dark={StaticResource Gray700}}"
+                        StrokeThickness="1"
+                        Padding="14">
+                    <Border.StrokeShape>
+                        <RoundRectangle CornerRadius="10"/>
+                    </Border.StrokeShape>
+                    <StackLayout Spacing="4">
+                        <Label Text="{Binding Rental.ItemTitle}"
+                               FontSize="18"
+                               FontAttributes="Bold"/>
+                        <Label Text="{Binding Rental.OwnerName, StringFormat='Owner: {0}'}"
+                               FontSize="13"
+                               TextColor="{AppThemeBinding Light={StaticResource Gray600}, Dark={StaticResource Gray400}}"/>
+                        <Label Text="{Binding Rental.StartDate, StringFormat='From {0:d MMM yyyy}'}"
+                               FontSize="12"/>
+                        <Label Text="{Binding Rental.EndDate, StringFormat='Until {0:d MMM yyyy}'}"
+                               FontSize="12"/>
+                    </StackLayout>
+                </Border>
+
+                <!-- Star picker + comment, only when reviewable -->
+                <StackLayout IsVisible="{Binding CanReview}" Spacing="14">
+
+                    <Label Text="Your rating" FontAttributes="Bold"/>
+                    <Grid ColumnDefinitions="*,*,*,*,*" ColumnSpacing="6">
+                        <Button Grid.Column="0"
+                                Text="{Binding Star1Symbol}"
+                                FontSize="28"
+                                Command="{Binding SetRatingCommand}"
+                                CommandParameter="1"
+                                BackgroundColor="Transparent"/>
+                        <Button Grid.Column="1"
+                                Text="{Binding Star2Symbol}"
+                                FontSize="28"
+                                Command="{Binding SetRatingCommand}"
+                                CommandParameter="2"
+                                BackgroundColor="Transparent"/>
+                        <Button Grid.Column="2"
+                                Text="{Binding Star3Symbol}"
+                                FontSize="28"
+                                Command="{Binding SetRatingCommand}"
+                                CommandParameter="3"
+                                BackgroundColor="Transparent"/>
+                        <Button Grid.Column="3"
+                                Text="{Binding Star4Symbol}"
+                                FontSize="28"
+                                Command="{Binding SetRatingCommand}"
+                                CommandParameter="4"
+                                BackgroundColor="Transparent"/>
+                        <Button Grid.Column="4"
+                                Text="{Binding Star5Symbol}"
+                                FontSize="28"
+                                Command="{Binding SetRatingCommand}"
+                                CommandParameter="5"
+                                BackgroundColor="Transparent"/>
+                    </Grid>
+                    <Label Text="{Binding Rating, StringFormat='{0} / 5'}"
+                           HorizontalOptions="Center"
+                           FontSize="14"/>
+
+                    <Label Text="Your comment (optional)" FontAttributes="Bold"/>
+                    <Editor Text="{Binding Comment}"
+                            Placeholder="How was your rental? (up to 500 characters)"
+                            HeightRequest="140"
+                            AutoSize="TextChanges"/>
+
+                    <Button Text="Submit review"
+                            Command="{Binding SubmitCommand}"
+                            IsEnabled="{Binding IsBusy, Converter={StaticResource InvertedBoolConverter}}"
+                            Margin="0,12,0,0"/>
+
+                    <ActivityIndicator IsRunning="{Binding IsBusy}"
+                                       IsVisible="{Binding IsBusy}"
+                                       HorizontalOptions="Center"/>
+                </StackLayout>
+            </StackLayout>
+        </ScrollView>
+    </RefreshView>
+</ContentPage>
