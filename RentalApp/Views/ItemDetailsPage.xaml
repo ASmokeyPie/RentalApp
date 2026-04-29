@@ -3,6 +3,7 @@
              xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
              xmlns:vm="clr-namespace:RentalApp.ViewModels"
+             xmlns:models="clr-namespace:RentalApp.Database.Models;assembly=RentalApp.Database"
              x:DataType="vm:ItemDetailsViewModel"
              Title="{Binding Title}">
 
@@ -108,6 +109,66 @@
                             Command="{Binding EditItemCommand}"
                             IsVisible="{Binding IsOwner}"
                             Margin="0,8,0,0"/>
+
+                    <!-- Reviews section (inline from GET /items/{id}) -->
+                    <Label Text="Reviews"
+                           FontSize="18"
+                           FontAttributes="Bold"
+                           Margin="0,16,0,0"/>
+
+                    <!-- Summary line: average + total -->
+                    <StackLayout Orientation="Horizontal" Spacing="8">
+                        <Label Text="{Binding Item.AverageRating, StringFormat='{0:F1} ★', TargetNullValue='No rating yet'}"
+                               FontSize="14"
+                               FontAttributes="Bold"
+                               TextColor="{AppThemeBinding Light={StaticResource Primary}, Dark={StaticResource PrimaryDark}}"/>
+                        <Label Text="{Binding Item.TotalReviews, StringFormat='({0} reviews)'}"
+                               FontSize="13"
+                               TextColor="{AppThemeBinding Light={StaticResource Gray600}, Dark={StaticResource Gray400}}"/>
+                    </StackLayout>
+
+                    <!-- Per-review rows -->
+                    <CollectionView ItemsSource="{Binding Item.Reviews}"
+                                    SelectionMode="None">
+                        <CollectionView.EmptyView>
+                            <Label Text="No reviews yet."
+                                   FontSize="13"
+                                   TextColor="{AppThemeBinding Light={StaticResource Gray600}, Dark={StaticResource Gray400}}"
+                                   Margin="0,8,0,0"/>
+                        </CollectionView.EmptyView>
+                        <CollectionView.ItemTemplate>
+                            <DataTemplate x:DataType="models:Review">
+                                <Border Margin="0,6"
+                                        Padding="12"
+                                        BackgroundColor="{AppThemeBinding Light={StaticResource White}, Dark={StaticResource Gray900}}"
+                                        Stroke="{AppThemeBinding Light={StaticResource Gray200}, Dark={StaticResource Gray700}}"
+                                        StrokeThickness="1">
+                                    <Border.StrokeShape>
+                                        <RoundRectangle CornerRadius="8"/>
+                                    </Border.StrokeShape>
+                                    <Grid ColumnDefinitions="*,Auto" RowDefinitions="Auto,Auto,Auto" RowSpacing="2">
+                                        <Label Grid.Row="0" Grid.Column="0"
+                                               Text="{Binding ReviewerName}"
+                                               FontAttributes="Bold"
+                                               FontSize="14"/>
+                                        <Label Grid.Row="0" Grid.Column="1"
+                                               Text="{Binding Rating, StringFormat='{0} ★'}"
+                                               FontAttributes="Bold"
+                                               FontSize="13"
+                                               TextColor="{AppThemeBinding Light={StaticResource Primary}, Dark={StaticResource PrimaryDark}}"/>
+                                        <Label Grid.Row="1" Grid.ColumnSpan="2"
+                                               Text="{Binding Comment}"
+                                               FontSize="13"
+                                               LineBreakMode="WordWrap"/>
+                                        <Label Grid.Row="2" Grid.ColumnSpan="2"
+                                               Text="{Binding CreatedAt, StringFormat='{0:d MMM yyyy}'}"
+                                               FontSize="11"
+                                               TextColor="{AppThemeBinding Light={StaticResource Gray600}, Dark={StaticResource Gray400}}"/>
+                                    </Grid>
+                                </Border>
+                            </DataTemplate>
+                        </CollectionView.ItemTemplate>
+                    </CollectionView>
                 </StackLayout>
             </Grid>
         </ScrollView>

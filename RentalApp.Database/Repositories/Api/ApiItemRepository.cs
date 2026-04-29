@@ -347,6 +347,21 @@ public sealed class ApiItemRepository : IItemRepository
         CategoryName = w.Category ?? string.Empty,
         CategorySlug = string.Empty,
         DistanceKm = null,
+
+        // Phase 7b: surface the inline reviews from the wire so the page can
+        // render them without an extra round-trip to GET /items/{id}/reviews.
+        TotalReviews = w.TotalReviews ?? 0,
+        Reviews = (w.Reviews ?? Array.Empty<InlineReviewWire>())
+            .Select(r => new Review
+            {
+                Id = r.Id,
+                ReviewerId = r.ReviewerId,
+                ReviewerName = r.ReviewerName ?? string.Empty,
+                Rating = r.Rating,
+                Comment = r.Comment,
+                CreatedAt = r.CreatedAt,
+            })
+            .ToList(),
     };
 
     private static Item ToModel(ItemListItemWire w) => new()

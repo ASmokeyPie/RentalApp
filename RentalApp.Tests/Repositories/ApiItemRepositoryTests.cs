@@ -63,6 +63,53 @@ public class ApiItemRepositoryTests
         Assert.Equal("Power Tools", item.CategoryName);
     }
 
+    [Fact]
+    public async Task GetByIdAsync_PopulatesInlineReviews_AndTotalReviews()
+    {
+        // Phase 7b: surface the inline reviews array + totalReviews count
+        // so ItemDetailsPage can render them without an extra round-trip.
+        var stub = new StubHttpMessageHandler(TestResponses.Json(new
+        {
+            id = 42,
+            title = "Drill", description = (string?)null,
+            dailyRate = 5m,
+            categoryId = 1, category = "Power Tools",
+            ownerId = 7, ownerName = "Ada",
+            ownerRating = (double?)null,
+            latitude = 0.0, longitude = 0.0,
+            isAvailable = true,
+            averageRating = 4.5,
+            totalReviews = 3,
+            createdAt = DateTime.UtcNow,
+            reviews = new[]
+            {
+                new
+                {
+                    id = 100, reviewerId = 5, reviewerName = "Bob",
+                    rating = 5, comment = "Loved it",
+                    createdAt = new DateTime(2026, 4, 10),
+                },
+                new
+                {
+                    id = 101, reviewerId = 6, reviewerName = "Cara",
+                    rating = 4, comment = (string?)null,
+                    createdAt = new DateTime(2026, 4, 12),
+                },
+            },
+        }));
+        var repo = BuildRepo(stub);
+
+        var item = await repo.GetByIdAsync(42);
+
+        Assert.NotNull(item);
+        Assert.Equal(3, item!.TotalReviews);
+        Assert.Equal(2, item.Reviews.Count);
+        Assert.Equal("Bob", item.Reviews[0].ReviewerName);
+        Assert.Equal(5,     item.Reviews[0].Rating);
+        Assert.Equal("Loved it", item.Reviews[0].Comment);
+        Assert.Null(item.Reviews[1].Comment);   // null comment round-trips as null
+    }
+
     // ---- SearchAsync (paginated GET /items) -------------------------------
 
     [Fact]
