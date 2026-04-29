@@ -39,4 +39,12 @@ public class User
 
     [NotMapped]
     public string FullName => $"{FirstName} {LastName}";
+
+    /// <summary>
+    /// The user's average star rating as an item owner, as returned by the
+    /// API's /users/me endpoint. Null when the user has not yet been reviewed.
+    /// Marked [NotMapped] because it is a computed aggregate, not a column.
+    /// </summary>
+    [NotMapped]
+    public double? AverageRating { get; set; }
 }

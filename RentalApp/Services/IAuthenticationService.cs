@@ -22,4 +22,13 @@ public interface IAuthenticationService
     /// raised); false if the user must log in again.
     /// </summary>
     Task<bool> TryRestoreSessionAsync();
+
+    /// <summary>
+    /// Re-fetches the current user's profile from GET /users/me and updates
+    /// <see cref="CurrentUser"/> in place. Used by pages (e.g. ProfilePage)
+    /// that need a fresh snapshot — including fields like
+    /// <see cref="Database.Models.User.AverageRating"/> that are not loaded
+    /// at login time in older code. No-op if not authenticated.
+    /// </summary>
+    Task RefreshCurrentUserAsync();
 }

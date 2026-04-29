@@ -87,6 +87,9 @@
 
     <!-- Phase 7a: review submission VM. -->
     <Compile Include="..\RentalApp\ViewModels\WriteReviewViewModel.cs" Link="ViewModels\WriteReviewViewModel.cs" />
+
+    <!-- Phase 7b: user profile VM. -->
+    <Compile Include="..\RentalApp\ViewModels\ProfileViewModel.cs" Link="ViewModels\ProfileViewModel.cs" />
   </ItemGroup>
 
 </Project>

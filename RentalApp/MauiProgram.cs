@@ -136,6 +136,12 @@ public static class MauiProgram
         builder.Services.AddTransient<WriteReviewViewModel>();
         builder.Services.AddTransient<WriteReviewPage>();
 
+        // Phase 7b: user profile — account info, average rating, reviews written.
+        // Transient so each navigation gets a fresh load (reviews may change
+        // between visits, e.g. after the user submits a new review).
+        builder.Services.AddTransient<ProfileViewModel>();
+        builder.Services.AddTransient<ProfilePage>();
+
 #if DEBUG
         builder.Logging.AddDebug();
 #endif

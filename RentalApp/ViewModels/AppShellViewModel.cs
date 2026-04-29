@@ -70,7 +70,7 @@ namespace RentalApp.ViewModels
         [RelayCommand]
         private async Task NavigateToProfileAsync()
         {
-            await _navigationService.NavigateToAsync("TempPage");
+            await _navigationService.NavigateToAsync("ProfilePage");
         }
 
         /// @brief Navigates to the current user's settings page

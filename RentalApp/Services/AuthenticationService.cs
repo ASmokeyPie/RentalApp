@@ -102,6 +102,12 @@ public class AuthenticationService : IAuthenticationService
     /// </summary>
     public Task<bool> TryRestoreSessionAsync() => Task.FromResult(false);
 
+    /// <summary>
+    /// The local-DB path has no remote /users/me endpoint, so there is nothing
+    /// to refresh. AverageRating is not computed by the local service.
+    /// </summary>
+    public Task RefreshCurrentUserAsync() => Task.CompletedTask;
+
     public async Task<bool> ChangePasswordAsync(string currentPassword, string newPassword)
     {
         if (_currentUser == null)

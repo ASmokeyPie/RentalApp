@@ -10,8 +10,6 @@
     </ContentPage.BindingContext>
 
     <ContentPage.ToolbarItems>
-        <ToolbarItem Text="Browse"
-                     Command="{Binding NavigateToItemsListCommand}"/>
         <ToolbarItem Text="Nearby"
                      Command="{Binding NavigateToFindNearbyCommand}"/>
         <ToolbarItem Text="+"

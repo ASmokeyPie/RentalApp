@@ -161,13 +161,25 @@ public class ApiAuthenticationService : IAuthenticationService
 
         return new User
         {
-            Id = profile.Id,
-            Email = profile.Email,
-            FirstName = profile.FirstName,
-            LastName = profile.LastName,
-            CreatedAt = profile.CreatedAt,
-            IsActive = true,
+            Id            = profile.Id,
+            Email         = profile.Email,
+            FirstName     = profile.FirstName,
+            LastName      = profile.LastName,
+            CreatedAt     = profile.CreatedAt,
+            IsActive      = true,
+            AverageRating = profile.AverageRating,
         };
+    }
+
+    public async Task RefreshCurrentUserAsync()
+    {
+        if (_currentUser is null) return;
+
+        var user = await LoadCurrentUserAsync();
+        if (user is not null)
+        {
+            _currentUser = user;
+        }
     }
 
     private void OnAuthenticationExpired(object? sender, EventArgs e)
@@ -189,7 +201,8 @@ public class ApiAuthenticationService : IAuthenticationService
     private record TokenResponse(string Token, DateTime ExpiresAt, int UserId);
 
     private record UserProfileResponse(
-        int Id, string Email, string FirstName, string LastName, DateTime CreatedAt);
+        int Id, string Email, string FirstName, string LastName,
+        double? AverageRating, DateTime CreatedAt);
 
     private record ApiErrorResponse(string Error, string Message);
 }

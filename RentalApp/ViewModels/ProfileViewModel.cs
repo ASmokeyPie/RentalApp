@@ -1,177 +1,155 @@
 /// @file ProfileViewModel.cs
-/// @brief User profile management view model
+/// @brief User profile view model — displays account info, average rating, and reviews written
 /// @author RentalApp Development Team
-/// @date 2025
+/// @date 2026
 
+using System.Collections.ObjectModel;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using RentalApp.Database.Models;
+using RentalApp.Database.Repositories;
 using RentalApp.Services;
 
 namespace RentalApp.ViewModels;
 
-/// @brief View model for the user profile page
-/// @details Manages user profile display and password change functionality
+/// @brief View model for the user profile page.
+/// @details Loads the authenticated user's account information and the reviews
+///          they have written. Computes the user's average rating from the
+///          fetched review set so it can be displayed as a summary stat.
+///          Fetches reviews via <see cref="IReviewRepository.GetForUserAsync"/>
+///          with a large page size so a single request covers most users.
+///          MAUI-free for testability.
 /// @extends BaseViewModel
 public partial class ProfileViewModel : BaseViewModel
 {
-    /// @brief Authentication service for managing user authentication
-    private readonly IAuthenticationService _authService;
+    // null! suppresses CS8618 for the design-time parameterless ctor; the
+    // runtime DI ctor always assigns these before any command runs.
+    private readonly IAuthenticationService _auth = null!;
+    private readonly IReviewRepository _reviews = null!;
+    private readonly INavigationService _navigation = null!;
 
-    /// @brief Navigation service for managing page navigation
-    private readonly INavigationService _navigationService;
+    /// @brief Reviews written by the current user.
+    public ObservableCollection<Review> Reviews { get; } = new();
 
-    /// @brief The current user's profile information
-    /// @details Observable property containing the current user's data
+    /// @brief The currently authenticated user. Populated on load.
     [ObservableProperty]
     private User? currentUser;
 
-    /// @brief The user's current password for verification
-    /// @details Observable property bound to the current password input field
+    /// @brief The user's average star rating across all their fetched reviews,
+    ///        or null if they haven't written any.
     [ObservableProperty]
-    private string currentPassword = string.Empty;
+    private double? averageRating;
 
-    /// @brief The user's new password
-    /// @details Observable property bound to the new password input field
+    /// @brief Total number of reviews the user has written (from the server's
+    ///        TotalCount, which is authoritative even when multiple pages exist).
     [ObservableProperty]
-    private string newPassword = string.Empty;
+    private int totalReviews;
 
-    /// @brief Confirmation of the user's new password
-    /// @details Observable property bound to the confirm new password input field
+    /// @brief True once the profile has loaded successfully at least once.
     [ObservableProperty]
-    private string confirmNewPassword = string.Empty;
+    private bool isLoaded;
 
-    /// @brief Indicates whether the password change mode is active
-    /// @details Observable property that controls the visibility of password change fields
+    /// @brief True while the RefreshView spinner should be active.
     [ObservableProperty]
-    private bool isChangingPassword;
+    private bool isRefreshing;
 
-    /// @brief Initializes a new instance of the ProfileViewModel class
-    /// @param authService The authentication service instance
-    /// @param navigationService The navigation service instance
-    /// @details Sets up the required services, initializes the title, and loads user data
-    public ProfileViewModel(IAuthenticationService authService, INavigationService navigationService)
+    /// @brief True when the user has written no reviews AND loading is complete.
+    [ObservableProperty]
+    private bool isEmpty;
+
+    /// @brief Human-readable average rating for display (e.g. "4.3 ★" or
+    ///        "No ratings yet"). Recomputed whenever AverageRating changes.
+    public string AverageRatingDisplay =>
+        AverageRating.HasValue ? $"{AverageRating.Value:F1} ★" : "No ratings yet";
+
+    /// @brief Default constructor for design-time support.
+    public ProfileViewModel()
     {
-        _authService = authService;
-        _navigationService = navigationService;
         Title = "Profile";
-
-        LoadUserData();
     }
 
-    /// @brief Loads the current user's profile data
-    /// @details Retrieves the current user's information from the authentication service
-    private void LoadUserData()
+    /// @brief Initializes a new instance of <see cref="ProfileViewModel"/>.
+    /// @param auth Authentication service — supplies the current user and logout.
+    /// @param reviews Review repository — supplies the user's written reviews.
+    /// @param navigation Navigation service — used for the logout redirect.
+    public ProfileViewModel(
+        IAuthenticationService auth,
+        IReviewRepository reviews,
+        INavigationService navigation) : this()
     {
-        CurrentUser = _authService.CurrentUser;
+        _auth = auth;
+        _reviews = reviews;
+        _navigation = navigation;
     }
 
-    /// @brief Changes the user's password
-    /// @details Relay command that validates and performs the password change operation
-    /// @return A task representing the asynchronous password change operation
+    /// @brief Loads (or reloads) the profile: fresh user info + their reviews.
+    /// @details Wired as both the page's on-appearing handler and the
+    ///          pull-to-refresh command. The sequence is:
+    ///          1. Call <see cref="IAuthenticationService.RefreshCurrentUserAsync"/>
+    ///             to re-fetch GET /users/me — this gives us the server-computed
+    ///             <c>averageRating</c> (accurate regardless of review count).
+    ///          2. Fetch the first page of reviews via
+    ///             <see cref="IReviewRepository.GetForUserAsync"/> (pageSize 50,
+    ///             the API's documented maximum for that endpoint).
+    ///          Does NOT early-return on IsRefreshing — the RefreshView pre-sets
+    ///          it before firing the command, so early-returning would leave the
+    ///          spinner stuck (same pattern used by other VMs in this project).
     [RelayCommand]
-    private async Task ChangePasswordAsync()
+    public async Task RefreshAsync()
     {
-        if (IsBusy)
-            return;
-
-        if (!ValidatePasswordChange())
-            return;
-
         try
         {
-            IsBusy = true;
+            IsRefreshing = true;
             ClearError();
 
-            var success = await _authService.ChangePasswordAsync(CurrentPassword, NewPassword);
+            // Re-fetch /users/me so AverageRating reflects the latest server value.
+            await _auth.RefreshCurrentUserAsync();
+            CurrentUser = _auth.CurrentUser;
 
-            if (success)
+            if (CurrentUser is null)
             {
-                await Application.Current.MainPage.DisplayAlertAsync("Success", "Password changed successfully!", "OK");
-                ClearPasswordFields();
-                IsChangingPassword = false;
+                SetError("You must be signed in to view your profile.");
+                IsLoaded = false;
+                return;
             }
-            else
-            {
-                SetError("Failed to change password. Please check your current password.");
-            }
+
+            // Fetch the user's reviews. The API caps pageSize at 50 for this endpoint.
+            var page = await _reviews.GetForUserAsync(CurrentUser.Id, page: 1, pageSize: 50);
+
+            Reviews.Clear();
+            foreach (var r in page.Items)
+                Reviews.Add(r);
+
+            // AverageRating comes from the refreshed CurrentUser (server-computed,
+            // always accurate). TotalReviews comes from the paged result's TotalCount.
+            AverageRating = CurrentUser.AverageRating;
+            TotalReviews  = page.TotalCount;
+
+            IsEmpty   = Reviews.Count == 0;
+            IsLoaded  = true;
         }
         catch (Exception ex)
         {
-            SetError($"Password change failed: {ex.Message}");
+            SetError($"Could not load profile: {ex.Message}");
+            IsLoaded = false;
+            IsEmpty  = Reviews.Count == 0;
         }
         finally
         {
-            IsBusy = false;
+            IsRefreshing = false;
         }
     }
 
-    /// @brief Toggles the password change mode
-    /// @details Relay command that shows/hides password change fields and clears data when hiding
+    /// @brief Logs the user out and navigates back to the login page.
     [RelayCommand]
-    private void TogglePasswordChangeMode()
+    public async Task LogoutAsync()
     {
-        IsChangingPassword = !IsChangingPassword;
-        if (!IsChangingPassword)
-        {
-            ClearPasswordFields();
-            ClearError();
-        }
+        await _auth.LogoutAsync();
+        await _navigation.NavigateToAsync("LoginPage");
     }
 
-    /// @brief Navigates back to the previous page
-    /// @details Relay command that performs backward navigation
-    /// @return A task representing the asynchronous navigation operation
-    [RelayCommand]
-    private async Task NavigateBackAsync()
-    {
-        await _navigationService.NavigateBackAsync();
-    }
+    // ---- Property change hooks -------------------------------------------
 
-    /// @brief Validates the password change form data
-    /// @return True if validation passes, false otherwise
-    /// @details Checks all password change requirements and sets appropriate error messages
-    private bool ValidatePasswordChange()
-    {
-        if (string.IsNullOrWhiteSpace(CurrentPassword))
-        {
-            SetError("Current password is required");
-            return false;
-        }
-
-        if (string.IsNullOrWhiteSpace(NewPassword))
-        {
-            SetError("New password is required");
-            return false;
-        }
-
-        if (NewPassword.Length < 6)
-        {
-            SetError("New password must be at least 6 characters long");
-            return false;
-        }
-
-        if (NewPassword != ConfirmNewPassword)
-        {
-            SetError("New passwords do not match");
-            return false;
-        }
-
-        if (CurrentPassword == NewPassword)
-        {
-            SetError("New password must be different from current password");
-            return false;
-        }
-
-        return true;
-    }
-
-    /// @brief Clears all password input fields
-    /// @details Resets all password-related properties to empty strings
-    private void ClearPasswordFields()
-    {
-        CurrentPassword = string.Empty;
-        NewPassword = string.Empty;
-        ConfirmNewPassword = string.Empty;
-    }
+    partial void OnAverageRatingChanged(double? value) =>
+        OnPropertyChanged(nameof(AverageRatingDisplay));
 }
