@@ -5,6 +5,14 @@ using BCrypt.Net;
 
 namespace RentalApp.Services;
 
+/// <summary>
+/// Local/offline <see cref="IAuthenticationService"/> implementation backed by the
+/// on-device database (<see cref="AppDbContext"/>). Uses BCrypt to verify and
+/// store password hashes.
+///
+/// This service is for the "local DB" mode; the shared hosted API mode uses
+/// <see cref="ApiAuthenticationService"/>.
+/// </summary>
 public class AuthenticationService : IAuthenticationService
 {
     private readonly AppDbContext _context;

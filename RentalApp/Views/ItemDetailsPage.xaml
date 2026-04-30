@@ -122,13 +122,13 @@
                                FontSize="14"
                                FontAttributes="Bold"
                                TextColor="{AppThemeBinding Light={StaticResource Primary}, Dark={StaticResource PrimaryDark}}"/>
-                        <Label Text="{Binding Item.TotalReviews, StringFormat='({0} reviews)'}"
+                        <Label Text="{Binding TotalReviews, StringFormat='({0} reviews)'}"
                                FontSize="13"
                                TextColor="{AppThemeBinding Light={StaticResource Gray600}, Dark={StaticResource Gray400}}"/>
                     </StackLayout>
 
                     <!-- Per-review rows -->
-                    <CollectionView ItemsSource="{Binding Item.Reviews}"
+                    <CollectionView ItemsSource="{Binding Reviews}"
                                     SelectionMode="None">
                         <CollectionView.EmptyView>
                             <Label Text="No reviews yet."

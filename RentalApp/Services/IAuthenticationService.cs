@@ -2,17 +2,42 @@ using RentalApp.Database.Models;
 
 namespace RentalApp.Services;
 
+/// <summary>
+/// Authentication/session contract consumed by ViewModels.
+///
+/// Two implementations exist:
+/// <list type="bullet">
+///   <item><description><see cref="ApiAuthenticationService"/> — talks to the shared hosted API and persists a JWT.</description></item>
+///   <item><description><see cref="AuthenticationService"/> — local/offline mode backed by the on-device database.</description></item>
+/// </list>
+/// </summary>
 public interface IAuthenticationService
 {
+    /// <summary>
+    /// Raised whenever the authenticated state changes.
+    /// The boolean argument is <c>true</c> when signed in; <c>false</c> when signed out.
+    /// </summary>
     event EventHandler<bool>? AuthenticationStateChanged;
 
+    /// <summary>True when there is an active in-memory session.</summary>
     bool IsAuthenticated { get; }
+
+    /// <summary>The current authenticated user, or <c>null</c> if signed out.</summary>
     User? CurrentUser { get; }
 
+    /// <summary>Attempts to sign in with the given credentials.</summary>
     Task<AuthenticationResult> LoginAsync(string email, string password);
+
+    /// <summary>Creates a new user account.</summary>
     Task<AuthenticationResult> RegisterAsync(string firstName, string lastName, string email, string password);
+
+    /// <summary>Clears any persisted credentials (if applicable) and ends the session.</summary>
     Task LogoutAsync();
 
+    /// <summary>
+    /// Attempts to change the current user's password.
+    /// Implementations may return <c>false</c> if the backing auth system doesn't support this.
+    /// </summary>
     Task<bool> ChangePasswordAsync(string currentPassword, string newPassword);
 
     /// <summary>

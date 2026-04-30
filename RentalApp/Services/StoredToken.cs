@@ -1,7 +1,7 @@
 namespace RentalApp.Services;
 
 /// <summary>
-/// A JWT together with the metadata we need to decide whether it is still usable.
+/// A JWT together with the metadata needed to decide whether it is still usable.
 /// Persisted by <see cref="ITokenStorage"/> and attached to outbound requests by
 /// <see cref="AuthDelegatingHandler"/>.
 /// </summary>

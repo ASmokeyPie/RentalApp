@@ -3,6 +3,7 @@
 /// @author RentalApp Development Team
 /// @date 2026
 
+using System.Collections.ObjectModel;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using RentalApp.Database.Models;
@@ -27,8 +28,21 @@ public partial class ItemDetailsViewModel : BaseViewModel
     // null! suppresses CS8618 for the design-time parameterless ctor; the
     // runtime DI ctor always assigns these before any command runs.
     private readonly IItemRepository _items = null!;
+    private readonly IReviewRepository _reviews = null!;
     private readonly IAuthenticationService? _auth;
     private readonly INavigationService? _navigation;
+
+    /// @brief Reviews for the currently loaded item. Populated by a dedicated
+    ///        call to <c>GET /items/{id}/reviews</c> so the list is always
+    ///        consistent with <see cref="TotalReviews"/>.
+    public ObservableCollection<Review> Reviews { get; } = new();
+
+    /// @brief Server-authoritative total review count for the item.
+    /// @details Comes from the <c>totalCount</c> field of the paged reviews
+    ///          response, which reflects the true total regardless of how many
+    ///          rows are visible in <see cref="Reviews"/>.
+    [ObservableProperty]
+    private int totalReviews;
 
     /// @brief The id of the item to load. Set by Shell navigation.
     /// @details Setting this property triggers an asynchronous load of the
@@ -75,14 +89,17 @@ public partial class ItemDetailsViewModel : BaseViewModel
 
     /// @brief Initializes a new instance of the <see cref="ItemDetailsViewModel"/> class.
     /// @param items Item repository used to fetch the item by id.
+    /// @param reviews Review repository used to fetch the item's reviews.
     /// @param auth Authentication service, used to check ownership.
     /// @param navigation Navigation service, used by the EditCommand.
     public ItemDetailsViewModel(
         IItemRepository items,
+        IReviewRepository reviews,
         IAuthenticationService auth,
         INavigationService navigation)
     {
         _items = items;
+        _reviews = reviews;
         _auth = auth;
         _navigation = navigation;
         Title = "Item";
@@ -116,6 +133,8 @@ public partial class ItemDetailsViewModel : BaseViewModel
                 IsLoaded = false;
                 IsOwner = false;
                 CanRent = false;
+                Reviews.Clear();
+                TotalReviews = 0;
                 SetError($"Item {ItemId} could not be found.");
                 Title = "Item";
                 return;
@@ -131,6 +150,14 @@ public partial class ItemDetailsViewModel : BaseViewModel
                       && !IsOwner
                       && loaded.IsAvailable
                       && _auth?.IsAuthenticated == true;
+
+            // Fetch reviews via the dedicated endpoint so the list always
+            // matches the total count (GET /items/{id} inlines only a subset).
+            var reviewPage = await _reviews.GetForItemAsync(ItemId, page: 1, pageSize: 50);
+            Reviews.Clear();
+            foreach (var r in reviewPage.Items)
+                Reviews.Add(r);
+            TotalReviews = reviewPage.TotalCount;
         }
         catch (Exception ex)
         {
@@ -138,6 +165,8 @@ public partial class ItemDetailsViewModel : BaseViewModel
             IsLoaded = false;
             IsOwner = false;
             CanRent = false;
+            Reviews.Clear();
+            TotalReviews = 0;
             SetError($"Could not load item: {ex.Message}");
         }
         finally

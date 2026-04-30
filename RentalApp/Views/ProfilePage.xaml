@@ -14,7 +14,8 @@
     <RefreshView IsRefreshing="{Binding IsRefreshing}"
                  Command="{Binding RefreshCommand}">
         <ScrollView>
-            <Grid Padding="20" RowSpacing="16">
+            <Grid Padding="20"
+                    RowSpacing="16">
                 <Grid.RowDefinitions>
                     <RowDefinition Height="Auto"/>
                     <RowDefinition Height="Auto"/>
@@ -66,7 +67,8 @@
                         <Border.StrokeShape>
                             <RoundRectangle CornerRadius="12"/>
                         </Border.StrokeShape>
-                        <StackLayout HorizontalOptions="Center" Spacing="6">
+                        <StackLayout HorizontalOptions="Center"
+                                Spacing="6">
                             <Label Text="👤"
                                    FontSize="40"
                                    HorizontalOptions="Center"/>
@@ -96,10 +98,13 @@
                         <Border.StrokeShape>
                             <RoundRectangle CornerRadius="12"/>
                         </Border.StrokeShape>
-                        <Grid ColumnDefinitions="*,Auto,*" ColumnSpacing="0">
+                        <Grid ColumnDefinitions="*,Auto,*"
+                                ColumnSpacing="0">
 
                             <!-- Average rating stat -->
-                            <StackLayout Grid.Column="0" HorizontalOptions="Center" Spacing="4">
+                            <StackLayout Grid.Column="0"
+                                    HorizontalOptions="Center"
+                                    Spacing="4">
                                 <Label Text="{Binding AverageRatingDisplay}"
                                        FontSize="26"
                                        FontAttributes="Bold"
@@ -119,13 +124,15 @@
                                      Margin="0,4"/>
 
                             <!-- Review count stat -->
-                            <StackLayout Grid.Column="2" HorizontalOptions="Center" Spacing="4">
+                            <StackLayout Grid.Column="2"
+                                    HorizontalOptions="Center"
+                                    Spacing="4">
                                 <Label Text="{Binding TotalReviews}"
                                        FontSize="26"
                                        FontAttributes="Bold"
                                        HorizontalOptions="Center"
                                        TextColor="{AppThemeBinding Light={StaticResource Primary}, Dark={StaticResource PrimaryDark}}"/>
-                                <Label Text="Reviews Written"
+                                <Label Text="Reviews Received"
                                        FontSize="12"
                                        HorizontalOptions="Center"
                                        TextColor="{AppThemeBinding Light={StaticResource Gray600}, Dark={StaticResource Gray400}}"/>
@@ -134,13 +141,13 @@
                     </Border>
 
                     <!-- Reviews section header -->
-                    <Label Text="Reviews Written"
+                    <Label Text="Reviews Received"
                            FontSize="18"
                            FontAttributes="Bold"
                            Margin="0,8,0,0"/>
 
                     <!-- Empty state -->
-                    <Label Text="You haven't written any reviews yet."
+                    <Label Text="No Reviews received yet."
                            FontSize="14"
                            TextColor="{AppThemeBinding Light={StaticResource Gray600}, Dark={StaticResource Gray400}}"
                            IsVisible="{Binding IsEmpty}"
@@ -163,23 +170,27 @@
                                           RowDefinitions="Auto,Auto,Auto"
                                           RowSpacing="4">
                                         <!-- Item title + star rating -->
-                                        <Label Grid.Row="0" Grid.Column="0"
+                                        <Label Grid.Row="0"
+                                                Grid.Column="0"
                                                Text="{Binding ItemTitle}"
                                                FontAttributes="Bold"
                                                FontSize="14"/>
-                                        <Label Grid.Row="0" Grid.Column="1"
+                                        <Label Grid.Row="0"
+                                                Grid.Column="1"
                                                Text="{Binding Rating, StringFormat='{0} ★'}"
                                                FontAttributes="Bold"
                                                FontSize="13"
                                                TextColor="{AppThemeBinding Light={StaticResource Primary}, Dark={StaticResource PrimaryDark}}"/>
                                         <!-- Optional comment -->
-                                        <Label Grid.Row="1" Grid.ColumnSpan="2"
+                                        <Label Grid.Row="1"
+                                                Grid.ColumnSpan="2"
                                                Text="{Binding Comment}"
                                                FontSize="13"
                                                LineBreakMode="WordWrap"
                                                IsVisible="{Binding Comment, Converter={StaticResource StringToBoolConverter}}"/>
                                         <!-- Date -->
-                                        <Label Grid.Row="2" Grid.ColumnSpan="2"
+                                        <Label Grid.Row="2"
+                                                Grid.ColumnSpan="2"
                                                Text="{Binding CreatedAt, StringFormat='{0:d MMM yyyy}'}"
                                                FontSize="11"
                                                TextColor="{AppThemeBinding Light={StaticResource Gray600}, Dark={StaticResource Gray400}}"/>
