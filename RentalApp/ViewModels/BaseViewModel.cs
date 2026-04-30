@@ -1,7 +1,7 @@
 /// @file BaseViewModel.cs
 /// @brief Base view model class providing common functionality for all view models
 /// @author RentalApp Development Team
-/// @date 2025
+/// @date 2026
 
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;

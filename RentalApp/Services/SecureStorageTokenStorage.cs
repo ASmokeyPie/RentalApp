@@ -30,7 +30,7 @@ public class SecureStorageTokenStorage : ITokenStorage
         }
         catch (JsonException)
         {
-            // Corrupt value — drop it so we don't get stuck in a bad state.
+            // Corrupt value — drop to avoid getting stuck in a bad state.
             SecureStorage.Default.Remove(StorageKey);
             return null;
         }

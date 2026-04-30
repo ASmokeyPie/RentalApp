@@ -1,7 +1,7 @@
 /// @file RegisterViewModel.cs
 /// @brief User registration view model
 /// @author RentalApp Development Team
-/// @date 2025
+/// @date 2026
 
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
@@ -17,7 +17,7 @@ public partial class RegisterViewModel : BaseViewModel
 {
     /// @brief Authentication service for managing user registration
     private readonly IAuthenticationService _authService;
-    
+
     /// @brief Navigation service for managing page navigation
     private readonly INavigationService _navigationService;
 

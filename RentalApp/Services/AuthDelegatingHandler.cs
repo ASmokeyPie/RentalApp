@@ -29,6 +29,7 @@ public class AuthDelegatingHandler : DelegatingHandler
 
     public AuthDelegatingHandler(ITokenStorage tokenStorage)
     {
+        // Storage is the single source of truth for the persisted JWT.
         _tokenStorage = tokenStorage;
     }
 
@@ -36,10 +37,15 @@ public class AuthDelegatingHandler : DelegatingHandler
         HttpRequestMessage request,
         CancellationToken cancellationToken)
     {
+        // Tracks whether this request was authenticated (either by attaching
+        // a stored token, or because the caller provided Authorisation).
+        // We only treat 401 as "session expired" when the request was authenticated.
         var attachedToken = false;
 
         if (request.Headers.Authorization is null)
         {
+            // No Authorisation header yet — opportunistically attach a valid stored JWT.
+            // (GetValidTokenAsync applies a proactive expiry check.)
             var token = await _tokenStorage.GetValidTokenAsync();
             if (token is not null)
             {
@@ -49,17 +55,20 @@ public class AuthDelegatingHandler : DelegatingHandler
         }
         else
         {
-            // Caller supplied their own Authorization header — treat that as
+            // Caller supplied their own Authorisation header — treat that as
             // "this request is authenticated" so a 401 gets the session-expired
             // treatment. (In practice the app doesn't set this explicitly,
             // but this keeps behaviour predictable.)
             attachedToken = true;
         }
 
+        // Continue the pipeline and send the request.
         var response = await base.SendAsync(request, cancellationToken);
 
         if (response.StatusCode == HttpStatusCode.Unauthorized && attachedToken)
         {
+            // The server rejected an authenticated request: clear persisted token
+            // and notify subscribers so the app can redirect to Login.
             await _tokenStorage.ClearAsync();
             AuthenticationExpired?.Invoke(this, EventArgs.Empty);
         }

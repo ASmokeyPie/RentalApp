@@ -1,7 +1,7 @@
 /// @file AppShellViewModel.cs
 /// @brief Application shell view model for managing navigation and authentication state
 /// @author RentalApp Development Team
-/// @date 2025
+/// @date 2026
 
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;

@@ -7,7 +7,6 @@ namespace RentalApp.Services;
 /// Default <see cref="IReviewService"/> implementation. Validates the rules
 /// the requirements + plan call out, then delegates to
 /// <see cref="IReviewRepository.CreateAsync(int, int, string?, CancellationToken)"/>.
-/// MAUI-free so the .NET 10 test project can exercise it directly.
 /// </summary>
 public sealed class ReviewService : IReviewService
 {

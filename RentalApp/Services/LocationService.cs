@@ -64,7 +64,7 @@ public sealed class LocationService : ILocationService
         catch (Exception ex)
         {
             // Anything else — log and treat as "no fix" so the caller can
-            // gracefully fall back to manual entry. We deliberately don't
+            // gracefully fall back to manual entry. Deliberately don't
             // re-throw because losing the GPS read shouldn't crash the page.
             Debug.WriteLine($"LocationService.GetCurrentLocationAsync failed: {ex}");
             return null;

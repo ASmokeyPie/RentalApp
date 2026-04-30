@@ -1,7 +1,7 @@
 /// @file LoginViewModel.cs
 /// @brief Login page view model for user authentication
 /// @author RentalApp Development Team
-/// @date 2025
+/// @date 2026
 
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
@@ -16,7 +16,7 @@ public partial class LoginViewModel : BaseViewModel
 {
     /// @brief Authentication service for managing user login
     private readonly IAuthenticationService _authService;
-    
+
     /// @brief Navigation service for managing page navigation
     private readonly INavigationService _navigationService;
 

@@ -4,10 +4,7 @@ namespace RentalApp.Services;
 
 /// <summary>
 /// Wraps the platform geolocation API behind a MAUI-free contract AND owns
-/// the client-side spatial-discovery workflow ("find items near me"). Keeps
-/// coordinate handling out of ViewModels — they ask the service for nearby
-/// items and never see lat/lon themselves, in line with the requirement that
-/// spatial logic lives in <c>LocationService</c>, not the view layer.
+/// the client-side spatial-discovery workflow ("find items near me").
 /// The implementation (<see cref="LocationService"/>) lives in the MAUI head;
 /// this interface stays in the test-compileable surface.
 /// </summary>
