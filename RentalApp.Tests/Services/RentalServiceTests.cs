@@ -59,6 +59,10 @@ public class RentalServiceTests
     // From OutForRent
     [InlineData(RentalStatus.OutForRent, RentalStatus.Returned,   true)]
     [InlineData(RentalStatus.OutForRent, RentalStatus.Completed,  false)]
+    // From Overdue (client-side derived: OutForRent past end date)
+    [InlineData(RentalStatus.Overdue, RentalStatus.Returned,      true)]
+    [InlineData(RentalStatus.Overdue, RentalStatus.Completed,     false)]
+    [InlineData(RentalStatus.Overdue, RentalStatus.Approved,      false)]
     // From Returned
     [InlineData(RentalStatus.Returned, RentalStatus.Completed,    true)]
     [InlineData(RentalStatus.Returned, RentalStatus.OutForRent,   false)]
@@ -121,6 +125,15 @@ public class RentalServiceTests
         var svc = Build();
         var existing = new[] { Rental(new DateOnly(2026, 5, 10), new DateOnly(2026, 5, 12), RentalStatus.Approved) };
         Assert.True(svc.HasOverlap(existing, new DateOnly(2026, 5, 1), new DateOnly(2026, 5, 30)));
+    }
+
+    [Fact]
+    public void HasOverlap_OverdueRentalBlocksAvailability()
+    {
+        // Overdue is non-terminal — item is still out, so it must block.
+        var svc = Build();
+        var existing = new[] { Rental(new DateOnly(2026, 5, 1), new DateOnly(2026, 5, 30), RentalStatus.Overdue) };
+        Assert.True(svc.HasOverlap(existing, new DateOnly(2026, 5, 10), new DateOnly(2026, 5, 12)));
     }
 
     [Theory]
@@ -195,6 +208,21 @@ public class RentalServiceTests
 
         Assert.Equal(RentalStatus.Approved, result.Status);
         repo.Verify(r => r.UpdateStatusAsync(7, RentalStatus.Approved, default), Times.Once);
+    }
+
+    [Fact]
+    public async Task TransitionAsync_OverdueToReturned_IsLegal()
+    {
+        // Overdue is the client-side derived state for a late OutForRent rental.
+        // The borrower must still be able to mark it Returned.
+        var (svc, repo) = BuildWithMock();
+        repo.Setup(r => r.UpdateStatusAsync(7, RentalStatus.Returned, default))
+            .ReturnsAsync(new RentalStatusUpdate(7, RentalStatus.Returned, DateTime.UtcNow));
+
+        var result = await svc.TransitionAsync(7, RentalStatus.Overdue, RentalStatus.Returned);
+
+        Assert.Equal(RentalStatus.Returned, result.Status);
+        repo.Verify(r => r.UpdateStatusAsync(7, RentalStatus.Returned, default), Times.Once);
     }
 
     [Fact]

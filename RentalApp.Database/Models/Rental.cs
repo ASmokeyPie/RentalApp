@@ -5,7 +5,7 @@ using Microsoft.EntityFrameworkCore;
 namespace RentalApp.Database.Models;
 
 /// <summary>
-/// Lifecycle states for a Rental, matching the requirements wording AND the
+/// Lifecycle states for a Rental, matching the
 /// hosted API's state machine:
 /// <list type="bullet">
 ///   <item><description><c>Requested</c> → <c>Approved</c> | <c>Rejected</c> (owner decides).</description></item>
@@ -16,7 +16,8 @@ namespace RentalApp.Database.Models;
 /// </list>
 /// The full transition table lives in <c>RentalApp.Services.RentalService</c>.
 /// The API's PATCH /rentals/{id}/status enforces the same rules server-side
-/// (returns 409 on illegal transitions); the service-layer check is for UX.
+/// (returns 409 on illegal transitions).
+/// 
 /// Configure string persistence in DbContext:
 ///   modelBuilder.Entity&lt;Rental&gt;().Property(r => r.Status).HasConversion&lt;string&gt;();
 /// </summary>
@@ -26,6 +27,11 @@ public enum RentalStatus
     Approved,
     Rejected,
     OutForRent,
+    /// <summary>
+    /// Client-side derived state: OutForRent rental whose EndDate has passed.
+    /// Never sent to the API — the server always sees "Out for Rent".
+    /// </summary>
+    Overdue,
     Returned,
     Completed
 }

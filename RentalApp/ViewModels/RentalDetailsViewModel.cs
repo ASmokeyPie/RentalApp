@@ -80,7 +80,12 @@ public partial class RentalDetailsViewModel : BaseViewModel
     // Borrower marks Returned per server rule "only the borrower can perform
     // this transition" (they're physically returning the item). Owner then
     // inspects and marks Completed below.
-    public bool CanMarkReturned   => IsBorrower && Rental?.Status == RentalStatus.OutForRent;
+    // Overdue is also accepted: it is a client-side derived state for an
+    // OutForRent rental whose EndDate has passed; the transition is still
+    // Returned from the server's perspective.
+    public bool CanMarkReturned   => IsBorrower
+        && (Rental?.Status == RentalStatus.OutForRent
+            || Rental?.Status == RentalStatus.Overdue);
     public bool CanMarkCompleted  => IsOwner    && Rental?.Status == RentalStatus.Returned;
 
     /// @brief Borrower can leave a review once the rental is Completed.

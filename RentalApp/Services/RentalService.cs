@@ -1,14 +1,14 @@
 using RentalApp.Database.Models;
 using RentalApp.Database.Queries;
 using RentalApp.Database.Repositories;
+using RentalApp.Services.States;
 
 namespace RentalApp.Services;
 
 /// <summary>
 /// Default <see cref="IRentalService"/> implementation. Wraps an
 /// <see cref="IRentalRepository"/> for persistence and adds the rental-
-/// specific business rules. MAUI-free so it can be exercised by the .NET 10
-/// test project without any UI dependencies.
+/// specific business rules.
 /// </summary>
 public sealed class RentalService : IRentalService
 {
@@ -31,17 +31,20 @@ public sealed class RentalService : IRentalService
 
     public Task<Rental> RequestRentalAsync(int itemId, DateOnly startDate, DateOnly endDate, CancellationToken ct = default)
     {
+        // Basic date validation (server will still validate availability).
         if (endDate < startDate)
         {
             throw new InvalidOperationException("End date must be on or after start date.");
         }
 
+        // Prevent creating requests that start before today (UTC).
         var today = DateOnly.FromDateTime(DateTime.UtcNow.Date);
         if (startDate < today)
         {
             throw new InvalidOperationException("Start date cannot be in the past.");
         }
 
+        // Delegate persistence / API call to the repository.
         return _rentals.RequestAsync(itemId, startDate, endDate, ct);
     }
 
@@ -51,12 +54,14 @@ public sealed class RentalService : IRentalService
         RentalStatus targetStatus,
         CancellationToken ct = default)
     {
-        if (!IsTransitionLegal(currentStatus, targetStatus))
-        {
-            throw new InvalidOperationException(
-                $"Cannot transition rental {rentalId} from {currentStatus} to {targetStatus}.");
-        }
+        // Client-side guard: ask the current state whether the target is legal.
+        // Each RentalState subclass declares its own ValidTransitions; invalid
+        // attempts throw here before any network call is made.
+        // (The server mirrors this and remains the authoritative source of truth.)
+        RentalState.For(currentStatus).TransitionTo(targetStatus); // throws if illegal
 
+        // For Overdue → Returned, the server still sees OutForRent → Returned,
+        // so send Returned (not Overdue) as the target.
         return _rentals.UpdateStatusAsync(rentalId, targetStatus, ct);
     }
 
@@ -79,6 +84,7 @@ public sealed class RentalService : IRentalService
 
     public decimal CalculatePrice(decimal dailyRate, DateOnly startDate, DateOnly endDate)
     {
+        // Pricing assumes a non-negative duration.
         if (endDate < startDate)
         {
             throw new ArgumentException("End date must be on or after start date.", nameof(endDate));
@@ -86,19 +92,30 @@ public sealed class RentalService : IRentalService
 
         // Inclusive day count: startDate and endDate both count.
         var days = endDate.DayNumber - startDate.DayNumber + 1;
+
+        // Total price is a straight daily-rate * day-count calculation.
         return dailyRate * days;
     }
 
+    /// <summary>
+    /// Delegates to <see cref="RentalState.CanTransitionTo"/> so callers can
+    /// check legality without catching exceptions. The state objects are the
+    /// single source of truth for the transition table.
+    /// </summary>
     public bool IsTransitionLegal(RentalStatus from, RentalStatus to) =>
-        LegalTransitions.Contains((from, to));
+        RentalState.For(from).CanTransitionTo(to);
 
     public bool HasOverlap(IEnumerable<Rental> existing, DateOnly startDate, DateOnly endDate)
     {
+        // Null means "no existing rentals to check against".
         if (existing is null) return false;
 
         foreach (var r in existing)
         {
+            // Terminal rentals no longer block availability.
+            // Overdue is non-terminal — the item is still out so it blocks.
             if (IsTerminal(r.Status)) continue;
+
             // Inclusive ranges overlap iff start ≤ otherEnd AND otherStart ≤ end.
             if (startDate <= r.EndDate && r.StartDate <= endDate)
             {
@@ -108,30 +125,7 @@ public sealed class RentalService : IRentalService
         return false;
     }
 
-    // ---- State machine ----------------------------------------------------
-
-    /// <summary>
-    /// Canonical state-machine transition table. Mirrored on the server; the
-    /// client check is for UX (so we don't show illegal action buttons or send
-    /// requests we know will 409).
-    /// </summary>
-    private static readonly HashSet<(RentalStatus From, RentalStatus To)> LegalTransitions = new()
-    {
-        // From Requested
-        (RentalStatus.Requested, RentalStatus.Approved),
-        (RentalStatus.Requested, RentalStatus.Rejected),
-
-        // From Approved
-        (RentalStatus.Approved,  RentalStatus.OutForRent),
-
-        // From OutForRent
-        (RentalStatus.OutForRent, RentalStatus.Returned),
-
-        // From Returned
-        (RentalStatus.Returned, RentalStatus.Completed),
-
-        // Rejected, Completed are terminal — no outgoing edges.
-    };
+    // ---- Helpers ----------------------------------------------------------
 
     private static bool IsTerminal(RentalStatus s) =>
         s is RentalStatus.Rejected or RentalStatus.Completed;

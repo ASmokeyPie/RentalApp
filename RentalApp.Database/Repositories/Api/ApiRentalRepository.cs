@@ -163,43 +163,67 @@ public sealed class ApiRentalRepository : IRentalRepository
 
     // ---- Mappers ----------------------------------------------------------
 
-    private static Rental ToModel(RentalSummaryWire w) => new()
+    private static Rental ToModel(RentalSummaryWire w)
     {
-        Id = w.Id,
-        ItemId = w.ItemId,
-        BorrowerId = w.BorrowerId,
-        StartDate = ParseDate(w.StartDate),
-        EndDate = ParseDate(w.EndDate),
-        Status = ParseStatus(w.Status),
-        TotalPrice = w.TotalPrice,
-        CreatedAt = w.CreatedAt ?? DateTime.UtcNow,
-        UpdatedAt = w.CreatedAt ?? DateTime.UtcNow,
+        var endDate = ParseDate(w.EndDate);
+        return new()
+        {
+            Id = w.Id,
+            ItemId = w.ItemId,
+            BorrowerId = w.BorrowerId,
+            StartDate = ParseDate(w.StartDate),
+            EndDate = endDate,
+            Status = DeriveStatus(ParseStatus(w.Status), endDate),
+            TotalPrice = w.TotalPrice,
+            CreatedAt = w.CreatedAt ?? DateTime.UtcNow,
+            UpdatedAt = w.CreatedAt ?? DateTime.UtcNow,
 
-        ItemTitle = w.ItemTitle ?? string.Empty,
-        ItemDailyRate = w.ItemDailyRate,
-        BorrowerName = w.BorrowerName ?? string.Empty,
-        OwnerId = w.OwnerId ?? 0,
-        OwnerName = w.OwnerName ?? string.Empty,
-    };
+            ItemTitle = w.ItemTitle ?? string.Empty,
+            ItemDailyRate = w.ItemDailyRate,
+            BorrowerName = w.BorrowerName ?? string.Empty,
+            OwnerId = w.OwnerId ?? 0,
+            OwnerName = w.OwnerName ?? string.Empty,
+        };
+    }
 
-    private static Rental ToModel(RentalDetailWire w) => new()
+    private static Rental ToModel(RentalDetailWire w)
     {
-        Id = w.Id,
-        ItemId = w.ItemId,
-        BorrowerId = w.BorrowerId,
-        StartDate = ParseDate(w.StartDate),
-        EndDate = ParseDate(w.EndDate),
-        Status = ParseStatus(w.Status),
-        TotalPrice = w.TotalPrice,
-        CreatedAt = w.RequestedAt,
-        UpdatedAt = w.RequestedAt,
+        var endDate = ParseDate(w.EndDate);
+        return new()
+        {
+            Id = w.Id,
+            ItemId = w.ItemId,
+            BorrowerId = w.BorrowerId,
+            StartDate = ParseDate(w.StartDate),
+            EndDate = endDate,
+            Status = DeriveStatus(ParseStatus(w.Status), endDate),
+            TotalPrice = w.TotalPrice,
+            CreatedAt = w.RequestedAt,
+            UpdatedAt = w.RequestedAt,
 
-        ItemTitle = w.ItemTitle ?? string.Empty,
-        ItemDailyRate = null,
-        BorrowerName = w.BorrowerName ?? string.Empty,
-        OwnerId = w.OwnerId ?? 0,
-        OwnerName = w.OwnerName ?? string.Empty,
-    };
+            ItemTitle = w.ItemTitle ?? string.Empty,
+            ItemDailyRate = null,
+            BorrowerName = w.BorrowerName ?? string.Empty,
+            OwnerId = w.OwnerId ?? 0,
+            OwnerName = w.OwnerName ?? string.Empty,
+        };
+    }
+
+    /// <summary>
+    /// Elevates <c>OutForRent</c> to <c>Overdue</c> when the rental's end date
+    /// has passed. All other statuses are returned as-is. This is the only
+    /// place <c>Overdue</c> is produced — the server never emits it.
+    /// </summary>
+    private static RentalStatus DeriveStatus(RentalStatus parsed, DateOnly endDate)
+    {
+        if (parsed == RentalStatus.OutForRent)
+        {
+            var today = DateOnly.FromDateTime(DateTime.UtcNow);
+            if (endDate < today)
+                return RentalStatus.Overdue;
+        }
+        return parsed;
+    }
 
     /// <summary>
     /// Date parser tolerant of the two formats the API has been observed
@@ -255,6 +279,9 @@ public sealed class ApiRentalRepository : IRentalRepository
         RentalStatus.Approved   => "Approved",
         RentalStatus.Rejected   => "Rejected",
         RentalStatus.OutForRent => "Out for Rent",
+        // Overdue is client-side only; the server still sees it as Out for Rent.
+        // We never PATCH with Overdue as the target — but map it defensively.
+        RentalStatus.Overdue    => "Out for Rent",
         RentalStatus.Returned   => "Returned",
         RentalStatus.Completed  => "Completed",
         _ => s.ToString(),

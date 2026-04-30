@@ -58,6 +58,16 @@
     <Compile Include="..\RentalApp\Services\IReviewService.cs" Link="Services\IReviewService.cs" />
     <Compile Include="..\RentalApp\Services\ReviewService.cs" Link="Services\ReviewService.cs" />
 
+    <!-- State Pattern: abstract base + one file per concrete state. -->
+    <Compile Include="..\RentalApp\Services\States\RentalState.cs"    Link="Services\States\RentalState.cs" />
+    <Compile Include="..\RentalApp\Services\States\RequestedState.cs"  Link="Services\States\RequestedState.cs" />
+    <Compile Include="..\RentalApp\Services\States\ApprovedState.cs"   Link="Services\States\ApprovedState.cs" />
+    <Compile Include="..\RentalApp\Services\States\OutForRentState.cs" Link="Services\States\OutForRentState.cs" />
+    <Compile Include="..\RentalApp\Services\States\OverdueState.cs"    Link="Services\States\OverdueState.cs" />
+    <Compile Include="..\RentalApp\Services\States\ReturnedState.cs"   Link="Services\States\ReturnedState.cs" />
+    <Compile Include="..\RentalApp\Services\States\CompletedState.cs"  Link="Services\States\CompletedState.cs" />
+    <Compile Include="..\RentalApp\Services\States\RejectedState.cs"   Link="Services\States\RejectedState.cs" />
+
     <!-- Phase 3: item browsing read-path VMs. INavigationService is the
          interface. BaseViewModel is shared scaffolding and
          needs to compile here so the Phase 3 VMs (which inherit it) can too. -->

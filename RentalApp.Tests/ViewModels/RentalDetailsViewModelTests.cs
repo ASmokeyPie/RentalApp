@@ -145,6 +145,7 @@ public class RentalDetailsViewModelTests
     [InlineData(RentalStatus.Requested,  false)]
     [InlineData(RentalStatus.Approved,   false)]
     [InlineData(RentalStatus.OutForRent, true)]   // ← borrower marks Returned
+    [InlineData(RentalStatus.Overdue,    true)]   // ← overdue = late OutForRent, same action
     [InlineData(RentalStatus.Returned,   false)]
     [InlineData(RentalStatus.Completed,  false)]
     [InlineData(RentalStatus.Rejected,   false)]
@@ -270,6 +271,7 @@ public class RentalDetailsViewModelTests
     [InlineData(RentalStatus.Requested)]
     [InlineData(RentalStatus.Approved)]
     [InlineData(RentalStatus.OutForRent)]
+    [InlineData(RentalStatus.Overdue)]
     [InlineData(RentalStatus.Returned)]
     [InlineData(RentalStatus.Rejected)]
     public async Task CanLeaveReview_False_ForBorrowerOnNonCompletedRental(RentalStatus status)
