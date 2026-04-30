@@ -75,6 +75,19 @@ public partial class FindNearbyViewModel : BaseViewModel
     [ObservableProperty]
     private bool isEmpty;
 
+    /// @brief True when the map view is active; false shows the list.
+    ///        Toggled by <see cref="ToggleViewCommand"/>. Starts as false so
+    ///        the list is the default — the user needs to search first before
+    ///        the map has anything meaningful to show.
+    [ObservableProperty]
+    private bool isMapView;
+
+    /// @brief Inverse of <see cref="IsMapView"/> — drives list visibility.
+    public bool IsListView => !IsMapView;
+
+    /// @brief Label for the toggle button, reflecting the view you'd switch TO.
+    public string ToggleViewLabel => IsMapView ? "List" : "Map";
+
     /// @brief Default constructor for design-time support.
     public FindNearbyViewModel()
     {
@@ -154,6 +167,10 @@ public partial class FindNearbyViewModel : BaseViewModel
         }
     }
 
+    /// @brief Switches between map and list views.
+    [RelayCommand]
+    public void ToggleView() => IsMapView = !IsMapView;
+
     /// @brief Navigates to the item-detail page for a tapped row.
     [RelayCommand]
     public async Task SelectItemAsync(Item? item)
@@ -162,5 +179,13 @@ public partial class FindNearbyViewModel : BaseViewModel
         await _navigation.NavigateToAsync(
             "ItemDetailsPage",
             new Dictionary<string, object> { ["itemId"] = item.Id });
+    }
+
+    // ---- Property change hooks -------------------------------------------
+
+    partial void OnIsMapViewChanged(bool value)
+    {
+        OnPropertyChanged(nameof(IsListView));
+        OnPropertyChanged(nameof(ToggleViewLabel));
     }
 }
