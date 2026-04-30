@@ -2,6 +2,7 @@
 <ContentPage x:Class="RentalApp.Views.FindNearbyPage"
              xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:maps="clr-namespace:Microsoft.Maui.Controls.Maps;assembly=Microsoft.Maui.Controls.Maps"
              xmlns:vm="clr-namespace:RentalApp.ViewModels"
              xmlns:models="clr-namespace:RentalApp.Database.Models;assembly=RentalApp.Database"
              x:DataType="vm:FindNearbyViewModel"
@@ -41,7 +42,7 @@
             </Grid>
         </Border>
 
-        <!-- Filter controls: radius slider + category picker + search button -->
+        <!-- Filter controls: radius slider + category picker + search + map toggle -->
         <StackLayout Grid.Row="1" Padding="12,12,12,0" Spacing="6">
             <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="8">
                 <Label Grid.Column="0"
@@ -64,13 +65,27 @@
                     ItemDisplayBinding="{Binding Name, x:DataType=models:Category}"
                     Title="Filter by category"/>
 
-            <Button Text="Find nearby items"
-                    Command="{Binding RefreshCommand}"
-                    Margin="0,4,0,0"/>
+            <!-- Search + map/list toggle on the same row -->
+            <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8" Margin="0,4,0,0">
+                <Button Grid.Column="0"
+                        Text="Find nearby items"
+                        Command="{Binding RefreshCommand}"/>
+                <Button Grid.Column="1"
+                        Text="{Binding ToggleViewLabel}"
+                        Command="{Binding ToggleViewCommand}"
+                        WidthRequest="72"/>
+            </Grid>
         </StackLayout>
 
-        <!-- Results list with pull-to-refresh -->
+        <!-- Map view — shown when IsMapView is true -->
+        <maps:Map x:Name="NearbyMap"
+                  Grid.Row="2"
+                  IsVisible="{Binding IsMapView}"
+                  IsShowingUser="True"/>
+
+        <!-- List view — shown when IsListView is true -->
         <RefreshView Grid.Row="2"
+                     IsVisible="{Binding IsListView}"
                      IsRefreshing="{Binding IsRefreshing}"
                      Command="{Binding RefreshCommand}">
             <CollectionView x:Name="NearbyCollection"
@@ -141,5 +156,6 @@
                 </CollectionView.ItemTemplate>
             </CollectionView>
         </RefreshView>
+
     </Grid>
 </ContentPage>
