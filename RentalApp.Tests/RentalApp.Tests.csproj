@@ -23,6 +23,11 @@
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
       <PrivateAssets>all</PrivateAssets>
     </PackageReference>
+    <!-- Required for db.Database.MigrateAsync() and ExecuteSqlRawAsync() in DatabaseFixture.
+         Microsoft.EntityFrameworkCore.Design is PrivateAssets=all in RentalApp.Database so
+         the relational extension methods are not available transitively. -->
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Relational" Version="10.0.0" />
+    <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL.NetTopologySuite" Version="10.0.0" />
   </ItemGroup>
 
   <ItemGroup>

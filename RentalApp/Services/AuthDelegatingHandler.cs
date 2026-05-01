@@ -11,8 +11,8 @@ namespace RentalApp.Services;
 ///       <see cref="AuthenticationExpired"/> so the auth service can sign
 ///       the user out and redirect to Login.
 ///
-/// We deliberately do NOT fire AuthenticationExpired for 401s that happen
-/// *without* a token attached — those are just "bad credentials" on the
+/// Deliberately does not fire AuthenticationExpired for 401s that happen
+/// without a token attached — those are just "bad credentials" on the
 /// /auth/token login endpoint.
 /// </summary>
 public class AuthDelegatingHandler : DelegatingHandler
