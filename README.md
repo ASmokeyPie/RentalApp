@@ -1,5 +1,8 @@
 # RentalApp
 
+[![CI](https://github.com/ASmokeyPie/RentalApp/actions/workflows/ci.yml/badge.svg)](https://github.com/ASmokeyPie/RentalApp/actions/workflows/ci.yml)
+[![CD](https://github.com/ASmokeyPie/RentalApp/actions/workflows/cd.yml/badge.svg)](https://github.com/ASmokeyPie/RentalApp/actions/workflows/cd.yml)
+
 A .NET MAUI Android app for peer-to-peer item rental — a "Library of Things" where users can list items they own, browse and rent items from others, manage the rental lifecycle, and leave reviews.
 
 The app supports two fully interchangeable data backends controlled by a single flag in `MauiProgram.cs`:
