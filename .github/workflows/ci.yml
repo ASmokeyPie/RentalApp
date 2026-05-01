@@ -30,13 +30,13 @@ jobs:
       db:
         image: postgis/postgis:16-3.4
         env:
-          POSTGRES_USER: ${{ secrets.POSTGRES_USER }}
-          POSTGRES_PASSWORD: ${{ secrets.POSTGRES_PASSWORD }}
-          POSTGRES_DB: ${{ secrets.POSTGRES_DB }}
+          POSTGRES_USER: ci_user
+          POSTGRES_PASSWORD: ci_password
+          POSTGRES_DB: ci_db
         ports:
           - 5432:5432
         options: >-
-          --health-cmd "pg_isready -U ${{ secrets.POSTGRES_USER }} -d ${{ secrets.POSTGRES_DB }}"
+          --health-cmd "pg_isready -U ci_user -d ci_db"
           --health-interval 5s
           --health-timeout 5s
           --health-retries 10
@@ -75,7 +75,7 @@ jobs:
 
       - name: Run tests with coverage
         env:
-          TEST_CONNECTION_STRING: Host=localhost;Username=${{ secrets.POSTGRES_USER }};Password=${{ secrets.POSTGRES_PASSWORD }};Database=${{ secrets.POSTGRES_DB }}
+          TEST_CONNECTION_STRING: Host=localhost;Username=ci_user;Password=ci_password;Database=ci_db
         run: >
           dotnet test RentalApp.Tests/RentalApp.Tests.csproj
           --configuration Release
