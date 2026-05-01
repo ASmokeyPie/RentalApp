@@ -1,0 +1,142 @@
+@startuml rental_workflow
+
+title Rental Workflow (Request → Approve → OutForRent → Returned → Completed → Review)
+
+autonumber
+hide footbox
+
+actor Borrower
+actor Owner
+
+box "RentalApp (MAUI Client)" #White
+  participant "ItemDetailsPage\n+ ItemDetailsViewModel" as ItemDetails
+  participant "RequestRentalPage\n+ RequestRentalViewModel" as RequestRental
+  participant "RentalDetailsPage\n+ RentalDetailsViewModel" as RentalDetails
+
+  participant "IRentalService\n(RentalService)" as RentalSvc
+
+  participant "AuthDelegatingHandler" as AuthHandler
+  participant "ITokenStorage\n(SecureStorageTokenStorage)" as TokenStore
+end box
+
+box "RentalApp.Database (Repositories)" #White
+  participant "IItemRepository\n(ApiItemRepository)" as ItemRepo
+  participant "IRentalRepository\n(ApiRentalRepository)" as RentalRepo
+end box
+
+participant "Hosted API\nset09102-api.b-davison.workers.dev" as API
+
+== Borrower requests a rental ==
+
+Borrower -> ItemDetails : Tap "Rent this"
+ItemDetails -> RequestRental : NavigateTo("RequestRentalPage", itemId)
+
+RequestRental -> ItemRepo : GetByIdAsync(itemId)
+ItemRepo -> API : GET /items/{id}
+API --> ItemRepo : 200 Item detail
+ItemRepo --> RequestRental : Item
+
+Borrower -> RequestRental : Choose start/end dates
+Borrower -> RequestRental : Tap "Submit"
+
+RequestRental -> RentalSvc : RequestRentalAsync(itemId, startDate, endDate)
+activate RentalSvc
+RentalSvc -> RentalRepo : RequestAsync(itemId, startDate, endDate)
+activate RentalRepo
+
+RentalRepo -> AuthHandler : SendAsync(POST /rentals)
+activate AuthHandler
+AuthHandler -> TokenStore : GetValidTokenAsync()
+TokenStore --> AuthHandler : StoredToken? (if valid)
+AuthHandler -> API : POST /rentals { itemId, startDate, endDate }
+
+alt Success
+  API --> AuthHandler : 200 Rental
+  AuthHandler --> RentalRepo : HttpResponseMessage
+  RentalRepo --> RentalSvc : Rental
+  RentalSvc --> RequestRental : Rental
+  RequestRental -> RequestRental : NavigateBackAsync()
+else Overlap / invalid dates on server
+  API --> AuthHandler : 409 { error, message }
+  AuthHandler --> RentalRepo : HttpResponseMessage
+  RentalRepo --> RentalSvc : throws ApiException
+  RentalSvc --> RequestRental : exception
+  RequestRental -> RequestRental : Show error banner
+else Not authenticated
+  API --> AuthHandler : 401 { error, message }
+  note right of AuthHandler
+  401 without an attached token is treated as
+  "not signed in" (not "token expired").
+  end note
+  AuthHandler --> RentalRepo : HttpResponseMessage
+  RentalRepo --> RentalSvc : throws ApiException
+  RentalSvc --> RequestRental : exception
+  RequestRental -> RequestRental : Show error banner
+end
+
+deactivate AuthHandler
+deactivate RentalRepo
+deactivate RentalSvc
+
+== Owner processes the request ==
+
+Owner -> RentalDetails : Open rental from "Incoming" list
+RentalDetails -> RentalSvc : GetRentalAsync(rentalId)
+RentalSvc -> RentalRepo : GetByIdAsync(rentalId)
+RentalRepo -> AuthHandler : SendAsync(GET /rentals/{id})
+AuthHandler -> TokenStore : GetValidTokenAsync()
+AuthHandler -> API : GET /rentals/{id}
+API --> AuthHandler : 200 Rental detail
+AuthHandler --> RentalRepo : response
+RentalRepo --> RentalSvc : Rental
+RentalSvc --> RentalDetails : Rental
+
+Owner -> RentalDetails : Tap "Approve"
+RentalDetails -> RentalSvc : ApproveAsync(rentalId, currentStatus)
+RentalSvc -> RentalRepo : UpdateStatusAsync(rentalId, Approved)
+RentalRepo -> AuthHandler : SendAsync(PATCH /rentals/{id}/status)
+AuthHandler -> TokenStore : GetValidTokenAsync()
+AuthHandler -> API : PATCH /rentals/{id}/status { status: "Approved" }
+API --> AuthHandler : 200 { id, status, updatedAt }
+AuthHandler --> RentalRepo : response
+RentalRepo --> RentalSvc : RentalStatusUpdate
+RentalSvc --> RentalDetails : RentalStatusUpdate
+RentalDetails -> RentalDetails : Patch in-memory status + refresh buttons
+
+== Handover + return ==
+
+Owner -> RentalDetails : Tap "Mark out for rent"
+RentalDetails -> RentalSvc : MarkOutForRentAsync(...)
+RentalSvc -> RentalRepo : UpdateStatusAsync(..., OutForRent)
+RentalRepo -> AuthHandler : PATCH /rentals/{id}/status
+AuthHandler -> TokenStore : GetValidTokenAsync()
+AuthHandler -> API : PATCH status=OutForRent
+API --> AuthHandler : 200 { id, status, updatedAt }
+
+Borrower -> RentalDetails : Tap "Mark returned"
+RentalDetails -> RentalSvc : MarkReturnedAsync(...)
+RentalSvc -> RentalRepo : UpdateStatusAsync(..., Returned)
+RentalRepo -> AuthHandler : PATCH /rentals/{id}/status
+AuthHandler -> TokenStore : GetValidTokenAsync()
+AuthHandler -> API : PATCH status=Returned
+API --> AuthHandler : 200 { id, status, updatedAt }
+
+Owner -> RentalDetails : Tap "Mark completed"
+RentalDetails -> RentalSvc : MarkCompletedAsync(...)
+RentalSvc -> RentalRepo : UpdateStatusAsync(..., Completed)
+RentalRepo -> AuthHandler : PATCH /rentals/{id}/status
+AuthHandler -> TokenStore : GetValidTokenAsync()
+AuthHandler -> API : PATCH status=Completed
+API --> AuthHandler : 200 { id, status, updatedAt }
+
+opt Token expired during any authenticated call
+  API --> AuthHandler : 401 Unauthorized
+  AuthHandler -> TokenStore : ClearAsync()
+  note right of AuthHandler
+  AuthDelegatingHandler raises AuthenticationExpired;
+  ApiAuthenticationService signs the user out and
+  the shell redirects to Login.
+  end note
+end
+
+@enduml

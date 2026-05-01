@@ -24,7 +24,7 @@ public static class MauiProgram
                 fonts.AddFont("OpenSans-Semibold.ttf", "OpenSansSemibold");
             });
 
-        const bool useSharedApi = true; // Set to false to use local database and authentication
+        const bool useSharedApi = false; // Set to false to use local database and authentication
 
         if (useSharedApi)
         {
@@ -54,9 +54,9 @@ public static class MauiProgram
             // AuthDelegatingHandler), so authenticated endpoints get the Bearer
             // token attached automatically.
             builder.Services.AddSingleton<ICategoryRepository, ApiCategoryRepository>();
-            builder.Services.AddSingleton<IItemRepository,     ApiItemRepository>();
-            builder.Services.AddSingleton<IRentalRepository,   ApiRentalRepository>();
-            builder.Services.AddSingleton<IReviewRepository,   ApiReviewRepository>();
+            builder.Services.AddSingleton<IItemRepository, ApiItemRepository>();
+            builder.Services.AddSingleton<IRentalRepository, ApiRentalRepository>();
+            builder.Services.AddSingleton<IReviewRepository, ApiReviewRepository>();
         }
         else
         {
@@ -66,11 +66,11 @@ public static class MauiProgram
             // Local-DB path: stub repositories. They throw NotImplementedException
             // until the EF-backed implementations land. Registered so DI still
             // resolves and the app starts; any code path that actually calls
-            // them will fail loudly until the slice that fills them in.
+            // them will fail until the slice that fills them in.
             builder.Services.AddSingleton<ICategoryRepository, DbCategoryRepository>();
-            builder.Services.AddSingleton<IItemRepository,     DbItemRepository>();
-            builder.Services.AddSingleton<IRentalRepository,   DbRentalRepository>();
-            builder.Services.AddSingleton<IReviewRepository,   DbReviewRepository>();
+            builder.Services.AddSingleton<IItemRepository, DbItemRepository>();
+            builder.Services.AddSingleton<IRentalRepository, DbRentalRepository>();
+            builder.Services.AddSingleton<IReviewRepository, DbReviewRepository>();
         }
         builder.Services.AddSingleton<INavigationService, NavigationService>();
 
