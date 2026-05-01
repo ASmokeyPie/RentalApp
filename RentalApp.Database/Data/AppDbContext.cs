@@ -31,7 +31,7 @@ public class AppDbContext : DbContext
             connectionString = config.GetConnectionString("DevelopmentConnection");
         }
 
-        optionsBuilder.UseNpgsql(connectionString);
+        optionsBuilder.UseNpgsql(connectionString, o => o.UseNetTopologySuite());
     }
 
     public DbSet<User> Users { get; set; }
@@ -65,6 +65,7 @@ public class AppDbContext : DbContext
         {
             entity.Property(e => e.Title).HasMaxLength(100);
             entity.Property(e => e.DailyRate).HasColumnType("numeric(10,2)");
+            entity.Property(e => e.Location).HasColumnType("geography (Point, 4326)");
 
             entity.HasOne(e => e.Category)
                   .WithMany(c => c.Items)

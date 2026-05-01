@@ -1,6 +1,7 @@
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 using Microsoft.EntityFrameworkCore;
+using NetTopologySuite.Geometries;
 
 namespace RentalApp.Database.Models;
 
@@ -56,6 +57,14 @@ public class Item
 
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
+
+    /// <summary>
+    /// PostGIS geography point used for spatial proximity queries
+    /// (<c>ST_DWithin</c>). Populated from <see cref="Latitude"/> /
+    /// <see cref="Longitude"/> on save. Null for rows inserted before
+    /// the Stage 4 migration.
+    /// </summary>
+    public Point? Location { get; set; }
 
     // Navigation properties
     public List<Rental> Rentals { get; set; } = new();

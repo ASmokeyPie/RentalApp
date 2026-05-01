@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+using NetTopologySuite.Geometries;
 using RentalApp.Database.Data;
 using RentalApp.Database.Models;
 using RentalApp.Database.Queries;
@@ -66,6 +67,7 @@ public sealed class DbItemRepository : IItemRepository
             ?? throw new InvalidOperationException("Cannot create an item: no authenticated user.");
         entity.CreatedAt = DateTime.UtcNow;
         entity.UpdatedAt = DateTime.UtcNow;
+        entity.Location  = MakePoint(entity.Latitude, entity.Longitude);
         using var db = _factory.CreateDbContext();
         db.Items.Add(entity);
         await db.SaveChangesAsync(ct);
@@ -75,6 +77,7 @@ public sealed class DbItemRepository : IItemRepository
     public async Task<Item> UpdateAsync(Item entity, CancellationToken ct = default)
     {
         entity.UpdatedAt = DateTime.UtcNow;
+        entity.Location  = MakePoint(entity.Latitude, entity.Longitude);
         using var db = _factory.CreateDbContext();
         db.Items.Update(entity);
         await db.SaveChangesAsync(ct);
@@ -130,15 +133,35 @@ public sealed class DbItemRepository : IItemRepository
         };
     }
 
-    /// <summary>
-    /// Not implemented until Stage 4 — requires the PostGIS extension and the
-    /// <c>Location GEOGRAPHY(POINT,4326)</c> column added by that migration.
-    /// </summary>
-    public Task<IReadOnlyList<Item>> GetNearbyAsync(
+    public async Task<IReadOnlyList<Item>> GetNearbyAsync(
         double lat, double lon, double radiusKm,
         string? categorySlug = null,
         CancellationToken ct = default)
-        => throw new NotImplementedException("GetNearbyAsync requires PostGIS — implement in Stage 4.");
+    {
+        var origin        = MakePoint(lat, lon);
+        var radiusMetres  = radiusKm * 1000.0;
+
+        using var db = _factory.CreateDbContext();
+        var q = db.Items
+            .Include(i => i.Owner)
+            .Include(i => i.Category)
+            .Where(i => i.Location != null
+                     && i.Location.IsWithinDistance(origin, radiusMetres));
+
+        if (!string.IsNullOrWhiteSpace(categorySlug))
+            q = q.Where(i => i.Category!.Slug == categorySlug);
+
+        var items = await q.ToListAsync(ct);
+
+        foreach (var item in items)
+        {
+            PopulateDisplayFields(item);
+            // Distance() on geography columns returns metres; convert to km.
+            item.DistanceKm = item.Location!.Distance(origin) / 1000.0;
+        }
+
+        return items.OrderBy(i => i.DistanceKm).ToList();
+    }
 
     public async Task<PagedResult<Review>> GetReviewsAsync(
         int itemId, int page = 1, int pageSize = 20, CancellationToken ct = default)
@@ -201,4 +224,11 @@ public sealed class DbItemRepository : IItemRepository
         string.IsNullOrEmpty(lastName)
             ? firstName
             : $"{firstName} {lastName[0]}.";
+
+    /// <summary>
+    /// Creates a WGS-84 geography point. NetTopologySuite uses (X=longitude, Y=latitude)
+    /// convention — the SRID 4326 tells PostGIS this is lat/lon degrees.
+    /// </summary>
+    private static Point MakePoint(double lat, double lon) =>
+        new Point(lon, lat) { SRID = 4326 };
 }
