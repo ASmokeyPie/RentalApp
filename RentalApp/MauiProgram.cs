@@ -25,7 +25,7 @@ public static class MauiProgram
                 fonts.AddFont("OpenSans-Semibold.ttf", "OpenSansSemibold");
             });
 
-        const bool useSharedApi = false; // Set to false to use local database and authentication
+        const bool useSharedApi = true; // Set to false to use local database and authentication
 
         if (useSharedApi)
         {
