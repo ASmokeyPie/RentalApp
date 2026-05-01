@@ -7,6 +7,7 @@ using RentalApp.Database.Repositories.Db;
 using RentalApp.Views;
 using System.Diagnostics;
 using RentalApp.Services;
+using RentalApp.Database.Services;
 
 namespace RentalApp;
 
@@ -60,8 +61,9 @@ public static class MauiProgram
         }
         else
         {
-            builder.Services.AddDbContext<AppDbContext>();
+            builder.Services.AddDbContextFactory<AppDbContext>();
             builder.Services.AddSingleton<IAuthenticationService, AuthenticationService>();
+            builder.Services.AddSingleton<ICurrentUserProvider, CurrentUserProvider>();
 
             // Local-DB path: stub repositories. They throw NotImplementedException
             // until the EF-backed implementations land. Registered so DI still

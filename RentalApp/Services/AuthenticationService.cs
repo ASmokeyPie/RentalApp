@@ -15,14 +15,14 @@ namespace RentalApp.Services;
 /// </summary>
 public class AuthenticationService : IAuthenticationService
 {
-    private readonly AppDbContext _context;
+    private readonly IDbContextFactory<AppDbContext> _factory;
     private User? _currentUser;
 
     public event EventHandler<bool>? AuthenticationStateChanged;
 
-    public AuthenticationService(AppDbContext context)
+    public AuthenticationService(IDbContextFactory<AppDbContext> factory)
     {
-        _context = context;
+        _factory = factory;
     }
 
     public bool IsAuthenticated => _currentUser != null;
@@ -33,7 +33,8 @@ public class AuthenticationService : IAuthenticationService
     {
         try
         {
-            var user = await _context.Users
+            using var context = _factory.CreateDbContext();
+            var user = await context.Users
                 .FirstOrDefaultAsync(u => u.Email == email && u.IsActive);
 
             if (user == null)
@@ -61,8 +62,10 @@ public class AuthenticationService : IAuthenticationService
     {
         try
         {
+            using var context = _factory.CreateDbContext();
+
             // Check if user already exists
-            var existingUser = await _context.Users.FirstOrDefaultAsync(u => u.Email == email);
+            var existingUser = await context.Users.FirstOrDefaultAsync(u => u.Email == email);
             if (existingUser != null)
             {
                 return new AuthenticationResult(false, "User with this email already exists");
@@ -84,8 +87,8 @@ public class AuthenticationService : IAuthenticationService
                 IsActive = true
             };
 
-            _context.Users.Add(user);
-            await _context.SaveChangesAsync();
+            context.Users.Add(user);
+            await context.SaveChangesAsync();
 
 
             return new AuthenticationResult(true, "Registration successful");
@@ -124,18 +127,24 @@ public class AuthenticationService : IAuthenticationService
         try
         {
             if (!BCrypt.Net.BCrypt.Verify(currentPassword, _currentUser.PasswordHash))
-            {
                 return false;
-            }
 
             var salt = BCrypt.Net.BCrypt.GenerateSalt();
             var hashedPassword = BCrypt.Net.BCrypt.HashPassword(newPassword, salt);
 
-            _currentUser.PasswordHash = hashedPassword;
-            _currentUser.UpdatedAt = DateTime.UtcNow;
+            // Open a fresh context — the user entity was loaded in a previous
+            // (now-disposed) context, so we fetch by ID and update there.
+            using var context = _factory.CreateDbContext();
+            var user = await context.Users.FindAsync(_currentUser.Id);
+            if (user is null) return false;
 
-            _context.Users.Update(_currentUser);
-            await _context.SaveChangesAsync();
+            user.PasswordHash = hashedPassword;
+            user.UpdatedAt = DateTime.UtcNow;
+            await context.SaveChangesAsync();
+
+            // Keep the in-memory copy consistent.
+            _currentUser.PasswordHash = hashedPassword;
+            _currentUser.UpdatedAt = user.UpdatedAt;
 
             return true;
         }
