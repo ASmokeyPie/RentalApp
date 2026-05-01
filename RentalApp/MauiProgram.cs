@@ -32,7 +32,7 @@ public static class MauiProgram
             // Token storage (SecureStorage on device).
             builder.Services.AddSingleton<ITokenStorage, SecureStorageTokenStorage>();
 
-            // The delegating handler attaches the stored Bearer token per request
+            // The delegating handler attaches the stored token per request
             // and raises AuthenticationExpired on 401s to authenticated requests.
             // It is a singleton so ApiAuthenticationService can subscribe to its
             // event exactly once.
@@ -52,7 +52,7 @@ public static class MauiProgram
 
             // Repositories — API-backed implementations against the shared API.
             // Each takes the same singleton HttpClient (already wired with the
-            // AuthDelegatingHandler), so authenticated endpoints get the Bearer
+            // AuthDelegatingHandler), so authenticated endpoints get the
             // token attached automatically.
             builder.Services.AddSingleton<ICategoryRepository, ApiCategoryRepository>();
             builder.Services.AddSingleton<IItemRepository, ApiItemRepository>();
@@ -61,32 +61,35 @@ public static class MauiProgram
         }
         else
         {
+            // Local database context factory. Registered as a singleton so the same
+            // factory instance (and underlying connection pool) is used across
+            // the app. Repositories will create their own contexts from this factory as needed.
             builder.Services.AddDbContextFactory<AppDbContext>();
             builder.Services.AddSingleton<IAuthenticationService, AuthenticationService>();
             builder.Services.AddSingleton<ICurrentUserProvider, CurrentUserProvider>();
 
-            // Local-DB path: stub repositories. They throw NotImplementedException
-            // until the EF-backed implementations land. Registered so DI still
-            // resolves and the app starts; any code path that actually calls
-            // them will fail until the slice that fills them in.
+            // Repositories — database-backed implementations. Each repository creates
+            // its own DbContext from the factory as needed, so they can be
+            // registered as singletons without sharing DbContext instances.
             builder.Services.AddSingleton<ICategoryRepository, DbCategoryRepository>();
             builder.Services.AddSingleton<IItemRepository, DbItemRepository>();
             builder.Services.AddSingleton<IRentalRepository, DbRentalRepository>();
             builder.Services.AddSingleton<IReviewRepository, DbReviewRepository>();
         }
+
+        // Navigation service. Singleton, since it holds the global Shell
         builder.Services.AddSingleton<INavigationService, NavigationService>();
 
-        // Phase 6: GPS-backed location service. Singleton (stateless wrapper
+        // GPS-backed location service. Singleton (stateless wrapper
         // around Geolocation.Default). Used by FindNearbyViewModel and the
         // "Use my location" button on CreateItemViewModel.
         builder.Services.AddSingleton<ILocationService, LocationService>();
 
-        // Phase 5a: rental domain service. Sits over IRentalRepository (which
-        // is registered above against either Api* or Db* per useSharedApi),
+        // Rental domain service. Sits over IRentalRepository, 
         // so the service is data-source-agnostic by construction.
         builder.Services.AddSingleton<IRentalService, RentalService>();
 
-        // Phase 7a: review domain service. Same pattern — sits over the
+        // Review domain service. Same pattern — sits over the
         // review repo and adds the "borrower of a Completed rental" rules.
         builder.Services.AddSingleton<IReviewService, ReviewService>();
 
@@ -103,7 +106,7 @@ public static class MauiProgram
         builder.Services.AddSingleton<TempViewModel>();
         builder.Services.AddTransient<TempPage>();
 
-        // Phase 3: Item browsing (read paths). Both VMs are transient because
+        // Item browsing (read paths). Both VMs are transient because
         // each navigation should start with a fresh state — list page resets
         // pagination on entry, detail page is loaded fresh per item id.
         builder.Services.AddTransient<ItemsListViewModel>();
@@ -111,35 +114,35 @@ public static class MauiProgram
         builder.Services.AddTransient<ItemDetailsViewModel>();
         builder.Services.AddTransient<ItemDetailsPage>();
 
-        // Phase 4: Item create + edit (write paths). Transient so each
+        // Item create + edit (write paths). Transient so each
         // navigation gets a fresh form state.
         builder.Services.AddTransient<CreateItemViewModel>();
         builder.Services.AddTransient<CreateItemPage>();
         builder.Services.AddTransient<EditItemViewModel>();
         builder.Services.AddTransient<EditItemPage>();
 
-        // Phase 5b: Rental request flow. Transient — the form should always
+        // Rental request flow. Transient — the form should always
         // open with default dates and the right item id from the route.
         builder.Services.AddTransient<RequestRentalViewModel>();
         builder.Services.AddTransient<RequestRentalPage>();
 
-        // Phase 5c: My Rentals (incoming + outgoing tabbed list).
+        // User Rentals (incoming + outgoing tabbed list).
         builder.Services.AddTransient<MyRentalsViewModel>();
         builder.Services.AddTransient<MyRentalsPage>();
 
-        // Phase 5d: Rental detail + owner/borrower workflow actions.
+        // Rental detail + owner/borrower workflow actions.
         builder.Services.AddTransient<RentalDetailsViewModel>();
         builder.Services.AddTransient<RentalDetailsPage>();
 
-        // Phase 6: Location-based discovery.
+        // Location-based discovery.
         builder.Services.AddTransient<FindNearbyViewModel>();
         builder.Services.AddTransient<FindNearbyPage>();
 
-        // Phase 7a: review submission flow.
+        // Review submission flow.
         builder.Services.AddTransient<WriteReviewViewModel>();
         builder.Services.AddTransient<WriteReviewPage>();
 
-        // Phase 7b: user profile — account info, average rating, reviews written.
+        // User profile — account info, average rating, reviews written.
         // Transient so each navigation gets a fresh load (reviews may change
         // between visits, e.g. after the user submits a new review).
         builder.Services.AddTransient<ProfileViewModel>();

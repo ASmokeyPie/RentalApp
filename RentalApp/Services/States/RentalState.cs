@@ -1,5 +1,5 @@
 /// @file RentalState.cs
-/// @brief Abstract base class for the rental state machine (GoF State Pattern)
+/// @brief Abstract base class for the rental state machine
 /// @author RentalApp Development Team
 /// @date 2026
 
@@ -61,13 +61,13 @@ public abstract class RentalState
     /// </exception>
     public static RentalState For(RentalStatus status) => status switch
     {
-        RentalStatus.Requested  => new RequestedState(),
-        RentalStatus.Approved   => new ApprovedState(),
+        RentalStatus.Requested => new RequestedState(),
+        RentalStatus.Approved => new ApprovedState(),
         RentalStatus.OutForRent => new OutForRentState(),
-        RentalStatus.Overdue    => new OverdueState(),
-        RentalStatus.Returned   => new ReturnedState(),
-        RentalStatus.Completed  => new CompletedState(),
-        RentalStatus.Rejected   => new RejectedState(),
+        RentalStatus.Overdue => new OverdueState(),
+        RentalStatus.Returned => new ReturnedState(),
+        RentalStatus.Completed => new CompletedState(),
+        RentalStatus.Rejected => new RejectedState(),
         _ => throw new ArgumentOutOfRangeException(
                  nameof(status), status, "Unknown rental status."),
     };

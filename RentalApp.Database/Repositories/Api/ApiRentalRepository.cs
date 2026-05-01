@@ -1,5 +1,6 @@
 using System.Globalization;
 using System.Net.Http.Json;
+using RentalApp.Database.Helpers;
 using RentalApp.Database.Models;
 using RentalApp.Database.Queries;
 
@@ -173,7 +174,7 @@ public sealed class ApiRentalRepository : IRentalRepository
             BorrowerId = w.BorrowerId,
             StartDate = ParseDate(w.StartDate),
             EndDate = endDate,
-            Status = DeriveStatus(ParseStatus(w.Status), endDate),
+            Status = RentalStatusHelper.DeriveStatus(ParseStatus(w.Status), endDate),
             TotalPrice = w.TotalPrice,
             CreatedAt = w.CreatedAt ?? DateTime.UtcNow,
             UpdatedAt = w.CreatedAt ?? DateTime.UtcNow,
@@ -196,7 +197,7 @@ public sealed class ApiRentalRepository : IRentalRepository
             BorrowerId = w.BorrowerId,
             StartDate = ParseDate(w.StartDate),
             EndDate = endDate,
-            Status = DeriveStatus(ParseStatus(w.Status), endDate),
+            Status = RentalStatusHelper.DeriveStatus(ParseStatus(w.Status), endDate),
             TotalPrice = w.TotalPrice,
             CreatedAt = w.RequestedAt,
             UpdatedAt = w.RequestedAt,
@@ -207,22 +208,6 @@ public sealed class ApiRentalRepository : IRentalRepository
             OwnerId = w.OwnerId ?? 0,
             OwnerName = w.OwnerName ?? string.Empty,
         };
-    }
-
-    /// <summary>
-    /// Elevates <c>OutForRent</c> to <c>Overdue</c> when the rental's end date
-    /// has passed. All other statuses are returned as-is. This is the only
-    /// place <c>Overdue</c> is produced — the server never emits it.
-    /// </summary>
-    private static RentalStatus DeriveStatus(RentalStatus parsed, DateOnly endDate)
-    {
-        if (parsed == RentalStatus.OutForRent)
-        {
-            var today = DateOnly.FromDateTime(DateTime.UtcNow);
-            if (endDate < today)
-                return RentalStatus.Overdue;
-        }
-        return parsed;
     }
 
     /// <summary>

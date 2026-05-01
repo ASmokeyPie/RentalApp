@@ -9,8 +9,7 @@ namespace RentalApp.Services;
 /// Token handling:
 ///   - On login, persist a <see cref="StoredToken"/> via <see cref="ITokenStorage"/>.
 ///   - Outbound requests are authenticated by <see cref="AuthDelegatingHandler"/>,
-///     which reads from storage on each call — never touching
-///     <c>HttpClient.DefaultRequestHeaders.Authorization</c> directly.
+///     which reads from storage on each call.
 ///   - On a 401 to an authenticated request the handler clears storage and
 ///     raises <see cref="AuthDelegatingHandler.AuthenticationExpired"/>;
 ///     subscribe here to drop the in-memory user and notify the shell.

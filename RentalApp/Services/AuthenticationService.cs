@@ -2,6 +2,7 @@ using Microsoft.EntityFrameworkCore;
 using RentalApp.Database.Data;
 using RentalApp.Database.Models;
 using BCrypt.Net;
+using System.Linq;
 
 namespace RentalApp.Services;
 
@@ -114,10 +115,24 @@ public class AuthenticationService : IAuthenticationService
     public Task<bool> TryRestoreSessionAsync() => Task.FromResult(false);
 
     /// <summary>
-    /// The local-DB path has no remote /users/me endpoint, so there is nothing
-    /// to refresh. AverageRating is not computed by the local service.
+    /// The local-DB path has no remote /users/me endpoint. We compute
+    /// <c>AverageRating</c> locally: average of all reviews left on items
+    /// owned by the current user (i.e. the rating others gave them as a lender).
     /// </summary>
-    public Task RefreshCurrentUserAsync() => Task.CompletedTask;
+    public async Task RefreshCurrentUserAsync()
+    {
+        if (_currentUser is null) return;
+
+        using var context = _factory.CreateDbContext();
+
+        // Ratings on items this user owns — walk Review → Rental → Item.OwnerId
+        var ratings = await context.Reviews
+            .Where(r => r.Rental!.Item!.OwnerId == _currentUser.Id)
+            .Select(r => (double)r.Rating)
+            .ToListAsync();
+
+        _currentUser.AverageRating = ratings.Count > 0 ? ratings.Average() : null;
+    }
 
     public async Task<bool> ChangePasswordAsync(string currentPassword, string newPassword)
     {

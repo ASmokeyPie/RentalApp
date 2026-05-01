@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using RentalApp.Database.Data;
+using RentalApp.Database.Helpers;
 using RentalApp.Database.Models;
 using RentalApp.Database.Queries;
 using RentalApp.Database.Services;
@@ -13,7 +14,7 @@ namespace RentalApp.Database.Repositories.Db;
 ///
 /// Status persistence note: <see cref="RentalStatus.Overdue"/> is a client-side
 /// derived state (OutForRent whose EndDate has passed). It is never written to the
-/// database — reads elevate OutForRent → Overdue via <see cref="DeriveStatus"/>,
+/// database — reads elevate OutForRent → Overdue via <see cref="RentalStatusHelper.DeriveStatus"/>,
 /// and writes map Overdue back to OutForRent before calling SaveChangesAsync.
 /// </summary>
 public sealed class DbRentalRepository : IRentalRepository
@@ -60,7 +61,7 @@ public sealed class DbRentalRepository : IRentalRepository
         if (rental is null) return null;
 
         PopulateDisplayFields(rental);
-        rental.Status = DeriveStatus(rental.Status, rental.EndDate);
+        rental.Status = RentalStatusHelper.DeriveStatus(rental.Status, rental.EndDate);
         return rental;
     }
 
@@ -87,7 +88,7 @@ public sealed class DbRentalRepository : IRentalRepository
         foreach (var r in rentals)
         {
             PopulateDisplayFields(r);
-            r.Status = DeriveStatus(r.Status, r.EndDate);
+            r.Status = RentalStatusHelper.DeriveStatus(r.Status, r.EndDate);
         }
 
         return rentals;
@@ -116,7 +117,7 @@ public sealed class DbRentalRepository : IRentalRepository
         foreach (var r in rentals)
         {
             PopulateDisplayFields(r);
-            r.Status = DeriveStatus(r.Status, r.EndDate);
+            r.Status = RentalStatusHelper.DeriveStatus(r.Status, r.EndDate);
         }
 
         return rentals;
@@ -180,7 +181,7 @@ public sealed class DbRentalRepository : IRentalRepository
         await db.SaveChangesAsync(ct);
 
         // Re-derive so the caller gets Overdue back if the date has already passed.
-        var displayStatus = DeriveStatus(dbStatus, rental.EndDate);
+        var displayStatus = RentalStatusHelper.DeriveStatus(dbStatus, rental.EndDate);
         return new RentalStatusUpdate(rental.Id, displayStatus, rental.UpdatedAt);
     }
 
@@ -222,22 +223,6 @@ public sealed class DbRentalRepository : IRentalRepository
         if (rental.Borrower is not null)
             rental.BorrowerName = FormatDisplayName(
                 rental.Borrower.FirstName, rental.Borrower.LastName);
-    }
-
-    /// <summary>
-    /// Elevates <c>OutForRent</c> to <c>Overdue</c> when the rental's end date
-    /// has passed. All other statuses are returned as-is. This is the only
-    /// place <c>Overdue</c> is produced — the database never stores it.
-    /// </summary>
-    private static RentalStatus DeriveStatus(RentalStatus stored, DateOnly endDate)
-    {
-        if (stored == RentalStatus.OutForRent)
-        {
-            var today = DateOnly.FromDateTime(DateTime.UtcNow);
-            if (endDate < today)
-                return RentalStatus.Overdue;
-        }
-        return stored;
     }
 
     private static string FormatDisplayName(string firstName, string lastName) =>
