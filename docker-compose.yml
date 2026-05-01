@@ -9,7 +9,7 @@ services:
       - nuget_cache:/root/.nuget/packages
     network_mode: service:db
     environment:
-      - CONNECTION_STRING=Host=localhost;Username=app_user;Password=app_password;Database=appdb
+      - CONNECTION_STRING=Host=localhost;Username=${POSTGRES_USER};Password=${POSTGRES_PASSWORD};Database=${POSTGRES_DB}
     command: bash -c "cd /RentalApp && dotnet run --project RentalApp.Migrations/RentalApp.Migrations.csproj"
     depends_on:
       db:
@@ -36,15 +36,15 @@ services:
     image: postgis/postgis:16-3.4
     restart: always
     environment:
-      POSTGRES_USER: app_user
-      POSTGRES_PASSWORD: app_password
-      POSTGRES_DB: appdb
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
     ports:
       - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U app_user -d appdb"]
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
       interval: 5s
       timeout: 5s
       retries: 5

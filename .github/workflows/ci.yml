@@ -7,21 +7,36 @@ on:
     branches: [main, develop]
 
 jobs:
+  secret-scan:
+    name: Scan for secrets (gitleaks)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Run gitleaks
+        uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
   test:
     name: Build class libs & run xUnit tests
     runs-on: ubuntu-latest
+    needs: secret-scan
 
     services:
       db:
         image: postgis/postgis:16-3.4
         env:
-          POSTGRES_USER: app_user
-          POSTGRES_PASSWORD: app_password
-          POSTGRES_DB: appdb
+          POSTGRES_USER: ${{ secrets.POSTGRES_USER }}
+          POSTGRES_PASSWORD: ${{ secrets.POSTGRES_PASSWORD }}
+          POSTGRES_DB: ${{ secrets.POSTGRES_DB }}
         ports:
           - 5432:5432
         options: >-
-          --health-cmd "pg_isready -U app_user -d appdb"
+          --health-cmd "pg_isready -U ${{ secrets.POSTGRES_USER }} -d ${{ secrets.POSTGRES_DB }}"
           --health-interval 5s
           --health-timeout 5s
           --health-retries 10
@@ -59,6 +74,8 @@ jobs:
         run: dotnet build RentalApp.Tests/RentalApp.Tests.csproj --configuration Release --no-restore
 
       - name: Run tests with coverage
+        env:
+          TEST_CONNECTION_STRING: Host=localhost;Username=${{ secrets.POSTGRES_USER }};Password=${{ secrets.POSTGRES_PASSWORD }};Database=${{ secrets.POSTGRES_DB }}
         run: >
           dotnet test RentalApp.Tests/RentalApp.Tests.csproj
           --configuration Release

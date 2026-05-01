@@ -8,13 +8,16 @@ namespace RentalApp.Tests.Support;
 /// Applies pending migrations once on startup; exposes <see cref="ResetAsync"/>
 /// to truncate all user-data tables between tests.
 ///
-/// Prerequisites: <c>docker compose up -d db</c> before running.
-/// Connection: Host=localhost;Username=app_user;Password=app_password;Database=appdb
+/// Prerequisites: <c>docker compose up -d db</c> before running (locally), or the
+/// CI service container (GitHub Actions). The connection string is read from the
+/// <c>TEST_CONNECTION_STRING</c> environment variable. If unset, falls back to the
+/// standard local dev defaults that match <c>.env.example</c>.
 /// </summary>
 public sealed class DatabaseFixture : IAsyncLifetime
 {
-    private const string ConnectionString =
-        "Host=localhost;Username=app_user;Password=app_password;Database=appdb";
+    private static readonly string ConnectionString =
+        Environment.GetEnvironmentVariable("TEST_CONNECTION_STRING")
+        ?? "Host=localhost;Username=app_user;Password=app_password;Database=appdb";
 
     public IDbContextFactory<AppDbContext> Factory { get; } =
         new TestDbContextFactory(ConnectionString);
