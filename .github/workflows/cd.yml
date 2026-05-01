@@ -1,0 +1,79 @@
+name: CD
+
+on:
+  push:
+    branches: [main]
+    tags:
+      - "v*"
+
+jobs:
+  build-apk:
+    name: Build Android APK
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup .NET 10
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 10.0.x
+
+      - name: Cache NuGet packages
+        uses: actions/cache@v4
+        with:
+          path: ~/.nuget/packages
+          key: nuget-${{ runner.os }}-${{ hashFiles('**/*.csproj') }}
+          restore-keys: |
+            nuget-${{ runner.os }}-
+
+      - name: Install MAUI Android workload
+        run: dotnet workload install maui-android
+
+      - name: Restore
+        run: dotnet restore RentalApp/RentalApp.csproj
+
+      - name: Publish APK
+        run: >
+          dotnet publish RentalApp/RentalApp.csproj
+          -f net10.0-android
+          -c Release
+          --no-restore
+          -p:AndroidSdkDirectory=$ANDROID_SDK_ROOT
+
+      - name: Locate APK
+        id: apk
+        run: |
+          APK=$(find RentalApp/bin/Release/net10.0-android/publish -name "*.apk" | head -1)
+          echo "path=$APK" >> "$GITHUB_OUTPUT"
+          echo "name=$(basename $APK)" >> "$GITHUB_OUTPUT"
+
+      - name: Upload APK artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: rentalapp-apk
+          path: ${{ steps.apk.outputs.path }}
+          if-no-files-found: error
+
+  release:
+    name: Create GitHub Release
+    runs-on: ubuntu-latest
+    needs: build-apk
+    if: startsWith(github.ref, 'refs/tags/v')
+
+    permissions:
+      contents: write
+
+    steps:
+      - name: Download APK artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: rentalapp-apk
+          path: ./apk
+
+      - name: Create release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: ./apk/*.apk
+          generate_release_notes: true
