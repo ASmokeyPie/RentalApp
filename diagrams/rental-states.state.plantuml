@@ -1,0 +1,35 @@
+@startuml rental_states
+' RentalApp — Rental status state diagram
+' Source of truth: RentalApp.Database.Models.RentalStatus + RentalApp.Services.States.*
+' May 2026
+
+title Rental States (Lifecycle)
+
+hide empty description
+skinparam shadowing false
+
+[*] --> Requested : Request rental
+
+Requested --> Approved : Owner approves
+Requested --> Rejected : Owner rejects
+
+Approved --> OutForRent : Owner marks pickup / handover
+
+OutForRent --> Returned : Borrower marks returned
+Returned --> Completed : Owner closes out
+
+' Client-side derived state:
+' If EndDate has passed and the rental hasn't been returned yet,
+' the client surfaces the rental as Overdue (server still sees OutForRent).
+OutForRent --> Overdue : EndDate passed (derived)
+Overdue --> Returned : Borrower marks returned
+
+Rejected --> [*]
+Completed --> [*]
+
+note right of Overdue
+  Derived client-side only (never PATCHed to API).
+  Legal transitions from Overdue match OutForRent.
+end note
+
+@enduml
