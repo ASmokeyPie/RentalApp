@@ -1,0 +1,6 @@
+{
+    "plantuml.graphvizDotPath": "/usr/bin/dot",
+    "plantuml.commandArgs": [
+        "-DGRAPHVIZ_DOT=/usr/bin/dot"
+    ]
+}
