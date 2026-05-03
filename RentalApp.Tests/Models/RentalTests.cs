@@ -29,4 +29,20 @@ public class RentalTests
 
         Assert.Equal(0, rental.DurationDays);
     }
+
+    [Fact]
+    public void Status_DefaultsToRequested()
+    {
+        var rental = new Rental();
+        Assert.Equal(RentalStatus.Requested, rental.Status);
+    }
+
+    [Fact]
+    public void IsActiveOnToday_IsTrue_WhenTodayWithinRange()
+    {
+        var today = DateOnly.FromDateTime(DateTime.UtcNow);
+        var rental = new Rental { StartDate = today, EndDate = today };
+
+        Assert.True(rental.IsActiveOnToday);
+    }
 }
