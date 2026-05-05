@@ -65,8 +65,27 @@ public sealed class RentalService : IRentalService
         return _rentals.UpdateStatusAsync(rentalId, targetStatus, ct);
     }
 
-    public Task<RentalStatusUpdate> ApproveAsync(int rentalId, RentalStatus currentStatus, CancellationToken ct = default) =>
-        TransitionAsync(rentalId, currentStatus, RentalStatus.Approved, ct);
+    public async Task<RentalStatusUpdate> ApproveAsync(int rentalId, RentalStatus currentStatus, CancellationToken ct = default)
+    {
+        // Fetch the rental so we know which item and date range we're approving.
+        var rental = await _rentals.GetByIdAsync(rentalId, ct)
+            ?? throw new InvalidOperationException($"Rental {rentalId} not found.");
+
+        // Check all other incoming rentals for this item. Only Approved, OutForRent,
+        // and Overdue statuses are "committed" and block a new approval — pending
+        // Requested rentals are still competing and do not block each other.
+        var incoming = await _rentals.GetIncomingAsync(null, ct);
+        var activeConflicts = incoming.Where(r =>
+            r.ItemId == rental.ItemId &&
+            r.Id     != rentalId &&
+            r.Status is RentalStatus.Approved or RentalStatus.OutForRent or RentalStatus.Overdue);
+
+        if (HasOverlap(activeConflicts, rental.StartDate, rental.EndDate))
+            throw new InvalidOperationException(
+                "This item is already committed for the requested dates and cannot be approved for another rental.");
+
+        return await TransitionAsync(rentalId, currentStatus, RentalStatus.Approved, ct);
+    }
 
     public Task<RentalStatusUpdate> RejectAsync(int rentalId, RentalStatus currentStatus, CancellationToken ct = default) =>
         TransitionAsync(rentalId, currentStatus, RentalStatus.Rejected, ct);

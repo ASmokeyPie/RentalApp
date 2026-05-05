@@ -255,6 +255,55 @@ public class RentalServiceTests
     public async Task ApproveAsync_TransitionsToApproved()
     {
         var (svc, repo) = BuildWithMock();
+        repo.Setup(r => r.GetByIdAsync(7, default)).ReturnsAsync(SampleRental(7, RentalStatus.Requested));
+        repo.Setup(r => r.GetIncomingAsync(null, default)).ReturnsAsync(Array.Empty<Rental>());
+        repo.Setup(r => r.UpdateStatusAsync(7, RentalStatus.Approved, default))
+            .ReturnsAsync(new RentalStatusUpdate(7, RentalStatus.Approved, DateTime.UtcNow));
+
+        await svc.ApproveAsync(7, RentalStatus.Requested);
+
+        repo.Verify(r => r.UpdateStatusAsync(7, RentalStatus.Approved, default), Times.Once);
+    }
+
+    [Fact]
+    public async Task ApproveAsync_Throws_WhenConflictingApprovedRentalExists()
+    {
+        // Two requests for the same item and overlapping dates; one is already Approved.
+        var (svc, repo) = BuildWithMock();
+        var toApprove = new Rental { Id = 7, ItemId = 1, BorrowerId = 2,
+            StartDate = new DateOnly(2026, 6, 1), EndDate = new DateOnly(2026, 6, 5),
+            Status = RentalStatus.Requested, TotalPrice = 40m };
+        var alreadyApproved = new Rental { Id = 8, ItemId = 1, BorrowerId = 3,
+            StartDate = new DateOnly(2026, 6, 3), EndDate = new DateOnly(2026, 6, 7),
+            Status = RentalStatus.Approved, TotalPrice = 40m };
+
+        repo.Setup(r => r.GetByIdAsync(7, default)).ReturnsAsync(toApprove);
+        repo.Setup(r => r.GetIncomingAsync(null, default))
+            .ReturnsAsync(new Rental[] { toApprove, alreadyApproved });
+
+        var ex = await Assert.ThrowsAsync<InvalidOperationException>(() =>
+            svc.ApproveAsync(7, RentalStatus.Requested));
+
+        Assert.Contains("committed", ex.Message, StringComparison.OrdinalIgnoreCase);
+        repo.Verify(r => r.UpdateStatusAsync(It.IsAny<int>(), It.IsAny<RentalStatus>(), default), Times.Never);
+    }
+
+    [Fact]
+    public async Task ApproveAsync_AllowsApproval_WhenOtherConflictingRentalIsOnlyRequested()
+    {
+        // Two competing Requested rentals for the same item and dates — the first one
+        // approved should succeed; a pending Requested rental must not block it.
+        var (svc, repo) = BuildWithMock();
+        var toApprove = new Rental { Id = 7, ItemId = 1, BorrowerId = 2,
+            StartDate = new DateOnly(2026, 6, 1), EndDate = new DateOnly(2026, 6, 5),
+            Status = RentalStatus.Requested, TotalPrice = 40m };
+        var alsoRequested = new Rental { Id = 8, ItemId = 1, BorrowerId = 3,
+            StartDate = new DateOnly(2026, 6, 1), EndDate = new DateOnly(2026, 6, 5),
+            Status = RentalStatus.Requested, TotalPrice = 40m };
+
+        repo.Setup(r => r.GetByIdAsync(7, default)).ReturnsAsync(toApprove);
+        repo.Setup(r => r.GetIncomingAsync(null, default))
+            .ReturnsAsync(new Rental[] { toApprove, alsoRequested });
         repo.Setup(r => r.UpdateStatusAsync(7, RentalStatus.Approved, default))
             .ReturnsAsync(new RentalStatusUpdate(7, RentalStatus.Approved, DateTime.UtcNow));
 
