@@ -18,6 +18,16 @@
     <Color x:Key="MidnightBlue">#190649</Color>
     <Color x:Key="OffBlack">#1f1f1f</Color>
 
+    <!-- Semantic status colours -->
+    <Color x:Key="Success">#2E7D32</Color>
+    <Color x:Key="SuccessLight">#E8F5E9</Color>
+    <Color x:Key="Warning">#E65100</Color>
+    <Color x:Key="WarningLight">#FFF3E0</Color>
+
+    <!-- Neutral surface tones for cards / page backgrounds -->
+    <Color x:Key="SurfaceLight">#F6F6FB</Color>
+    <Color x:Key="SurfaceDark">#1C1C2E</Color>
+
     <Color x:Key="Gray100">#E1E1E1</Color>
     <Color x:Key="Gray200">#C8C8C8</Color>
     <Color x:Key="Gray300">#ACACAC</Color>

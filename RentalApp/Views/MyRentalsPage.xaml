@@ -41,18 +41,56 @@
             </Grid>
         </Border>
 
-        <!-- Tabs (segmented selector via two buttons; the active tab is
-             "disabled" so it renders greyed-out, giving visual feedback). -->
-        <Grid Grid.Row="1" ColumnDefinitions="*,*" ColumnSpacing="8" Padding="12,12,12,0">
-            <Button Grid.Column="0"
-                    Text="Incoming"
-                    Command="{Binding SelectIncomingCommand}"
-                    IsEnabled="{Binding IsOutgoingSelected}"/>
-            <Button Grid.Column="1"
-                    Text="Outgoing"
-                    Command="{Binding SelectOutgoingCommand}"
-                    IsEnabled="{Binding IsIncomingSelected}"/>
-        </Grid>
+        <!-- Tab selector: Active/Inactive styled buttons -->
+        <Border Grid.Row="1"
+                BackgroundColor="{AppThemeBinding Light={StaticResource Gray100}, Dark={StaticResource Gray800}}"
+                Stroke="Transparent"
+                Margin="12,12,12,0"
+                Padding="4">
+            <Border.StrokeShape>
+                <RoundRectangle CornerRadius="12"/>
+            </Border.StrokeShape>
+            <Grid ColumnDefinitions="*,*" ColumnSpacing="4">
+
+                <!-- Incoming tab -->
+                <Button Grid.Column="0"
+                        Text="Incoming"
+                        Command="{Binding SelectIncomingCommand}"
+                        IsEnabled="{Binding IsOutgoingSelected}">
+                    <Button.Triggers>
+                        <DataTrigger TargetType="Button"
+                                     Binding="{Binding IsIncomingSelected}"
+                                     Value="True">
+                            <Setter Property="Style" Value="{StaticResource ActiveTabButton}"/>
+                        </DataTrigger>
+                        <DataTrigger TargetType="Button"
+                                     Binding="{Binding IsIncomingSelected}"
+                                     Value="False">
+                            <Setter Property="Style" Value="{StaticResource InactiveTabButton}"/>
+                        </DataTrigger>
+                    </Button.Triggers>
+                </Button>
+
+                <!-- Outgoing tab -->
+                <Button Grid.Column="1"
+                        Text="Outgoing"
+                        Command="{Binding SelectOutgoingCommand}"
+                        IsEnabled="{Binding IsIncomingSelected}">
+                    <Button.Triggers>
+                        <DataTrigger TargetType="Button"
+                                     Binding="{Binding IsOutgoingSelected}"
+                                     Value="True">
+                            <Setter Property="Style" Value="{StaticResource ActiveTabButton}"/>
+                        </DataTrigger>
+                        <DataTrigger TargetType="Button"
+                                     Binding="{Binding IsOutgoingSelected}"
+                                     Value="False">
+                            <Setter Property="Style" Value="{StaticResource InactiveTabButton}"/>
+                        </DataTrigger>
+                    </Button.Triggers>
+                </Button>
+            </Grid>
+        </Border>
 
         <!-- Pull-to-refresh + the two tab-bound lists -->
         <RefreshView Grid.Row="2"
@@ -72,40 +110,60 @@
                     </CollectionView.EmptyView>
                     <CollectionView.ItemTemplate>
                         <DataTemplate x:DataType="models:Rental">
-                            <Border Margin="12,6"
-                                    Padding="12"
+                            <Border Margin="12,5"
+                                    Padding="0"
                                     BackgroundColor="{AppThemeBinding Light={StaticResource White}, Dark={StaticResource Gray900}}"
                                     Stroke="{AppThemeBinding Light={StaticResource Gray200}, Dark={StaticResource Gray700}}"
                                     StrokeThickness="1">
                                 <Border.StrokeShape>
-                                    <RoundRectangle CornerRadius="10"/>
+                                    <RoundRectangle CornerRadius="12"/>
                                 </Border.StrokeShape>
                                 <Border.GestureRecognizers>
                                     <TapGestureRecognizer
                                         Command="{Binding Source={x:Reference IncomingCollection}, Path=BindingContext.SelectRentalCommand}"
                                         CommandParameter="{Binding .}"/>
                                 </Border.GestureRecognizers>
-                                <Grid ColumnDefinitions="*,Auto" RowDefinitions="Auto,Auto,Auto" RowSpacing="2">
-                                    <Label Grid.Row="0" Grid.Column="0"
-                                           Text="{Binding ItemTitle}"
-                                           FontSize="16"
-                                           FontAttributes="Bold"/>
-                                    <Label Grid.Row="0" Grid.Column="1"
-                                           Text="{Binding Status}"
-                                           FontSize="12"
-                                           FontAttributes="Bold"/>
-                                    <Label Grid.Row="1" Grid.ColumnSpan="2"
-                                           Text="{Binding BorrowerName, StringFormat='Borrower: {0}'}"
-                                           FontSize="12"
-                                           TextColor="{AppThemeBinding Light={StaticResource Gray600}, Dark={StaticResource Gray400}}"/>
-                                    <Grid Grid.Row="2" Grid.ColumnSpan="2" ColumnDefinitions="*,Auto">
-                                        <Label Grid.Column="0"
-                                               Text="{Binding StartDate, StringFormat='{0:d MMM yyyy}'}"
-                                               FontSize="12"/>
-                                        <Label Grid.Column="1"
-                                               Text="{Binding TotalPrice, StringFormat='£{0:F2}'}"
-                                               FontSize="12"
+                                <Grid ColumnDefinitions="5,*" ColumnSpacing="0">
+                                    <BoxView Grid.Column="0"
+                                             BackgroundColor="{AppThemeBinding Light={StaticResource Primary}, Dark={StaticResource PrimaryDark}}"
+                                             VerticalOptions="Fill"/>
+                                    <Grid Grid.Column="1"
+                                          Padding="14,12"
+                                          ColumnDefinitions="*,Auto"
+                                          RowDefinitions="Auto,Auto,Auto"
+                                          RowSpacing="3">
+                                        <Label Grid.Row="0" Grid.Column="0"
+                                               Text="{Binding ItemTitle}"
+                                               FontSize="15"
                                                FontAttributes="Bold"/>
+                                        <Border Grid.Row="0" Grid.Column="1"
+                                                BackgroundColor="{AppThemeBinding Light={StaticResource Secondary}, Dark=#2D1B6E}"
+                                                Stroke="Transparent"
+                                                Padding="6,2"
+                                                VerticalOptions="Center">
+                                            <Border.StrokeShape>
+                                                <RoundRectangle CornerRadius="4"/>
+                                            </Border.StrokeShape>
+                                            <Label Text="{Binding Status}"
+                                                   FontSize="11"
+                                                   FontAttributes="Bold"
+                                                   TextColor="{AppThemeBinding Light={StaticResource Tertiary}, Dark={StaticResource PrimaryDark}}"/>
+                                        </Border>
+                                        <Label Grid.Row="1" Grid.ColumnSpan="2"
+                                               Text="{Binding BorrowerName, StringFormat='Borrower: {0}'}"
+                                               FontSize="12"
+                                               TextColor="{AppThemeBinding Light={StaticResource Gray500}, Dark={StaticResource Gray400}}"/>
+                                        <Grid Grid.Row="2" Grid.ColumnSpan="2" ColumnDefinitions="*,Auto">
+                                            <Label Grid.Column="0"
+                                                   Text="{Binding StartDate, StringFormat='{0:d MMM yyyy}'}"
+                                                   FontSize="12"
+                                                   TextColor="{AppThemeBinding Light={StaticResource Gray500}, Dark={StaticResource Gray400}}"/>
+                                            <Label Grid.Column="1"
+                                                   Text="{Binding TotalPrice, StringFormat='£{0:F2}'}"
+                                                   FontSize="13"
+                                                   FontAttributes="Bold"
+                                                   TextColor="{AppThemeBinding Light={StaticResource Primary}, Dark={StaticResource PrimaryDark}}"/>
+                                        </Grid>
                                     </Grid>
                                 </Grid>
                             </Border>
@@ -126,40 +184,60 @@
                     </CollectionView.EmptyView>
                     <CollectionView.ItemTemplate>
                         <DataTemplate x:DataType="models:Rental">
-                            <Border Margin="12,6"
-                                    Padding="12"
+                            <Border Margin="12,5"
+                                    Padding="0"
                                     BackgroundColor="{AppThemeBinding Light={StaticResource White}, Dark={StaticResource Gray900}}"
                                     Stroke="{AppThemeBinding Light={StaticResource Gray200}, Dark={StaticResource Gray700}}"
                                     StrokeThickness="1">
                                 <Border.StrokeShape>
-                                    <RoundRectangle CornerRadius="10"/>
+                                    <RoundRectangle CornerRadius="12"/>
                                 </Border.StrokeShape>
                                 <Border.GestureRecognizers>
                                     <TapGestureRecognizer
                                         Command="{Binding Source={x:Reference OutgoingCollection}, Path=BindingContext.SelectRentalCommand}"
                                         CommandParameter="{Binding .}"/>
                                 </Border.GestureRecognizers>
-                                <Grid ColumnDefinitions="*,Auto" RowDefinitions="Auto,Auto,Auto" RowSpacing="2">
-                                    <Label Grid.Row="0" Grid.Column="0"
-                                           Text="{Binding ItemTitle}"
-                                           FontSize="16"
-                                           FontAttributes="Bold"/>
-                                    <Label Grid.Row="0" Grid.Column="1"
-                                           Text="{Binding Status}"
-                                           FontSize="12"
-                                           FontAttributes="Bold"/>
-                                    <Label Grid.Row="1" Grid.ColumnSpan="2"
-                                           Text="{Binding OwnerName, StringFormat='Owner: {0}'}"
-                                           FontSize="12"
-                                           TextColor="{AppThemeBinding Light={StaticResource Gray600}, Dark={StaticResource Gray400}}"/>
-                                    <Grid Grid.Row="2" Grid.ColumnSpan="2" ColumnDefinitions="*,Auto">
-                                        <Label Grid.Column="0"
-                                               Text="{Binding StartDate, StringFormat='{0:d MMM yyyy}'}"
-                                               FontSize="12"/>
-                                        <Label Grid.Column="1"
-                                               Text="{Binding TotalPrice, StringFormat='£{0:F2}'}"
-                                               FontSize="12"
+                                <Grid ColumnDefinitions="5,*" ColumnSpacing="0">
+                                    <BoxView Grid.Column="0"
+                                             BackgroundColor="{AppThemeBinding Light={StaticResource Primary}, Dark={StaticResource PrimaryDark}}"
+                                             VerticalOptions="Fill"/>
+                                    <Grid Grid.Column="1"
+                                          Padding="14,12"
+                                          ColumnDefinitions="*,Auto"
+                                          RowDefinitions="Auto,Auto,Auto"
+                                          RowSpacing="3">
+                                        <Label Grid.Row="0" Grid.Column="0"
+                                               Text="{Binding ItemTitle}"
+                                               FontSize="15"
                                                FontAttributes="Bold"/>
+                                        <Border Grid.Row="0" Grid.Column="1"
+                                                BackgroundColor="{AppThemeBinding Light={StaticResource Secondary}, Dark=#2D1B6E}"
+                                                Stroke="Transparent"
+                                                Padding="6,2"
+                                                VerticalOptions="Center">
+                                            <Border.StrokeShape>
+                                                <RoundRectangle CornerRadius="4"/>
+                                            </Border.StrokeShape>
+                                            <Label Text="{Binding Status}"
+                                                   FontSize="11"
+                                                   FontAttributes="Bold"
+                                                   TextColor="{AppThemeBinding Light={StaticResource Tertiary}, Dark={StaticResource PrimaryDark}}"/>
+                                        </Border>
+                                        <Label Grid.Row="1" Grid.ColumnSpan="2"
+                                               Text="{Binding OwnerName, StringFormat='Owner: {0}'}"
+                                               FontSize="12"
+                                               TextColor="{AppThemeBinding Light={StaticResource Gray500}, Dark={StaticResource Gray400}}"/>
+                                        <Grid Grid.Row="2" Grid.ColumnSpan="2" ColumnDefinitions="*,Auto">
+                                            <Label Grid.Column="0"
+                                                   Text="{Binding StartDate, StringFormat='{0:d MMM yyyy}'}"
+                                                   FontSize="12"
+                                                   TextColor="{AppThemeBinding Light={StaticResource Gray500}, Dark={StaticResource Gray400}}"/>
+                                            <Label Grid.Column="1"
+                                                   Text="{Binding TotalPrice, StringFormat='£{0:F2}'}"
+                                                   FontSize="13"
+                                                   FontAttributes="Bold"
+                                                   TextColor="{AppThemeBinding Light={StaticResource Primary}, Dark={StaticResource PrimaryDark}}"/>
+                                        </Grid>
                                     </Grid>
                                 </Grid>
                             </Border>

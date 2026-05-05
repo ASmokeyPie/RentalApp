@@ -30,31 +30,29 @@
     <RefreshView IsRefreshing="{Binding IsBusy}"
                  Command="{Binding RefreshDataCommand}">
         <ScrollView>
-            <Grid Padding="20"
-                  RowSpacing="20">
-                <Grid.RowDefinitions>
-                    <RowDefinition Height="Auto"/>
-                    <RowDefinition Height="Auto"/>
-                    <RowDefinition Height="Auto"/>
-                    <RowDefinition Height="*"/>
-                </Grid.RowDefinitions>
+            <StackLayout Padding="16,20" Spacing="16">
 
-                <!-- Welcome Section -->
-                <Border Grid.Row="0"
-                        BackgroundColor="{AppThemeBinding Light={StaticResource Primary}, Dark={StaticResource PrimaryDark}}"
-                        Padding="20"
-                        HeightRequest="120">
+                <!-- Welcome banner -->
+                <Border BackgroundColor="{AppThemeBinding Light={StaticResource Primary}, Dark={StaticResource PrimaryDark}}"
+                        Padding="20,18"
+                        Stroke="Transparent">
                     <Border.StrokeShape>
-                        <RoundRectangle CornerRadius="12"/>
+                        <RoundRectangle CornerRadius="14"/>
                     </Border.StrokeShape>
-                    <StackLayout VerticalOptions="Center">
+                    <Border.Shadow>
+                        <Shadow Brush="{AppThemeBinding Light={StaticResource Primary}, Dark=Transparent}"
+                                Offset="0,4"
+                                Radius="12"
+                                Opacity="0.25"/>
+                    </Border.Shadow>
+                    <StackLayout Spacing="4" VerticalOptions="Center">
                         <Label Text="{Binding WelcomeMessage}"
-                               FontSize="24"
+                               FontSize="22"
                                FontAttributes="Bold"
                                TextColor="White"
                                HorizontalOptions="Center"/>
                         <Label Text="{Binding CurrentUser.Email}"
-                               FontSize="14"
+                               FontSize="13"
                                TextColor="White"
                                Opacity="0.8"
                                HorizontalOptions="Center"/>
@@ -62,14 +60,13 @@
                 </Border>
 
                 <!-- Error Display -->
-                <Border Grid.Row="1"
-                        BackgroundColor="{AppThemeBinding Light=#FFEBEE, Dark=#1B0000}"
+                <Border BackgroundColor="{AppThemeBinding Light=#FFEBEE, Dark=#1B0000}"
                         Stroke="{AppThemeBinding Light=#F44336, Dark=#EF5350}"
                         StrokeThickness="1"
                         Padding="15"
                         IsVisible="{Binding HasError}">
                     <Border.StrokeShape>
-                        <RoundRectangle CornerRadius="8"/>
+                        <RoundRectangle CornerRadius="10"/>
                     </Border.StrokeShape>
                     <StackLayout Orientation="Horizontal">
                         <Label Text="{Binding ErrorMessage}"
@@ -88,124 +85,119 @@
                     </StackLayout>
                 </Border>
 
-                <!-- Quick Actions -->
-                <Label Grid.Row="2"
-                       Text="Quick Actions"
-                       FontSize="20"
-                       FontAttributes="Bold"
-                       Margin="0,10,0,10"/>
+                <!-- Quick Actions heading -->
+                <Label Text="Quick Actions"
+                       Style="{StaticResource SectionHeader}"/>
 
-                <!-- Action Cards -->
-                <StackLayout Grid.Row="3"
-                             Spacing="15">
+                <!-- Browse Items card -->
+                <Border Style="{StaticResource CardBorder}">
+                    <Border.GestureRecognizers>
+                        <TapGestureRecognizer Command="{Binding NavigateToItemsListCommand}"/>
+                    </Border.GestureRecognizers>
+                    <Grid ColumnDefinitions="44,*,Auto" ColumnSpacing="12">
+                        <Border Grid.Column="0"
+                                BackgroundColor="{AppThemeBinding Light={StaticResource Secondary}, Dark=#2D1B6E}"
+                                WidthRequest="44" HeightRequest="44"
+                                Stroke="Transparent"
+                                VerticalOptions="Center">
+                            <Border.StrokeShape>
+                                <RoundRectangle CornerRadius="10"/>
+                            </Border.StrokeShape>
+                            <Label Text="📦" FontSize="22"
+                                   HorizontalOptions="Center" VerticalOptions="Center"/>
+                        </Border>
+                        <StackLayout Grid.Column="1" VerticalOptions="Center" Spacing="2">
+                            <Label Text="Browse Items" FontSize="15" FontAttributes="Bold"/>
+                            <Label Text="View available items for rent"
+                                   Style="{StaticResource CaptionLabel}"/>
+                        </StackLayout>
+                        <Label Grid.Column="2" Text="›" FontSize="22" VerticalOptions="Center"
+                               TextColor="{AppThemeBinding Light={StaticResource Gray300}, Dark={StaticResource Gray600}}"/>
+                    </Grid>
+                </Border>
 
-                    <!-- Items List Card -->
-                    <Border BackgroundColor="{AppThemeBinding Light={StaticResource White}, Dark={StaticResource Gray900}}"
-                            Stroke="{AppThemeBinding Light={StaticResource Gray200}, Dark={StaticResource Gray700}}"
-                            StrokeThickness="1"
-                            Padding="20"
-                            HeightRequest="80">
-                        <Border.StrokeShape>
-                            <RoundRectangle CornerRadius="12"/>
-                        </Border.StrokeShape>
-                        <Border.GestureRecognizers>
-                            <TapGestureRecognizer Command="{Binding NavigateToItemsListCommand}"/>
-                        </Border.GestureRecognizers>
-                        <Grid ColumnDefinitions="Auto,*,Auto">
-                            <Label Grid.Column="0"
-                                   Text="📦"
-                                   FontSize="24"
-                                   VerticalOptions="Center"/>
-                            <StackLayout Grid.Column="1"
-                                         Margin="15,0,0,0"
-                                         VerticalOptions="Center">
-                                <Label Text="Browse Items"
-                                       FontSize="16"
-                                       FontAttributes="Bold"/>
-                                <Label Text="View available items for rent"
-                                       FontSize="12"
-                                       TextColor="{AppThemeBinding Light={StaticResource Gray600}, Dark={StaticResource Gray400}}"/>
-                            </StackLayout>
-                            <Label Grid.Column="2"
-                                   Text=">"
-                                   FontSize="18"
-                                   VerticalOptions="Center"
-                                   TextColor="{AppThemeBinding Light={StaticResource Gray400}, Dark={StaticResource Gray600}}"/>
-                        </Grid>
-                    </Border>
+                <!-- My Rentals card -->
+                <Border Style="{StaticResource CardBorder}">
+                    <Border.GestureRecognizers>
+                        <TapGestureRecognizer Command="{Binding NavigateToMyRentalsCommand}"/>
+                    </Border.GestureRecognizers>
+                    <Grid ColumnDefinitions="44,*,Auto" ColumnSpacing="12">
+                        <Border Grid.Column="0"
+                                BackgroundColor="{AppThemeBinding Light={StaticResource Secondary}, Dark=#2D1B6E}"
+                                WidthRequest="44" HeightRequest="44"
+                                Stroke="Transparent"
+                                VerticalOptions="Center">
+                            <Border.StrokeShape>
+                                <RoundRectangle CornerRadius="10"/>
+                            </Border.StrokeShape>
+                            <Label Text="🤝" FontSize="22"
+                                   HorizontalOptions="Center" VerticalOptions="Center"/>
+                        </Border>
+                        <StackLayout Grid.Column="1" VerticalOptions="Center" Spacing="2">
+                            <Label Text="My Rentals" FontSize="15" FontAttributes="Bold"/>
+                            <Label Text="Track incoming and outgoing rentals"
+                                   Style="{StaticResource CaptionLabel}"/>
+                        </StackLayout>
+                        <Label Grid.Column="2" Text="›" FontSize="22" VerticalOptions="Center"
+                               TextColor="{AppThemeBinding Light={StaticResource Gray300}, Dark={StaticResource Gray600}}"/>
+                    </Grid>
+                </Border>
 
+                <!-- Find Nearby card -->
+                <Border Style="{StaticResource CardBorder}">
+                    <Border.GestureRecognizers>
+                        <TapGestureRecognizer Command="{Binding NavigateToFindNearbyCommand}"/>
+                    </Border.GestureRecognizers>
+                    <Grid ColumnDefinitions="44,*,Auto" ColumnSpacing="12">
+                        <Border Grid.Column="0"
+                                BackgroundColor="{AppThemeBinding Light={StaticResource Secondary}, Dark=#2D1B6E}"
+                                WidthRequest="44" HeightRequest="44"
+                                Stroke="Transparent"
+                                VerticalOptions="Center">
+                            <Border.StrokeShape>
+                                <RoundRectangle CornerRadius="10"/>
+                            </Border.StrokeShape>
+                            <Label Text="📍" FontSize="22"
+                                   HorizontalOptions="Center" VerticalOptions="Center"/>
+                        </Border>
+                        <StackLayout Grid.Column="1" VerticalOptions="Center" Spacing="2">
+                            <Label Text="Find Nearby" FontSize="15" FontAttributes="Bold"/>
+                            <Label Text="Discover items close to you"
+                                   Style="{StaticResource CaptionLabel}"/>
+                        </StackLayout>
+                        <Label Grid.Column="2" Text="›" FontSize="22" VerticalOptions="Center"
+                               TextColor="{AppThemeBinding Light={StaticResource Gray300}, Dark={StaticResource Gray600}}"/>
+                    </Grid>
+                </Border>
 
-                    <!-- Profile Card -->
-                    <Border BackgroundColor="{AppThemeBinding Light={StaticResource White}, Dark={StaticResource Gray900}}"
-                            Stroke="{AppThemeBinding Light={StaticResource Gray200}, Dark={StaticResource Gray700}}"
-                            StrokeThickness="1"
-                            Padding="20"
-                            HeightRequest="80">
-                        <Border.StrokeShape>
-                            <RoundRectangle CornerRadius="12"/>
-                        </Border.StrokeShape>
-                        <Border.GestureRecognizers>
-                            <TapGestureRecognizer Command="{Binding NavigateToProfileCommand}"/>
-                        </Border.GestureRecognizers>
-                        <Grid ColumnDefinitions="Auto,*,Auto">
-                            <Label Grid.Column="0"
-                                   Text="👤"
-                                   FontSize="24"
-                                   VerticalOptions="Center"/>
-                            <StackLayout Grid.Column="1"
-                                         Margin="15,0,0,0"
-                                         VerticalOptions="Center">
-                                <Label Text="Profile Settings"
-                                       FontSize="16"
-                                       FontAttributes="Bold"/>
-                                <Label Text="Manage your account information"
-                                       FontSize="12"
-                                       TextColor="{AppThemeBinding Light={StaticResource Gray600}, Dark={StaticResource Gray400}}"/>
-                            </StackLayout>
-                            <Label Grid.Column="2"
-                                   Text=">"
-                                   FontSize="18"
-                                   VerticalOptions="Center"
-                                   TextColor="{AppThemeBinding Light={StaticResource Gray400}, Dark={StaticResource Gray600}}"/>
-                        </Grid>
-                    </Border>
+                <!-- Profile card -->
+                <Border Style="{StaticResource CardBorder}">
+                    <Border.GestureRecognizers>
+                        <TapGestureRecognizer Command="{Binding NavigateToProfileCommand}"/>
+                    </Border.GestureRecognizers>
+                    <Grid ColumnDefinitions="44,*,Auto" ColumnSpacing="12">
+                        <Border Grid.Column="0"
+                                BackgroundColor="{AppThemeBinding Light={StaticResource Secondary}, Dark=#2D1B6E}"
+                                WidthRequest="44" HeightRequest="44"
+                                Stroke="Transparent"
+                                VerticalOptions="Center">
+                            <Border.StrokeShape>
+                                <RoundRectangle CornerRadius="10"/>
+                            </Border.StrokeShape>
+                            <Label Text="👤" FontSize="22"
+                                   HorizontalOptions="Center" VerticalOptions="Center"/>
+                        </Border>
+                        <StackLayout Grid.Column="1" VerticalOptions="Center" Spacing="2">
+                            <Label Text="Profile" FontSize="15" FontAttributes="Bold"/>
+                            <Label Text="Manage your account"
+                                   Style="{StaticResource CaptionLabel}"/>
+                        </StackLayout>
+                        <Label Grid.Column="2" Text="›" FontSize="22" VerticalOptions="Center"
+                               TextColor="{AppThemeBinding Light={StaticResource Gray300}, Dark={StaticResource Gray600}}"/>
+                    </Grid>
+                </Border>
 
-                    <!-- Settings Card -->
-                    <Border BackgroundColor="{AppThemeBinding Light={StaticResource White}, Dark={StaticResource Gray900}}"
-                            Stroke="{AppThemeBinding Light={StaticResource Gray200}, Dark={StaticResource Gray700}}"
-                            StrokeThickness="1"
-                            Padding="20"
-                            HeightRequest="80">
-                        <Border.StrokeShape>
-                            <RoundRectangle CornerRadius="12"/>
-                        </Border.StrokeShape>
-                        <Border.GestureRecognizers>
-                            <TapGestureRecognizer Command="{Binding NavigateToSettingsCommand}"/>
-                        </Border.GestureRecognizers>
-                        <Grid ColumnDefinitions="Auto,*,Auto">
-                            <Label Grid.Column="0"
-                                   Text="⚙️"
-                                   FontSize="24"
-                                   VerticalOptions="Center"/>
-                            <StackLayout Grid.Column="1"
-                                         Margin="15,0,0,0"
-                                         VerticalOptions="Center">
-                                <Label Text="App Settings"
-                                       FontSize="16"
-                                       FontAttributes="Bold"/>
-                                <Label Text="Configure app preferences"
-                                       FontSize="12"
-                                       TextColor="{AppThemeBinding Light={StaticResource Gray600}, Dark={StaticResource Gray400}}"/>
-                            </StackLayout>
-                            <Label Grid.Column="2"
-                                   Text=">"
-                                   FontSize="18"
-                                   VerticalOptions="Center"
-                                   TextColor="{AppThemeBinding Light={StaticResource Gray400}, Dark={StaticResource Gray600}}"/>
-                        </Grid>
-                    </Border>
-                </StackLayout>
-            </Grid>
+            </StackLayout>
         </ScrollView>
     </RefreshView>
 </ContentPage>

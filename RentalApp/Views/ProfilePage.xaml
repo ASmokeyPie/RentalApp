@@ -203,9 +203,8 @@
                     <!-- Logout button -->
                     <Button Text="Log out"
                             Command="{Binding LogoutCommand}"
-                            Margin="0,16,0,8"
-                            BackgroundColor="{AppThemeBinding Light=#FFEBEE, Dark=#3B0000}"
-                            TextColor="{AppThemeBinding Light=#D32F2F, Dark=#EF5350}"/>
+                            Style="{StaticResource DangerButton}"
+                            Margin="0,16,0,8"/>
 
                 </StackLayout>
             </Grid>

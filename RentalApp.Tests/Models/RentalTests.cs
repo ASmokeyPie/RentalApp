@@ -3,9 +3,7 @@ using RentalApp.Database.Models;
 namespace RentalApp.Tests.Models;
 
 /// <summary>
-/// Smoke test for the RentalApp.Tests project wiring. Also exercises
-/// the Rental.DurationDays computed property that the pricing logic in
-/// Phase 5 (RentalService) will depend on.
+/// Performs rental duration calculation tests and verifies that the RentalStatus enum is present and defaults to Requested.
 /// </summary>
 public class RentalTests
 {

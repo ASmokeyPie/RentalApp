@@ -1,5 +1,5 @@
 /// @file ItemsListViewModel.cs
-/// @brief Browse-items list view model with pull-to-refresh + Load-more button
+/// @brief Browse-items list view model with pull-to-refresh, Load-more button, and category filter
 /// @author RentalApp Development Team
 /// @date 2026
 
@@ -13,6 +13,11 @@ using RentalApp.Services;
 
 namespace RentalApp.ViewModels;
 
+/// @brief A selectable entry in the category filter picker.
+/// @details The null <see cref="Slug"/> value represents "All categories" —
+///          i.e. no category filter is applied.
+public sealed record CategoryFilterItem(string Name, string? Slug);
+
 /// @brief View model for the paginated browse-items list.
 /// @details Loads items via <see cref="IItemRepository.SearchAsync"/> one page
 ///          at a time. Pull-to-refresh resets to page 1 and replaces the
@@ -20,6 +25,9 @@ namespace RentalApp.ViewModels;
 ///          appends the next page (no infinite-scroll trigger — that proved
 ///          flaky in practice and conflated with the refresh state). Tapping
 ///          an item navigates to <c>ItemDetailsPage</c>.
+///          A <see cref="SelectedCategoryFilter"/> property lets the user
+///          narrow results to a single category; changing it auto-refreshes
+///          the list from page 1.
 ///          MAUI-free so it can be unit-tested against the .NET 10 test
 ///          project; visual concerns (RefreshView, CollectionView) live in
 ///          the XAML page.
@@ -30,11 +38,31 @@ public partial class ItemsListViewModel : BaseViewModel
     // runtime DI ctor always assigns these before any command runs.
     private readonly IItemRepository _items = null!;
     private readonly INavigationService _navigation = null!;
+    private readonly ICategoryRepository? _categoriesRepo;
 
     /// @brief Items currently loaded into the list. Pages are appended in
     ///        load order. Page-level changes (CollectionChanged) refresh the
     ///        derived properties below.
     public ObservableCollection<Item> Items { get; }
+
+    /// @brief Category filter options shown in the picker.
+    /// @details The first entry is always "All Categories" (Slug = null).
+    ///          Populated by <see cref="LoadCategoriesAsync"/> on first
+    ///          appearance. Empty until that call completes.
+    public ObservableCollection<CategoryFilterItem> CategoryFilters { get; }
+
+    /// @brief The currently selected category filter (null = all categories).
+    /// @details Changing this property triggers an automatic page-1 refresh
+    ///          provided the list has already been loaded at least once
+    ///          (<see cref="CurrentPage"/> &gt; 0), so the initial category
+    ///          selection during <see cref="LoadCategoriesAsync"/> does not
+    ///          cause a double-load.
+    [ObservableProperty]
+    private CategoryFilterItem? selectedCategoryFilter;
+
+    /// @brief True while categories are being fetched for the filter picker.
+    [ObservableProperty]
+    private bool isLoadingCategories;
 
     /// @brief 1-based page number of the most recently loaded page.
     [ObservableProperty]
@@ -90,17 +118,59 @@ public partial class ItemsListViewModel : BaseViewModel
             OnPropertyChanged(nameof(RemainingCount));
             OnPropertyChanged(nameof(HasMorePages));
         };
+        CategoryFilters = new ObservableCollection<CategoryFilterItem>();
         Title = "Browse Items";
     }
 
-    /// @brief Initializes a new instance of the <see cref="ItemsListViewModel"/> class.
-    /// @param items Item repository (API or DB-backed; the VM doesn't care).
-    /// @param navigation Navigation service used to push the detail page.
-    public ItemsListViewModel(IItemRepository items, INavigationService navigation)
+    /// @brief Initialises a new instance of the <see cref="ItemsListViewModel"/> class.
+    /// @param items       Item repository (API or DB-backed; the VM doesn't care).
+    /// @param navigation  Navigation service used to push the detail page.
+    /// @param categories  Optional category repository for the filter picker.
+    ///                    When null (e.g. in unit tests) the picker simply shows
+    ///                    no categories — all other behaviour is unaffected.
+    public ItemsListViewModel(
+        IItemRepository items,
+        INavigationService navigation,
+        ICategoryRepository? categories = null)
         : this()
     {
         _items = items;
         _navigation = navigation;
+        _categoriesRepo = categories;
+    }
+
+    /// @brief Loads categories into <see cref="CategoryFilters"/> from the
+    ///        repository, prepending an "All Categories" entry.
+    /// @details Safe to call multiple times — returns immediately if the
+    ///          collection is already populated or no repository is wired.
+    ///          Category-load failures are swallowed: the browse page still
+    ///          works, just without the filter picker populated.
+    public async Task LoadCategoriesAsync()
+    {
+        if (_categoriesRepo is null || CategoryFilters.Count > 0) return;
+
+        try
+        {
+            IsLoadingCategories = true;
+            var all = await _categoriesRepo.ListAsync();
+
+            CategoryFilters.Add(new CategoryFilterItem("All Categories", null));
+            foreach (var c in all)
+                CategoryFilters.Add(new CategoryFilterItem(c.Name, c.Slug));
+
+            // Pre-select "All Categories" without triggering an auto-refresh
+            // (CurrentPage is still 0 at this point, so the guard in
+            // OnSelectedCategoryFilterChanged prevents the double-load).
+            SelectedCategoryFilter = CategoryFilters[0];
+        }
+        catch
+        {
+            // Non-fatal: the list will work without the filter populated.
+        }
+        finally
+        {
+            IsLoadingCategories = false;
+        }
     }
 
     /// @brief Loads (or reloads) the first page, replacing any current items.
@@ -120,15 +190,20 @@ public partial class ItemsListViewModel : BaseViewModel
             IsRefreshing = true;
             ClearError();
 
-            var page = await _items.SearchAsync(new ItemQuery { Page = 1, PageSize = PageSize });
+            var page = await _items.SearchAsync(new ItemQuery
+            {
+                Page = 1,
+                PageSize = PageSize,
+                CategorySlug = SelectedCategoryFilter?.Slug,
+            });
 
             Items.Clear();
             foreach (var i in page.Items) Items.Add(i);
 
             CurrentPage = page.Page;
-            TotalPages  = page.TotalPages;
-            TotalCount  = page.TotalCount;
-            IsEmpty     = Items.Count == 0;
+            TotalPages = page.TotalPages;
+            TotalCount = page.TotalCount;
+            IsEmpty = Items.Count == 0;
         }
         catch (Exception ex)
         {
@@ -157,13 +232,18 @@ public partial class ItemsListViewModel : BaseViewModel
             ClearError();
 
             var nextPage = CurrentPage + 1;
-            var page = await _items.SearchAsync(new ItemQuery { Page = nextPage, PageSize = PageSize });
+            var page = await _items.SearchAsync(new ItemQuery
+            {
+                Page = nextPage,
+                PageSize = PageSize,
+                CategorySlug = SelectedCategoryFilter?.Slug,
+            });
 
             foreach (var i in page.Items) Items.Add(i);
 
             CurrentPage = page.Page;
-            TotalPages  = page.TotalPages;
-            TotalCount  = page.TotalCount;
+            TotalPages = page.TotalPages;
+            TotalCount = page.TotalCount;
         }
         catch (Exception ex)
         {
@@ -204,4 +284,16 @@ public partial class ItemsListViewModel : BaseViewModel
 
     partial void OnTotalCountChanged(int value) =>
         OnPropertyChanged(nameof(RemainingCount));
+
+    /// @brief Triggers a page-1 refresh when the category filter changes —
+    ///        but only after the list has already been loaded at least once.
+    /// @details The guard on <see cref="CurrentPage"/> prevents a double-load
+    ///          during the initial <see cref="LoadCategoriesAsync"/> call,
+    ///          where the "All Categories" item is pre-selected before the
+    ///          first <see cref="RefreshAsync"/> has run.
+    partial void OnSelectedCategoryFilterChanged(CategoryFilterItem? value)
+    {
+        if (CurrentPage > 0)
+            _ = RefreshAsync();
+    }
 }

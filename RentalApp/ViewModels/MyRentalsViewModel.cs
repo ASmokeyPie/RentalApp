@@ -23,8 +23,7 @@ namespace RentalApp.ViewModels;
 /// <see cref="IRentalService.GetIncomingAsync"/> /
 /// <see cref="IRentalService.GetOutgoingAsync"/>; the page swaps which one is
 /// visible based on the selected tab. Tapping a row currently navigates to
-/// the rental's item detail page (Phase 5d will replace that with a dedicated
-/// rental-detail page once owner action commands land).
+/// the rental's item detail page.
 /// MAUI-free for testability.
 /// @extends BaseViewModel
 public partial class MyRentalsViewModel : BaseViewModel
@@ -52,10 +51,10 @@ public partial class MyRentalsViewModel : BaseViewModel
     [ObservableProperty]
     private bool isRefreshing;
 
-    /// @brief True iff the Incoming tab is currently selected.
+    /// @brief True if the Incoming tab is currently selected.
     public bool IsIncomingSelected => SelectedTab == "Incoming";
 
-    /// @brief True iff the Outgoing tab is currently selected.
+    /// @brief True if the Outgoing tab is currently selected.
     public bool IsOutgoingSelected => SelectedTab == "Outgoing";
 
     /// @brief Item count for the currently selected tab. Drives the empty-state

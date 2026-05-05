@@ -20,7 +20,7 @@ public class AuthDelegatingHandler : DelegatingHandler
     private readonly ITokenStorage _tokenStorage;
 
     /// <summary>
-    /// Raised when the server rejects a request that we authenticated with
+    /// Raised when the server rejects a request that was authenticated with
     /// a stored token. The handler has already cleared the token by this
     /// point; subscribers should clear any in-memory session and redirect
     /// to the login page.

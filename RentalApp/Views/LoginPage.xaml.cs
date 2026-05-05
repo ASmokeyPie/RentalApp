@@ -14,7 +14,7 @@ public partial class LoginPage : ContentPage
     {
         base.OnAppearing();
         EmailEntry.Focus();
-        EmailEntry.Text = "";
-        PasswordEntry.Text = "";
+        EmailEntry.Text = "testapi@testapi.com";
+        PasswordEntry.Text = "Password@123";
     }
 }

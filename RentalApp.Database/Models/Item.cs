@@ -61,8 +61,7 @@ public class Item
     /// <summary>
     /// PostGIS geography point used for spatial proximity queries
     /// (<c>ST_DWithin</c>). Populated from <see cref="Latitude"/> /
-    /// <see cref="Longitude"/> on save. Null for rows inserted before
-    /// the Stage 4 migration.
+    /// <see cref="Longitude"/> on save.
     /// </summary>
     public Point? Location { get; set; }
 
