@@ -11,6 +11,7 @@ public class ApiAuthenticationServiceTests
     [Fact]
     public async Task LoginAsync_OnSuccess_StoresTokenAndSetsCurrentUser()
     {
+        // Arrange: token endpoint succeeds and /users/me returns a user.
         var storage = new InMemoryTokenStorage();
         var inner = StubHttpMessageHandler.Sequence(
             TestResponses.Json(new
@@ -32,8 +33,10 @@ public class ApiAuthenticationServiceTests
         var events = new List<bool>();
         service.AuthenticationStateChanged += (_, isAuth) => events.Add(isAuth);
 
+        // Act
         var result = await service.LoginAsync("a@b.com", "pw");
 
+        // Assert: token is saved, current user is set, and auth event fires.
         Assert.True(result.IsSuccess);
         Assert.Equal(1, storage.SaveCallCount);
         var stored = await storage.LoadAsync();
@@ -48,6 +51,7 @@ public class ApiAuthenticationServiceTests
     [Fact]
     public async Task LoginAsync_On401_DoesNotStoreTokenOrRaiseEvent()
     {
+        // Arrange: token endpoint returns Unauthorized.
         var storage = new InMemoryTokenStorage();
         var inner = new StubHttpMessageHandler(
             TestResponses.Json(new { error = "Unauthorized", message = "Invalid email or password" },
@@ -57,8 +61,10 @@ public class ApiAuthenticationServiceTests
         var events = new List<bool>();
         service.AuthenticationStateChanged += (_, isAuth) => events.Add(isAuth);
 
+        // Act
         var result = await service.LoginAsync("a@b.com", "wrong");
 
+        // Assert: no token is stored and no auth event fires.
         Assert.False(result.IsSuccess);
         Assert.Equal("Invalid email or password", result.Message);
         Assert.Equal(0, storage.SaveCallCount);
@@ -70,6 +76,7 @@ public class ApiAuthenticationServiceTests
     [Fact]
     public async Task LoginAsync_WhenMeCallFails_ClearsToken()
     {
+        // Arrange: token endpoint succeeds but /users/me fails.
         var storage = new InMemoryTokenStorage();
         var inner = StubHttpMessageHandler.Sequence(
             TestResponses.Json(new
@@ -81,8 +88,10 @@ public class ApiAuthenticationServiceTests
             TestResponses.Status(HttpStatusCode.InternalServerError));
         var (service, _, _) = BuildService(storage, inner);
 
+        // Act
         var result = await service.LoginAsync("a@b.com", "pw");
 
+        // Assert: the partially-created session is rolled back.
         Assert.False(result.IsSuccess);
         Assert.Null(await storage.LoadAsync());
         Assert.Null(service.CurrentUser);
@@ -93,6 +102,7 @@ public class ApiAuthenticationServiceTests
     [Fact]
     public async Task LogoutAsync_ClearsTokenAndCurrentUserAndRaisesEvent()
     {
+        // Arrange: restore a session so we're authenticated.
         var token = new StoredToken("jwt", DateTime.UtcNow.AddHours(1), UserId: 7);
         var storage = new InMemoryTokenStorage(token);
         var inner = new StubHttpMessageHandler(TestResponses.Json(new
@@ -105,8 +115,10 @@ public class ApiAuthenticationServiceTests
         var events = new List<bool>();
         service.AuthenticationStateChanged += (_, isAuth) => events.Add(isAuth);
 
+        // Act
         await service.LogoutAsync();
 
+        // Assert: session state is cleared and event fires.
         Assert.Null(await storage.LoadAsync());
         Assert.Null(service.CurrentUser);
         Assert.Equal(new[] { false }, events);
@@ -117,12 +129,15 @@ public class ApiAuthenticationServiceTests
     [Fact]
     public async Task TryRestoreSessionAsync_ReturnsFalse_WhenNoToken()
     {
+        // Arrange: storage is empty.
         var storage = new InMemoryTokenStorage();
         var inner = new StubHttpMessageHandler(TestResponses.Status(HttpStatusCode.OK));
         var (service, _, _) = BuildService(storage, inner);
 
+        // Act
         var restored = await service.TryRestoreSessionAsync();
 
+        // Assert: no network call occurs and session is not restored.
         Assert.False(restored);
         Assert.Null(service.CurrentUser);
         Assert.Empty(inner.Requests);
@@ -131,13 +146,16 @@ public class ApiAuthenticationServiceTests
     [Fact]
     public async Task TryRestoreSessionAsync_ReturnsFalse_WhenTokenExpired()
     {
+        // Arrange: an expired token exists.
         var token = new StoredToken("jwt", DateTime.UtcNow.AddMinutes(-1), UserId: 7);
         var storage = new InMemoryTokenStorage(token);
         var inner = new StubHttpMessageHandler(TestResponses.Status(HttpStatusCode.OK));
         var (service, _, _) = BuildService(storage, inner);
 
+        // Act
         var restored = await service.TryRestoreSessionAsync();
 
+        // Assert: expired token short-circuits before calling /users/me.
         Assert.False(restored);
         Assert.Null(service.CurrentUser);
         Assert.Empty(inner.Requests); // Expired token short-circuits before hitting /users/me
@@ -146,6 +164,7 @@ public class ApiAuthenticationServiceTests
     [Fact]
     public async Task TryRestoreSessionAsync_RehydratesCurrentUser_WhenTokenValid()
     {
+        // Arrange: token exists and /users/me returns a user.
         var token = new StoredToken("jwt", DateTime.UtcNow.AddHours(1), UserId: 7);
         var storage = new InMemoryTokenStorage(token);
         var inner = new StubHttpMessageHandler(TestResponses.Json(new
@@ -161,8 +180,10 @@ public class ApiAuthenticationServiceTests
         var events = new List<bool>();
         service.AuthenticationStateChanged += (_, isAuth) => events.Add(isAuth);
 
+        // Act
         var restored = await service.TryRestoreSessionAsync();
 
+        // Assert: current user is populated and Bearer token is attached.
         Assert.True(restored);
         Assert.NotNull(service.CurrentUser);
         Assert.Equal(7, service.CurrentUser!.Id);
@@ -180,6 +201,7 @@ public class ApiAuthenticationServiceTests
     [Fact]
     public async Task AuthenticatedCallReturning401_DropsCurrentUserAndFiresEvent()
     {
+        // Arrange: session is restored, then a later authenticated call returns 401.
         var token = new StoredToken("jwt", DateTime.UtcNow.AddHours(1), UserId: 7);
         var storage = new InMemoryTokenStorage(token);
         var inner = StubHttpMessageHandler.Sequence(
@@ -199,8 +221,10 @@ public class ApiAuthenticationServiceTests
         service.AuthenticationStateChanged += (_, isAuth) => events.Add(isAuth);
 
         // Simulate some other part of the app calling an authenticated endpoint:
+        // Act
         await client.GetAsync("items");
 
+        // Assert: session is dropped and event fires.
         Assert.Null(service.CurrentUser);
         Assert.False(service.IsAuthenticated);
         Assert.Equal(new[] { false }, events);
@@ -212,6 +236,7 @@ public class ApiAuthenticationServiceTests
     [Fact]
     public async Task RegisterAsync_OnSuccess_ReturnsSuccessAndDoesNotLogIn()
     {
+        // Arrange: registration succeeds with Created.
         var storage = new InMemoryTokenStorage();
         var inner = new StubHttpMessageHandler(
             TestResponses.Json(new
@@ -221,8 +246,10 @@ public class ApiAuthenticationServiceTests
             }, HttpStatusCode.Created));
         var (service, _, _) = BuildService(storage, inner);
 
+        // Act
         var result = await service.RegisterAsync("C", "D", "c@d.com", "Password1");
 
+        // Assert: registration does not implicitly log in.
         Assert.True(result.IsSuccess);
         Assert.Null(service.CurrentUser);
         Assert.Equal(0, storage.SaveCallCount);
@@ -231,14 +258,17 @@ public class ApiAuthenticationServiceTests
     [Fact]
     public async Task RegisterAsync_On400_SurfacesErrorMessage()
     {
+        // Arrange: server returns a validation error.
         var storage = new InMemoryTokenStorage();
         var inner = new StubHttpMessageHandler(
             TestResponses.Json(new { error = "Validation", message = "Email already in use" },
                 HttpStatusCode.BadRequest));
         var (service, _, _) = BuildService(storage, inner);
 
+        // Act
         var result = await service.RegisterAsync("C", "D", "c@d.com", "short");
 
+        // Assert
         Assert.False(result.IsSuccess);
         Assert.Equal("Email already in use", result.Message);
     }
@@ -248,6 +278,7 @@ public class ApiAuthenticationServiceTests
     private static (ApiAuthenticationService Service, HttpClient Client, AuthDelegatingHandler Handler)
         BuildService(InMemoryTokenStorage storage, StubHttpMessageHandler inner)
     {
+        // Arrange: build a client whose handler chain includes AuthDelegatingHandler.
         var handler = new AuthDelegatingHandler(storage) { InnerHandler = inner };
         var client = new HttpClient(handler)
         {

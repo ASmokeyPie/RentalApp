@@ -21,13 +21,17 @@ public class RentalStateTests
     [InlineData(RentalStatus.Rejected,   typeof(RejectedState))]
     public void For_ReturnsCorrectConcreteType(RentalStatus status, Type expectedType)
     {
+        // Arrange + Act: build the state via the factory.
         var state = RentalState.For(status);
+
+        // Assert: returned type matches the status.
         Assert.IsType(expectedType, state);
     }
 
     [Fact]
     public void For_SetsStatusProperty()
     {
+        // Arrange + Act + Assert: factory sets Status consistently for all enum values.
         foreach (var status in Enum.GetValues<RentalStatus>())
         {
             Assert.Equal(status, RentalState.For(status).Status);
@@ -46,6 +50,7 @@ public class RentalStateTests
     [InlineData(RentalStatus.Requested,  false)]
     public void RequestedState_CanTransitionTo(RentalStatus target, bool expected)
     {
+        // Arrange + Act + Assert
         Assert.Equal(expected, new RequestedState().CanTransitionTo(target));
     }
 
@@ -59,6 +64,7 @@ public class RentalStateTests
     [InlineData(RentalStatus.Completed,  false)]
     public void ApprovedState_CanTransitionTo(RentalStatus target, bool expected)
     {
+        // Arrange + Act + Assert
         Assert.Equal(expected, new ApprovedState().CanTransitionTo(target));
     }
 
@@ -71,6 +77,7 @@ public class RentalStateTests
     [InlineData(RentalStatus.Approved,   false)]
     public void OutForRentState_CanTransitionTo(RentalStatus target, bool expected)
     {
+        // Arrange + Act + Assert
         Assert.Equal(expected, new OutForRentState().CanTransitionTo(target));
     }
 
@@ -84,6 +91,7 @@ public class RentalStateTests
     [InlineData(RentalStatus.Overdue,    false)]
     public void OverdueState_CanTransitionTo(RentalStatus target, bool expected)
     {
+        // Arrange + Act + Assert
         Assert.Equal(expected, new OverdueState().CanTransitionTo(target));
     }
 
@@ -96,6 +104,7 @@ public class RentalStateTests
     [InlineData(RentalStatus.Approved,   false)]
     public void ReturnedState_CanTransitionTo(RentalStatus target, bool expected)
     {
+        // Arrange + Act + Assert
         Assert.Equal(expected, new ReturnedState().CanTransitionTo(target));
     }
 
@@ -110,6 +119,7 @@ public class RentalStateTests
     [InlineData(RentalStatus.Rejected)]
     public void CompletedState_CannotTransitionToAnything(RentalStatus target)
     {
+        // Arrange + Act + Assert
         Assert.False(new CompletedState().CanTransitionTo(target));
     }
 
@@ -122,6 +132,7 @@ public class RentalStateTests
     [InlineData(RentalStatus.Rejected)]
     public void RejectedState_CannotTransitionToAnything(RentalStatus target)
     {
+        // Arrange + Act + Assert
         Assert.False(new RejectedState().CanTransitionTo(target));
     }
 
@@ -130,7 +141,10 @@ public class RentalStateTests
     [Fact]
     public void TransitionTo_ReturnsCorrectNextState_OnLegalTransition()
     {
+        // Arrange + Act
         var next = new RequestedState().TransitionTo(RentalStatus.Approved);
+
+        // Assert
         Assert.IsType<ApprovedState>(next);
         Assert.Equal(RentalStatus.Approved, next.Status);
     }
@@ -138,8 +152,11 @@ public class RentalStateTests
     [Fact]
     public void TransitionTo_Throws_OnIllegalTransition()
     {
+        // Arrange + Act
         var ex = Assert.Throws<InvalidOperationException>(
             () => new RequestedState().TransitionTo(RentalStatus.Completed));
+
+        // Assert: error message includes both states.
         Assert.Contains("Requested", ex.Message);
         Assert.Contains("Completed", ex.Message);
     }
@@ -147,13 +164,17 @@ public class RentalStateTests
     [Fact]
     public void TransitionTo_OverdueToReturned_ReturnsReturnedState()
     {
+        // Arrange + Act
         var next = new OverdueState().TransitionTo(RentalStatus.Returned);
+
+        // Assert
         Assert.IsType<ReturnedState>(next);
     }
 
     [Fact]
     public void TransitionTo_CompletedState_AlwaysThrows()
     {
+        // Arrange + Act + Assert
         Assert.Throws<InvalidOperationException>(
             () => new CompletedState().TransitionTo(RentalStatus.Requested));
     }
