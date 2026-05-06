@@ -11,6 +11,7 @@ public class ApiCategoryRepositoryTests
     public async Task ListAsync_HitsCategoriesEndpoint_AndParsesEnvelope()
     {
         // Spec: GET /categories returns { categories: [...] }, NOT a bare array.
+        // Arrange
         var stub = new StubHttpMessageHandler(TestResponses.Json(new
         {
             categories = new[]
@@ -21,8 +22,10 @@ public class ApiCategoryRepositoryTests
         }));
         var repo = BuildRepo(stub);
 
+        // Act
         var result = await repo.ListAsync();
 
+        // Assert
         var request = Assert.Single(stub.Requests);
         Assert.Equal(HttpMethod.Get, request.Method);
         Assert.Equal("/categories", request.RequestUri!.AbsolutePath);
@@ -35,6 +38,7 @@ public class ApiCategoryRepositoryTests
     [Fact]
     public async Task GetByIdAsync_FindsMatchingCategoryFromEnvelope()
     {
+        // Arrange
         var stub = new StubHttpMessageHandler(TestResponses.Json(new
         {
             categories = new[]
@@ -45,8 +49,10 @@ public class ApiCategoryRepositoryTests
         }));
         var repo = BuildRepo(stub);
 
+        // Act
         var category = await repo.GetByIdAsync(2);
 
+        // Assert
         Assert.NotNull(category);
         Assert.Equal("Camping Gear", category!.Name);
     }
@@ -54,22 +60,27 @@ public class ApiCategoryRepositoryTests
     [Fact]
     public async Task GetByIdAsync_ReturnsNull_WhenNotInEnvelope()
     {
+        // Arrange
         var stub = new StubHttpMessageHandler(TestResponses.Json(new
         {
             categories = Array.Empty<object>(),
         }));
         var repo = BuildRepo(stub);
 
+        // Act
         var category = await repo.GetByIdAsync(99);
 
+        // Assert
         Assert.Null(category);
     }
 
     [Fact]
     public async Task CreateAsync_Throws_NotSupported()
     {
+        // Arrange
         var repo = BuildRepo(new StubHttpMessageHandler(TestResponses.Status(HttpStatusCode.OK)));
 
+        // Act + Assert
         await Assert.ThrowsAsync<NotSupportedException>(
             () => repo.CreateAsync(new Category { Name = "X", Slug = "x" }));
     }
@@ -77,8 +88,10 @@ public class ApiCategoryRepositoryTests
     [Fact]
     public async Task UpdateAsync_Throws_NotSupported()
     {
+        // Arrange
         var repo = BuildRepo(new StubHttpMessageHandler(TestResponses.Status(HttpStatusCode.OK)));
 
+        // Act + Assert
         await Assert.ThrowsAsync<NotSupportedException>(
             () => repo.UpdateAsync(new Category { Id = 1, Name = "X", Slug = "x" }));
     }
@@ -86,13 +99,16 @@ public class ApiCategoryRepositoryTests
     [Fact]
     public async Task DeleteAsync_Throws_NotSupported()
     {
+        // Arrange
         var repo = BuildRepo(new StubHttpMessageHandler(TestResponses.Status(HttpStatusCode.OK)));
 
+        // Act + Assert
         await Assert.ThrowsAsync<NotSupportedException>(() => repo.DeleteAsync(1));
     }
 
     private static ApiCategoryRepository BuildRepo(StubHttpMessageHandler stub)
     {
+        // Arrange: repository under test with a stubbed HttpClient.
         var client = new HttpClient(stub) { BaseAddress = new Uri("https://api.test/") };
         return new ApiCategoryRepository(client);
     }

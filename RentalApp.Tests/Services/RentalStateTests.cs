@@ -12,13 +12,13 @@ public class RentalStateTests
     // ---- Factory ----------------------------------------------------------
 
     [Theory]
-    [InlineData(RentalStatus.Requested,  typeof(RequestedState))]
-    [InlineData(RentalStatus.Approved,   typeof(ApprovedState))]
+    [InlineData(RentalStatus.Requested, typeof(RequestedState))]
+    [InlineData(RentalStatus.Approved, typeof(ApprovedState))]
     [InlineData(RentalStatus.OutForRent, typeof(OutForRentState))]
-    [InlineData(RentalStatus.Overdue,    typeof(OverdueState))]
-    [InlineData(RentalStatus.Returned,   typeof(ReturnedState))]
-    [InlineData(RentalStatus.Completed,  typeof(CompletedState))]
-    [InlineData(RentalStatus.Rejected,   typeof(RejectedState))]
+    [InlineData(RentalStatus.Overdue, typeof(OverdueState))]
+    [InlineData(RentalStatus.Returned, typeof(ReturnedState))]
+    [InlineData(RentalStatus.Completed, typeof(CompletedState))]
+    [InlineData(RentalStatus.Rejected, typeof(RejectedState))]
     public void For_ReturnsCorrectConcreteType(RentalStatus status, Type expectedType)
     {
         // Arrange + Act: build the state via the factory.
@@ -44,10 +44,10 @@ public class RentalStateTests
     [InlineData(RentalStatus.Approved, true)]
     [InlineData(RentalStatus.Rejected, true)]
     [InlineData(RentalStatus.OutForRent, false)]
-    [InlineData(RentalStatus.Overdue,    false)]
-    [InlineData(RentalStatus.Returned,   false)]
-    [InlineData(RentalStatus.Completed,  false)]
-    [InlineData(RentalStatus.Requested,  false)]
+    [InlineData(RentalStatus.Overdue, false)]
+    [InlineData(RentalStatus.Returned, false)]
+    [InlineData(RentalStatus.Completed, false)]
+    [InlineData(RentalStatus.Requested, false)]
     public void RequestedState_CanTransitionTo(RentalStatus target, bool expected)
     {
         // Arrange + Act + Assert
@@ -58,10 +58,10 @@ public class RentalStateTests
 
     [Theory]
     [InlineData(RentalStatus.OutForRent, true)]
-    [InlineData(RentalStatus.Approved,   false)]
-    [InlineData(RentalStatus.Rejected,   false)]
-    [InlineData(RentalStatus.Returned,   false)]
-    [InlineData(RentalStatus.Completed,  false)]
+    [InlineData(RentalStatus.Approved, false)]
+    [InlineData(RentalStatus.Rejected, false)]
+    [InlineData(RentalStatus.Returned, false)]
+    [InlineData(RentalStatus.Completed, false)]
     public void ApprovedState_CanTransitionTo(RentalStatus target, bool expected)
     {
         // Arrange + Act + Assert
@@ -71,10 +71,10 @@ public class RentalStateTests
     // ---- OutForRentState --------------------------------------------------
 
     [Theory]
-    [InlineData(RentalStatus.Returned,   true)]
+    [InlineData(RentalStatus.Returned, true)]
     [InlineData(RentalStatus.OutForRent, false)]
-    [InlineData(RentalStatus.Completed,  false)]
-    [InlineData(RentalStatus.Approved,   false)]
+    [InlineData(RentalStatus.Completed, false)]
+    [InlineData(RentalStatus.Approved, false)]
     public void OutForRentState_CanTransitionTo(RentalStatus target, bool expected)
     {
         // Arrange + Act + Assert
@@ -84,11 +84,11 @@ public class RentalStateTests
     // ---- OverdueState -----------------------------------------------------
 
     [Theory]
-    [InlineData(RentalStatus.Returned,   true)]
+    [InlineData(RentalStatus.Returned, true)]
     [InlineData(RentalStatus.OutForRent, false)]
-    [InlineData(RentalStatus.Completed,  false)]
-    [InlineData(RentalStatus.Approved,   false)]
-    [InlineData(RentalStatus.Overdue,    false)]
+    [InlineData(RentalStatus.Completed, false)]
+    [InlineData(RentalStatus.Approved, false)]
+    [InlineData(RentalStatus.Overdue, false)]
     public void OverdueState_CanTransitionTo(RentalStatus target, bool expected)
     {
         // Arrange + Act + Assert
@@ -98,10 +98,10 @@ public class RentalStateTests
     // ---- ReturnedState ----------------------------------------------------
 
     [Theory]
-    [InlineData(RentalStatus.Completed,  true)]
-    [InlineData(RentalStatus.Returned,   false)]
+    [InlineData(RentalStatus.Completed, true)]
+    [InlineData(RentalStatus.Returned, false)]
     [InlineData(RentalStatus.OutForRent, false)]
-    [InlineData(RentalStatus.Approved,   false)]
+    [InlineData(RentalStatus.Approved, false)]
     public void ReturnedState_CanTransitionTo(RentalStatus target, bool expected)
     {
         // Arrange + Act + Assert

@@ -31,14 +31,17 @@ public sealed class DbRentalRepositoryTests : IClassFixture<DatabaseFixture>, IA
     [Fact]
     public async Task RequestAsync_Creates_Rental_With_Correct_TotalPrice()
     {
+        // Arrange
         var (owner, borrower, item) = await SeedScenarioAsync();
         _user.CurrentUserId = borrower.Id;
 
         var start = DateOnly.FromDateTime(DateTime.UtcNow.AddDays(1));
         var end   = start.AddDays(3); // 3-day rental at £10/day
 
+        // Act
         var rental = await _repo.RequestAsync(item.Id, start, end);
 
+        // Assert
         Assert.True(rental.Id > 0);
         Assert.Equal(RentalStatus.Requested, rental.Status);
         Assert.Equal(30.00m, rental.TotalPrice);
@@ -49,11 +52,13 @@ public sealed class DbRentalRepositoryTests : IClassFixture<DatabaseFixture>, IA
     [Fact]
     public async Task RequestAsync_Throws_WhenEndDateNotAfterStartDate()
     {
+        // Arrange
         var (_, borrower, item) = await SeedScenarioAsync();
         _user.CurrentUserId = borrower.Id;
 
         var date = DateOnly.FromDateTime(DateTime.UtcNow.AddDays(1));
 
+        // Act + Assert
         await Assert.ThrowsAsync<ArgumentException>(
             () => _repo.RequestAsync(item.Id, startDate: date, endDate: date));
     }
@@ -63,6 +68,7 @@ public sealed class DbRentalRepositoryTests : IClassFixture<DatabaseFixture>, IA
     [Fact]
     public async Task GetIncomingAsync_Returns_Only_Rentals_On_Owners_Items()
     {
+        // Arrange
         var (owner, borrower, item) = await SeedScenarioAsync();
         var unrelatedOwner = await SeedUserAsync("other@test.com");
         var unrelatedItem  = await SeedItemAsync(unrelatedOwner.Id);
@@ -74,8 +80,11 @@ public sealed class DbRentalRepositoryTests : IClassFixture<DatabaseFixture>, IA
         await SeedRentalAsync(unrelatedItem.Id, unrelatedRenter.Id);
 
         _user.CurrentUserId = owner.Id;
+
+        // Act
         var incoming = await _repo.GetIncomingAsync();
 
+        // Assert
         Assert.Single(incoming);
         Assert.Equal(item.Id, incoming[0].ItemId);
     }
@@ -83,13 +92,17 @@ public sealed class DbRentalRepositoryTests : IClassFixture<DatabaseFixture>, IA
     [Fact]
     public async Task GetIncomingAsync_Filters_By_Status()
     {
+        // Arrange
         var (owner, borrower, item) = await SeedScenarioAsync();
         await SeedRentalAsync(item.Id, borrower.Id, RentalStatus.Requested);
         await SeedRentalAsync(item.Id, borrower.Id, RentalStatus.Approved);
 
         _user.CurrentUserId = owner.Id;
+
+        // Act
         var approved = await _repo.GetIncomingAsync(new RentalQuery { Status = RentalStatus.Approved });
 
+        // Assert
         Assert.Single(approved);
         Assert.Equal(RentalStatus.Approved, approved[0].Status);
     }
@@ -99,6 +112,7 @@ public sealed class DbRentalRepositoryTests : IClassFixture<DatabaseFixture>, IA
     [Fact]
     public async Task GetOutgoingAsync_Returns_Only_Current_Users_Rentals()
     {
+        // Arrange
         var (_, borrower1, item) = await SeedScenarioAsync();
         var borrower2 = await SeedUserAsync("b2@test.com");
 
@@ -106,8 +120,11 @@ public sealed class DbRentalRepositoryTests : IClassFixture<DatabaseFixture>, IA
         await SeedRentalAsync(item.Id, borrower2.Id);
 
         _user.CurrentUserId = borrower1.Id;
+
+        // Act
         var outgoing = await _repo.GetOutgoingAsync();
 
+        // Assert
         Assert.Single(outgoing);
         Assert.Equal(borrower1.Id, outgoing[0].BorrowerId);
     }
@@ -117,12 +134,16 @@ public sealed class DbRentalRepositoryTests : IClassFixture<DatabaseFixture>, IA
     [Fact]
     public async Task UpdateStatusAsync_Persists_NewStatus()
     {
+        // Arrange
         var (owner, borrower, item) = await SeedScenarioAsync();
         var rental = await SeedRentalAsync(item.Id, borrower.Id, RentalStatus.Requested);
 
         _user.CurrentUserId = owner.Id;
+
+        // Act
         var update = await _repo.UpdateStatusAsync(rental.Id, RentalStatus.Approved);
 
+        // Assert
         Assert.Equal(RentalStatus.Approved, update.Status);
 
         using var db = _fixture.Factory.CreateDbContext();
@@ -134,12 +155,16 @@ public sealed class DbRentalRepositoryTests : IClassFixture<DatabaseFixture>, IA
     public async Task UpdateStatusAsync_Maps_Overdue_To_OutForRent_In_Database()
     {
         // Overdue is a client-side derived state — the DB must never store it.
+        // Arrange
         var (owner, borrower, item) = await SeedScenarioAsync();
         var rental = await SeedRentalAsync(item.Id, borrower.Id, RentalStatus.OutForRent);
 
         _user.CurrentUserId = owner.Id;
+
+        // Act
         await _repo.UpdateStatusAsync(rental.Id, RentalStatus.Overdue);
 
+        // Assert
         using var db = _fixture.Factory.CreateDbContext();
         var reloaded = await db.Rentals.FindAsync(rental.Id);
         // The persisted value must be OutForRent, not Overdue.
@@ -151,6 +176,7 @@ public sealed class DbRentalRepositoryTests : IClassFixture<DatabaseFixture>, IA
     [Fact]
     public async Task GetOutgoingAsync_Elevates_OutForRent_To_Overdue_WhenEndDatePast()
     {
+        // Arrange
         var (_, borrower, item) = await SeedScenarioAsync();
 
         // Rental with end date in the past and status OutForRent.
@@ -159,8 +185,11 @@ public sealed class DbRentalRepositoryTests : IClassFixture<DatabaseFixture>, IA
             startDate: pastEnd.AddDays(-3), endDate: pastEnd);
 
         _user.CurrentUserId = borrower.Id;
+
+        // Act
         var outgoing = await _repo.GetOutgoingAsync();
 
+        // Assert
         Assert.Single(outgoing);
         Assert.Equal(RentalStatus.Overdue, outgoing[0].Status);
     }
@@ -168,6 +197,7 @@ public sealed class DbRentalRepositoryTests : IClassFixture<DatabaseFixture>, IA
     [Fact]
     public async Task GetIncomingAsync_Overdue_Filter_Matches_OutForRent_With_PastEndDate()
     {
+        // Arrange
         var (owner, borrower, item) = await SeedScenarioAsync();
 
         var pastEnd = DateOnly.FromDateTime(DateTime.UtcNow.AddDays(-1));
@@ -180,8 +210,11 @@ public sealed class DbRentalRepositoryTests : IClassFixture<DatabaseFixture>, IA
             startDate: futureEnd.AddDays(-1), endDate: futureEnd);
 
         _user.CurrentUserId = owner.Id;
+
+        // Act
         var overdueOnly = await _repo.GetIncomingAsync(new RentalQuery { Status = RentalStatus.Overdue });
 
+        // Assert
         Assert.Single(overdueOnly);
         Assert.Equal(RentalStatus.Overdue, overdueOnly[0].Status);
     }

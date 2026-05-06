@@ -107,7 +107,11 @@ public class ApiAuthenticationServiceTests
         var storage = new InMemoryTokenStorage(token);
         var inner = new StubHttpMessageHandler(TestResponses.Json(new
         {
-            id = 7, email = "a@b.com", firstName = "A", lastName = "B", createdAt = DateTime.UtcNow,
+            id = 7,
+            email = "a@b.com",
+            firstName = "A",
+            lastName = "B",
+            createdAt = DateTime.UtcNow,
         }));
         var (service, _, _) = BuildService(storage, inner);
         Assert.True(await service.TryRestoreSessionAsync());
@@ -208,7 +212,11 @@ public class ApiAuthenticationServiceTests
             // First call: TryRestoreSession -> /users/me succeeds
             TestResponses.Json(new
             {
-                id = 7, email = "a@b.com", firstName = "A", lastName = "B", createdAt = DateTime.UtcNow,
+                id = 7,
+                email = "a@b.com",
+                firstName = "A",
+                lastName = "B",
+                createdAt = DateTime.UtcNow,
             }),
             // Second call: some downstream authenticated call that the app makes later
             TestResponses.Status(HttpStatusCode.Unauthorized));
@@ -241,7 +249,10 @@ public class ApiAuthenticationServiceTests
         var inner = new StubHttpMessageHandler(
             TestResponses.Json(new
             {
-                id = 9, email = "c@d.com", firstName = "C", lastName = "D",
+                id = 9,
+                email = "c@d.com",
+                firstName = "C",
+                lastName = "D",
                 createdAt = DateTime.UtcNow,
             }, HttpStatusCode.Created));
         var (service, _, _) = BuildService(storage, inner);

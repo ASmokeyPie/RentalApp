@@ -65,30 +65,30 @@ public class RentalServiceTests
 
     [Theory]
     // From Requested
-    [InlineData(RentalStatus.Requested, RentalStatus.Approved,    true)]
-    [InlineData(RentalStatus.Requested, RentalStatus.Rejected,    true)]
-    [InlineData(RentalStatus.Requested, RentalStatus.OutForRent,  false)]
-    [InlineData(RentalStatus.Requested, RentalStatus.Returned,    false)]
-    [InlineData(RentalStatus.Requested, RentalStatus.Completed,   false)]
+    [InlineData(RentalStatus.Requested, RentalStatus.Approved, true)]
+    [InlineData(RentalStatus.Requested, RentalStatus.Rejected, true)]
+    [InlineData(RentalStatus.Requested, RentalStatus.OutForRent, false)]
+    [InlineData(RentalStatus.Requested, RentalStatus.Returned, false)]
+    [InlineData(RentalStatus.Requested, RentalStatus.Completed, false)]
     // From Approved
-    [InlineData(RentalStatus.Approved,  RentalStatus.OutForRent,  true)]
-    [InlineData(RentalStatus.Approved,  RentalStatus.Rejected,    false)]
-    [InlineData(RentalStatus.Approved,  RentalStatus.Completed,   false)]
+    [InlineData(RentalStatus.Approved, RentalStatus.OutForRent, true)]
+    [InlineData(RentalStatus.Approved, RentalStatus.Rejected, false)]
+    [InlineData(RentalStatus.Approved, RentalStatus.Completed, false)]
     // From OutForRent
-    [InlineData(RentalStatus.OutForRent, RentalStatus.Returned,   true)]
-    [InlineData(RentalStatus.OutForRent, RentalStatus.Completed,  false)]
+    [InlineData(RentalStatus.OutForRent, RentalStatus.Returned, true)]
+    [InlineData(RentalStatus.OutForRent, RentalStatus.Completed, false)]
     // From Overdue (client-side derived: OutForRent past end date)
-    [InlineData(RentalStatus.Overdue, RentalStatus.Returned,      true)]
-    [InlineData(RentalStatus.Overdue, RentalStatus.Completed,     false)]
-    [InlineData(RentalStatus.Overdue, RentalStatus.Approved,      false)]
+    [InlineData(RentalStatus.Overdue, RentalStatus.Returned, true)]
+    [InlineData(RentalStatus.Overdue, RentalStatus.Completed, false)]
+    [InlineData(RentalStatus.Overdue, RentalStatus.Approved, false)]
     // From Returned
-    [InlineData(RentalStatus.Returned, RentalStatus.Completed,    true)]
-    [InlineData(RentalStatus.Returned, RentalStatus.OutForRent,   false)]
+    [InlineData(RentalStatus.Returned, RentalStatus.Completed, true)]
+    [InlineData(RentalStatus.Returned, RentalStatus.OutForRent, false)]
     // Terminal states have no outgoing edges
-    [InlineData(RentalStatus.Rejected,  RentalStatus.Approved,    false)]
-    [InlineData(RentalStatus.Completed, RentalStatus.Approved,    false)]
+    [InlineData(RentalStatus.Rejected, RentalStatus.Approved, false)]
+    [InlineData(RentalStatus.Completed, RentalStatus.Approved, false)]
     // Self-transition not legal
-    [InlineData(RentalStatus.Requested, RentalStatus.Requested,   false)]
+    [InlineData(RentalStatus.Requested, RentalStatus.Requested, false)]
     public void IsTransitionLegal_RespectsStateMachine(RentalStatus from, RentalStatus to, bool expected)
     {
         // Arrange
@@ -342,12 +342,26 @@ public class RentalServiceTests
         // Two requests for the same item and overlapping dates; one is already Approved.
         // Arrange
         var (svc, repo) = BuildWithMock();
-        var toApprove = new Rental { Id = 7, ItemId = 1, BorrowerId = 2,
-            StartDate = new DateOnly(2026, 6, 1), EndDate = new DateOnly(2026, 6, 5),
-            Status = RentalStatus.Requested, TotalPrice = 40m };
-        var alreadyApproved = new Rental { Id = 8, ItemId = 1, BorrowerId = 3,
-            StartDate = new DateOnly(2026, 6, 3), EndDate = new DateOnly(2026, 6, 7),
-            Status = RentalStatus.Approved, TotalPrice = 40m };
+        var toApprove = new Rental
+        {
+            Id = 7,
+            ItemId = 1,
+            BorrowerId = 2,
+            StartDate = new DateOnly(2026, 6, 1),
+            EndDate = new DateOnly(2026, 6, 5),
+            Status = RentalStatus.Requested,
+            TotalPrice = 40m
+        };
+        var alreadyApproved = new Rental
+        {
+            Id = 8,
+            ItemId = 1,
+            BorrowerId = 3,
+            StartDate = new DateOnly(2026, 6, 3),
+            EndDate = new DateOnly(2026, 6, 7),
+            Status = RentalStatus.Approved,
+            TotalPrice = 40m
+        };
 
         repo.Setup(r => r.GetByIdAsync(7, default)).ReturnsAsync(toApprove);
         repo.Setup(r => r.GetIncomingAsync(null, default))
@@ -369,12 +383,26 @@ public class RentalServiceTests
         // approved should succeed; a pending Requested rental must not block it.
         // Arrange
         var (svc, repo) = BuildWithMock();
-        var toApprove = new Rental { Id = 7, ItemId = 1, BorrowerId = 2,
-            StartDate = new DateOnly(2026, 6, 1), EndDate = new DateOnly(2026, 6, 5),
-            Status = RentalStatus.Requested, TotalPrice = 40m };
-        var alsoRequested = new Rental { Id = 8, ItemId = 1, BorrowerId = 3,
-            StartDate = new DateOnly(2026, 6, 1), EndDate = new DateOnly(2026, 6, 5),
-            Status = RentalStatus.Requested, TotalPrice = 40m };
+        var toApprove = new Rental
+        {
+            Id = 7,
+            ItemId = 1,
+            BorrowerId = 2,
+            StartDate = new DateOnly(2026, 6, 1),
+            EndDate = new DateOnly(2026, 6, 5),
+            Status = RentalStatus.Requested,
+            TotalPrice = 40m
+        };
+        var alsoRequested = new Rental
+        {
+            Id = 8,
+            ItemId = 1,
+            BorrowerId = 3,
+            StartDate = new DateOnly(2026, 6, 1),
+            EndDate = new DateOnly(2026, 6, 5),
+            Status = RentalStatus.Requested,
+            TotalPrice = 40m
+        };
 
         repo.Setup(r => r.GetByIdAsync(7, default)).ReturnsAsync(toApprove);
         repo.Setup(r => r.GetIncomingAsync(null, default))

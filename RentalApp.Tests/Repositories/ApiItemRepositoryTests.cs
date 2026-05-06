@@ -14,11 +14,14 @@ public class ApiItemRepositoryTests
     [Fact]
     public async Task GetByIdAsync_ReturnsNull_On404()
     {
+        // Arrange
         var stub = new StubHttpMessageHandler(TestResponses.Status(HttpStatusCode.NotFound));
         var repo = BuildRepo(stub);
 
+        // Act
         var item = await repo.GetByIdAsync(42);
 
+        // Assert
         Assert.Null(item);
         Assert.Equal("/items/42", stub.Requests.Single().RequestUri!.AbsolutePath);
     }
@@ -28,6 +31,7 @@ public class ApiItemRepositoryTests
     {
         // Spec: GET /items/{id} returns latitude/longitude (not lat/lon),
         // plus totalReviews and an inline reviews array.
+        // Arrange
         var stub = new StubHttpMessageHandler(TestResponses.Json(new
         {
             id = 42,
@@ -49,8 +53,10 @@ public class ApiItemRepositoryTests
         }));
         var repo = BuildRepo(stub);
 
+        // Act
         var item = await repo.GetByIdAsync(42);
 
+        // Assert
         Assert.NotNull(item);
         Assert.Equal(42, item!.Id);
         Assert.Equal("Cordless Drill", item.Title);
@@ -68,6 +74,7 @@ public class ApiItemRepositoryTests
     {
         // Phase 7b: surface the inline reviews array + totalReviews count
         // so ItemDetailsPage can render them without an extra round-trip.
+        // Arrange
         var stub = new StubHttpMessageHandler(TestResponses.Json(new
         {
             id = 42,
@@ -99,8 +106,10 @@ public class ApiItemRepositoryTests
         }));
         var repo = BuildRepo(stub);
 
+        // Act
         var item = await repo.GetByIdAsync(42);
 
+        // Assert
         Assert.NotNull(item);
         Assert.Equal(3, item!.TotalReviews);
         Assert.Equal(2, item.Reviews.Count);
@@ -117,6 +126,7 @@ public class ApiItemRepositoryTests
     {
         // Spec: GET /items list response is { items, totalItems, page, pageSize, totalPages }
         // and the items in the list have NO latitude/longitude.
+        // Arrange
         var stub = new StubHttpMessageHandler(TestResponses.Json(new
         {
             items = new[]
@@ -140,6 +150,7 @@ public class ApiItemRepositoryTests
         }));
         var repo = BuildRepo(stub);
 
+        // Act
         var result = await repo.SearchAsync(new ItemQuery
         {
             CategorySlug = "power-tools",
@@ -148,6 +159,7 @@ public class ApiItemRepositoryTests
             PageSize = 10,
         });
 
+        // Assert
         var query = stub.Requests.Single().RequestUri!.Query;
         Assert.Contains("category=power-tools", query);
         Assert.Contains("search=drill", query);
@@ -164,6 +176,7 @@ public class ApiItemRepositoryTests
     [Fact]
     public async Task SearchAsync_OmitsEmptyFilters_StillIncludesPaging()
     {
+        // Arrange
         var stub = new StubHttpMessageHandler(TestResponses.Json(new
         {
             items = Array.Empty<object>(),
@@ -174,8 +187,10 @@ public class ApiItemRepositoryTests
         }));
         var repo = BuildRepo(stub);
 
+        // Act
         await repo.SearchAsync(new ItemQuery());
 
+        // Assert
         var query = stub.Requests.Single().RequestUri!.Query;
         Assert.DoesNotContain("category=", query);
         Assert.DoesNotContain("search=", query);
@@ -189,6 +204,7 @@ public class ApiItemRepositoryTests
     public async Task GetNearbyAsync_BuildsLatLonRadiusInvariantCulture()
     {
         // Spec: GET /items/nearby returns an envelope with searchLocation/radius/totalResults.
+        // Arrange
         var stub = new StubHttpMessageHandler(TestResponses.Json(new
         {
             items = Array.Empty<object>(),
@@ -198,8 +214,10 @@ public class ApiItemRepositoryTests
         }));
         var repo = BuildRepo(stub);
 
+        // Act
         await repo.GetNearbyAsync(55.95, -3.19, 5.0, "power-tools");
 
+        // Assert
         var uri = stub.Requests.Single().RequestUri!;
         Assert.Equal("/items/nearby", uri.AbsolutePath);
         // Query params use the short names per spec (lat/lon/radius/category).
@@ -213,6 +231,7 @@ public class ApiItemRepositoryTests
     public async Task GetNearbyAsync_PopulatesDistanceFromWire()
     {
         // Spec: nearby items use latitude/longitude and 'distance' (not distanceKm).
+        // Arrange
         var stub = new StubHttpMessageHandler(TestResponses.Json(new
         {
             items = new[]
@@ -235,8 +254,10 @@ public class ApiItemRepositoryTests
         }));
         var repo = BuildRepo(stub);
 
+        // Act
         var result = await repo.GetNearbyAsync(55.95, -3.19, 5.0);
 
+        // Assert
         Assert.Single(result);
         Assert.Equal(0.42, result[0].DistanceKm);
         Assert.Equal(55.95, result[0].Latitude);
@@ -250,6 +271,7 @@ public class ApiItemRepositoryTests
     {
         // Spec: POST /items takes latitude/longitude (full names) in the body
         // and ownerId is implicit from the JWT — must NOT be in the body.
+        // Arrange
         var stub = new StubHttpMessageHandler(TestResponses.Json(new
         {
             id = 99,
@@ -267,6 +289,7 @@ public class ApiItemRepositoryTests
         }, HttpStatusCode.Created));
         var repo = BuildRepo(stub);
 
+        // Act
         var created = await repo.CreateAsync(new Item
         {
             Title = "New Item",
@@ -277,6 +300,7 @@ public class ApiItemRepositoryTests
             Longitude = 2.0,
         });
 
+        // Assert
         var request = stub.Requests.Single();
         Assert.Equal(HttpMethod.Post, request.Method);
         Assert.Equal("/items", request.RequestUri!.AbsolutePath);
@@ -309,6 +333,7 @@ public class ApiItemRepositoryTests
         // Spec: PUT /items/{id} returns a slim 5-field response.
         // The repo merges those fields onto the entity caller passed in
         // rather than fabricating a full Item from the slim shape.
+        // Arrange
         var stub = new StubHttpMessageHandler(TestResponses.Json(new
         {
             id = 42,
@@ -319,6 +344,7 @@ public class ApiItemRepositoryTests
         }));
         var repo = BuildRepo(stub);
 
+        // Act
         var updated = await repo.UpdateAsync(new Item
         {
             Id = 42,
@@ -331,6 +357,7 @@ public class ApiItemRepositoryTests
             IsAvailable = false,
         });
 
+        // Assert
         var request = stub.Requests.Single();
         Assert.Equal(HttpMethod.Put, request.Method);
         Assert.Equal("/items/42", request.RequestUri!.AbsolutePath);
@@ -359,6 +386,7 @@ public class ApiItemRepositoryTests
     {
         // Spec: GET /items/{id}/reviews returns
         // { reviews, averageRating, totalReviews, page, pageSize, totalPages }.
+        // Arrange
         var stub = new StubHttpMessageHandler(TestResponses.Json(new
         {
             reviews = new[]
@@ -379,8 +407,10 @@ public class ApiItemRepositoryTests
         }));
         var repo = BuildRepo(stub);
 
+        // Act
         var result = await repo.GetReviewsAsync(42, page: 1, pageSize: 20);
 
+        // Assert
         var uri = stub.Requests.Single().RequestUri!;
         Assert.Equal("/items/42/reviews", uri.AbsolutePath);
         Assert.Contains("page=1",     uri.Query);
@@ -396,8 +426,10 @@ public class ApiItemRepositoryTests
     [Fact]
     public async Task DeleteAsync_Throws_NotSupported()
     {
+        // Arrange
         var repo = BuildRepo(new StubHttpMessageHandler(TestResponses.Status(HttpStatusCode.OK)));
 
+        // Act + Assert
         await Assert.ThrowsAsync<NotSupportedException>(() => repo.DeleteAsync(1));
     }
 
@@ -405,6 +437,7 @@ public class ApiItemRepositoryTests
 
     private static ApiItemRepository BuildRepo(StubHttpMessageHandler stub)
     {
+        // Arrange: repository under test with a stubbed HttpClient.
         var client = new HttpClient(stub) { BaseAddress = new Uri("https://api.test/") };
         return new ApiItemRepository(client);
     }

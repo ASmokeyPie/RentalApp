@@ -16,6 +16,7 @@ public class ApiRentalRepositoryTests
     {
         // Spec: POST /rentals body is { itemId, startDate, endDate } (date strings),
         // response is the full rental shape with createdAt.
+        // Arrange
         var stub = new StubHttpMessageHandler(TestResponses.Json(new
         {
             id = 99,
@@ -33,8 +34,10 @@ public class ApiRentalRepositoryTests
         }, HttpStatusCode.Created));
         var repo = BuildRepo(stub);
 
+        // Act
         var rental = await repo.RequestAsync(7, new DateOnly(2026, 5, 1), new DateOnly(2026, 5, 3));
 
+        // Assert
         var request = stub.Requests.Single();
         Assert.Equal(HttpMethod.Post, request.Method);
         Assert.Equal("/rentals", request.RequestUri!.AbsolutePath);
@@ -60,6 +63,7 @@ public class ApiRentalRepositoryTests
     public async Task GetIncomingAsync_HitsIncomingEndpoint_NoFilter()
     {
         // Spec: response wraps in { rentals, totalRentals }.
+        // Arrange
         var stub = new StubHttpMessageHandler(TestResponses.Json(new
         {
             rentals = Array.Empty<object>(),
@@ -67,8 +71,10 @@ public class ApiRentalRepositoryTests
         }));
         var repo = BuildRepo(stub);
 
+        // Act
         await repo.GetIncomingAsync();
 
+        // Assert
         var uri = stub.Requests.Single().RequestUri!;
         Assert.Equal("/rentals/incoming", uri.AbsolutePath);
         Assert.Equal(string.Empty, uri.Query);
@@ -77,6 +83,7 @@ public class ApiRentalRepositoryTests
     [Fact]
     public async Task GetIncomingAsync_AppendsStatusFilter_WhenProvided()
     {
+        // Arrange
         var stub = new StubHttpMessageHandler(TestResponses.Json(new
         {
             rentals = Array.Empty<object>(),
@@ -84,8 +91,10 @@ public class ApiRentalRepositoryTests
         }));
         var repo = BuildRepo(stub);
 
+        // Act
         await repo.GetIncomingAsync(new RentalQuery { Status = RentalStatus.Approved });
 
+        // Assert
         var uri = stub.Requests.Single().RequestUri!;
         Assert.Equal("/rentals/incoming", uri.AbsolutePath);
         Assert.Equal("?status=Approved", uri.Query);
@@ -94,6 +103,7 @@ public class ApiRentalRepositoryTests
     [Fact]
     public async Task GetOutgoingAsync_HitsOutgoingEndpoint_AndParsesEnvelope()
     {
+        // Arrange
         var stub = new StubHttpMessageHandler(TestResponses.Json(new
         {
             rentals = new[]
@@ -118,8 +128,10 @@ public class ApiRentalRepositoryTests
         }));
         var repo = BuildRepo(stub);
 
+        // Act
         var result = await repo.GetOutgoingAsync();
 
+        // Assert
         var uri = stub.Requests.Single().RequestUri!;
         Assert.Equal("/rentals/outgoing", uri.AbsolutePath);
         Assert.Single(result);
@@ -131,11 +143,14 @@ public class ApiRentalRepositoryTests
     [Fact]
     public async Task GetByIdAsync_ReturnsNull_On404()
     {
+        // Arrange
         var stub = new StubHttpMessageHandler(TestResponses.Status(HttpStatusCode.NotFound));
         var repo = BuildRepo(stub);
 
+        // Act
         var rental = await repo.GetByIdAsync(99);
 
+        // Assert
         Assert.Null(rental);
     }
 
@@ -148,6 +163,7 @@ public class ApiRentalRepositoryTests
         // Regression: live API sends full ISO datetimes for startDate/endDate
         // even though the spec types them as "yyyy-MM-dd". The repo's parser
         // handles both shapes plus a prefix fallback.
+        // Arrange
         var stub = new StubHttpMessageHandler(TestResponses.Json(new
         {
             id = 7, itemId = 1, itemTitle = "Drill",
@@ -159,8 +175,10 @@ public class ApiRentalRepositoryTests
         }));
         var repo = BuildRepo(stub);
 
+        // Act
         var rental = await repo.GetByIdAsync(7);
 
+        // Assert
         Assert.NotNull(rental);
         Assert.Equal(new DateOnly(2026, 4, 1), rental!.StartDate);
         Assert.Equal(new DateOnly(2026, 4, 2), rental.EndDate);
@@ -171,6 +189,7 @@ public class ApiRentalRepositoryTests
     {
         // Spec: GET /rentals/{id} uses 'requestedAt' (not createdAt)
         // and includes 'itemDescription'.
+        // Arrange
         var stub = new StubHttpMessageHandler(TestResponses.Json(new
         {
             id = 7,
@@ -189,8 +208,10 @@ public class ApiRentalRepositoryTests
         }));
         var repo = BuildRepo(stub);
 
+        // Act
         var rental = await repo.GetByIdAsync(7);
 
+        // Assert
         Assert.NotNull(rental);
         Assert.Equal(RentalStatus.Approved, rental!.Status);
         Assert.Equal(new DateOnly(2026, 4, 1), rental.StartDate);
@@ -204,6 +225,7 @@ public class ApiRentalRepositoryTests
     {
         // Spec: PATCH /rentals/{id}/status returns { id, status, updatedAt }.
         // The repo returns a RentalStatusUpdate (not a full Rental) to match.
+        // Arrange
         var updatedAt = DateTime.UtcNow;
         var stub = new StubHttpMessageHandler(TestResponses.Json(new
         {
@@ -213,8 +235,10 @@ public class ApiRentalRepositoryTests
         }));
         var repo = BuildRepo(stub);
 
+        // Act
         var result = await repo.UpdateStatusAsync(7, RentalStatus.Approved);
 
+        // Assert
         var request = stub.Requests.Single();
         Assert.Equal(HttpMethod.Patch, request.Method);
         Assert.Equal("/rentals/7/status", request.RequestUri!.AbsolutePath);
@@ -233,6 +257,7 @@ public class ApiRentalRepositoryTests
         // Regression: server rejected "OutForRent" with 409. The requirements
         // doc and (presumably) server use "Out for Rent" with spaces. We must
         // translate the enum on the way out.
+        // Arrange
         var stub = new StubHttpMessageHandler(TestResponses.Json(new
         {
             id = 7,
@@ -241,8 +266,10 @@ public class ApiRentalRepositoryTests
         }));
         var repo = BuildRepo(stub);
 
+        // Act
         var result = await repo.UpdateStatusAsync(7, RentalStatus.OutForRent);
 
+        // Assert
         var body = await stub.Requests.Single().Content!.ReadAsStringAsync();
         using var doc = JsonDocument.Parse(body);
         Assert.Equal("Out for Rent", doc.RootElement.GetProperty("status").GetString());
@@ -256,6 +283,7 @@ public class ApiRentalRepositoryTests
     [InlineData("out_for_rent")]   // snake_case
     public async Task ParseStatus_TolerantOfOutForRentWireVariants(string wireStatus)
     {
+        // Arrange
         var stub = new StubHttpMessageHandler(TestResponses.Json(new
         {
             id = 7,
@@ -264,8 +292,10 @@ public class ApiRentalRepositoryTests
         }));
         var repo = BuildRepo(stub);
 
+        // Act
         var result = await repo.UpdateStatusAsync(7, RentalStatus.OutForRent);
 
+        // Assert
         Assert.Equal(RentalStatus.OutForRent, result.Status);
     }
 
@@ -274,6 +304,7 @@ public class ApiRentalRepositoryTests
     {
         // The status= query parameter must use the same wire string as
         // PATCH body, otherwise the server's filter won't match anything.
+        // Arrange
         var stub = new StubHttpMessageHandler(TestResponses.Json(new
         {
             rentals = Array.Empty<object>(),
@@ -281,8 +312,10 @@ public class ApiRentalRepositoryTests
         }));
         var repo = BuildRepo(stub);
 
+        // Act
         await repo.GetIncomingAsync(new RentalQuery { Status = RentalStatus.OutForRent });
 
+        // Assert
         var uri = stub.Requests.Single().RequestUri!;
         // URL-encoded spaces become %20.
         Assert.Equal("?status=Out%20for%20Rent", uri.Query);
@@ -295,14 +328,17 @@ public class ApiRentalRepositoryTests
         // (e.g. "Rental cannot be marked OutForRent past its end date") but the
         // repo was throwing a generic "status code does not indicate success"
         // exception. The helper should now propagate the server's 'message'.
+        // Arrange
         var stub = new StubHttpMessageHandler(TestResponses.Json(
             new { error = "Conflict", message = "End date has already passed." },
             HttpStatusCode.Conflict));
         var repo = BuildRepo(stub);
 
+        // Act
         var ex = await Assert.ThrowsAsync<HttpRequestException>(
             () => repo.UpdateStatusAsync(7, RentalStatus.OutForRent));
 
+        // Assert
         Assert.Equal("End date has already passed.", ex.Message);
         Assert.Equal(HttpStatusCode.Conflict, ex.StatusCode);
     }
@@ -312,6 +348,7 @@ public class ApiRentalRepositoryTests
     {
         // Defensive parser: any wire status outside the enum throws so a
         // wire-vs-enum drift isn't silently swallowed.
+        // Arrange
         var stub = new StubHttpMessageHandler(TestResponses.Json(new
         {
             id = 7,
@@ -320,6 +357,7 @@ public class ApiRentalRepositoryTests
         }));
         var repo = BuildRepo(stub);
 
+        // Act + Assert
         await Assert.ThrowsAsync<InvalidDataException>(
             () => repo.UpdateStatusAsync(7, RentalStatus.Approved));
     }
@@ -329,14 +367,20 @@ public class ApiRentalRepositoryTests
     [Fact]
     public async Task ListAsync_Throws_NotSupported()
     {
+        // Arrange
         var repo = BuildRepo(new StubHttpMessageHandler(TestResponses.Status(HttpStatusCode.OK)));
+
+        // Act + Assert
         await Assert.ThrowsAsync<NotSupportedException>(() => repo.ListAsync());
     }
 
     [Fact]
     public async Task CreateAsync_FromEntity_Throws_NotSupported()
     {
+        // Arrange
         var repo = BuildRepo(new StubHttpMessageHandler(TestResponses.Status(HttpStatusCode.OK)));
+
+        // Act + Assert
         await Assert.ThrowsAsync<NotSupportedException>(
             () => repo.CreateAsync(new Rental
             {
@@ -348,14 +392,20 @@ public class ApiRentalRepositoryTests
     [Fact]
     public async Task UpdateAsync_FromEntity_Throws_NotSupported()
     {
+        // Arrange
         var repo = BuildRepo(new StubHttpMessageHandler(TestResponses.Status(HttpStatusCode.OK)));
+
+        // Act + Assert
         await Assert.ThrowsAsync<NotSupportedException>(() => repo.UpdateAsync(new Rental()));
     }
 
     [Fact]
     public async Task DeleteAsync_Throws_NotSupported()
     {
+        // Arrange
         var repo = BuildRepo(new StubHttpMessageHandler(TestResponses.Status(HttpStatusCode.OK)));
+
+        // Act + Assert
         await Assert.ThrowsAsync<NotSupportedException>(() => repo.DeleteAsync(1));
     }
 
@@ -363,6 +413,7 @@ public class ApiRentalRepositoryTests
 
     private static ApiRentalRepository BuildRepo(StubHttpMessageHandler stub)
     {
+        // Arrange: repository under test with a stubbed HttpClient.
         var client = new HttpClient(stub) { BaseAddress = new Uri("https://api.test/") };
         return new ApiRentalRepository(client);
     }

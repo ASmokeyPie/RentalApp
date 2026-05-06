@@ -15,6 +15,7 @@ public class ApiReviewRepositoryTests
     {
         // Spec: POST /reviews response is the bare review object with
         // { id, rentalId, reviewerId, reviewerName, rating, comment, createdAt }.
+        // Arrange
         var stub = new StubHttpMessageHandler(TestResponses.Json(new
         {
             id = 1,
@@ -27,8 +28,10 @@ public class ApiReviewRepositoryTests
         }, HttpStatusCode.Created));
         var repo = BuildRepo(stub);
 
+        // Act
         var review = await repo.CreateAsync(rentalId: 10, rating: 5, comment: "Loved it");
 
+        // Assert
         var request = stub.Requests.Single();
         Assert.Equal(HttpMethod.Post, request.Method);
         Assert.Equal("/reviews", request.RequestUri!.AbsolutePath);
@@ -47,6 +50,7 @@ public class ApiReviewRepositoryTests
     [Fact]
     public async Task CreateAsync_OmitsCommentWhenNull()
     {
+        // Arrange
         var stub = new StubHttpMessageHandler(TestResponses.Json(new
         {
             id = 1,
@@ -58,8 +62,10 @@ public class ApiReviewRepositoryTests
         }, HttpStatusCode.Created));
         var repo = BuildRepo(stub);
 
+        // Act
         await repo.CreateAsync(rentalId: 10, rating: 4, comment: null);
 
+        // Assert
         var bodyJson = await stub.Requests.Single().Content!.ReadAsStringAsync();
         using var doc = JsonDocument.Parse(bodyJson);
         // ApiJsonOptions sets DefaultIgnoreCondition = WhenWritingNull
@@ -69,6 +75,7 @@ public class ApiReviewRepositoryTests
     [Fact]
     public async Task CreateAsync_FromEntity_DelegatesToSpecialised()
     {
+        // Arrange
         var stub = new StubHttpMessageHandler(TestResponses.Json(new
         {
             id = 2, rentalId = 7, reviewerId = 3, reviewerName = "Ada",
@@ -76,11 +83,13 @@ public class ApiReviewRepositoryTests
         }, HttpStatusCode.Created));
         var repo = BuildRepo(stub);
 
+        // Act
         var review = await repo.CreateAsync(new Review
         {
             RentalId = 7, ReviewerId = 3, Rating = 3, Comment = "ok",
         });
 
+        // Assert
         var bodyJson = await stub.Requests.Single().Content!.ReadAsStringAsync();
         using var doc = JsonDocument.Parse(bodyJson);
         Assert.Equal(7, doc.RootElement.GetProperty("rentalId").GetInt32());
@@ -94,6 +103,7 @@ public class ApiReviewRepositoryTests
     {
         // Spec: GET /users/{id}/reviews returns
         // { reviews, averageRating, totalReviews, page, pageSize, totalPages }.
+        // Arrange
         var stub = new StubHttpMessageHandler(TestResponses.Json(new
         {
             reviews = Array.Empty<object>(),
@@ -105,8 +115,10 @@ public class ApiReviewRepositoryTests
         }));
         var repo = BuildRepo(stub);
 
+        // Act
         await repo.GetForUserAsync(userId: 5);
 
+        // Assert
         var uri = stub.Requests.Single().RequestUri!;
         Assert.Equal("/users/5/reviews", uri.AbsolutePath);
         Assert.Contains("page=1",     uri.Query);
@@ -116,6 +128,7 @@ public class ApiReviewRepositoryTests
     [Fact]
     public async Task GetForItemAsync_HitsItemReviewsEndpoint_AndParsesEnvelope()
     {
+        // Arrange
         var stub = new StubHttpMessageHandler(TestResponses.Json(new
         {
             reviews = new[]
@@ -135,8 +148,10 @@ public class ApiReviewRepositoryTests
         }));
         var repo = BuildRepo(stub);
 
+        // Act
         var result = await repo.GetForItemAsync(itemId: 42, page: 1, pageSize: 20);
 
+        // Assert
         var uri = stub.Requests.Single().RequestUri!;
         Assert.Equal("/items/42/reviews", uri.AbsolutePath);
         Assert.Single(result.Items);
@@ -148,28 +163,40 @@ public class ApiReviewRepositoryTests
     [Fact]
     public async Task GetByIdAsync_Throws_NotSupported()
     {
+        // Arrange
         var repo = BuildRepo(new StubHttpMessageHandler(TestResponses.Status(HttpStatusCode.OK)));
+
+        // Act + Assert
         await Assert.ThrowsAsync<NotSupportedException>(() => repo.GetByIdAsync(1));
     }
 
     [Fact]
     public async Task ListAsync_Throws_NotSupported()
     {
+        // Arrange
         var repo = BuildRepo(new StubHttpMessageHandler(TestResponses.Status(HttpStatusCode.OK)));
+
+        // Act + Assert
         await Assert.ThrowsAsync<NotSupportedException>(() => repo.ListAsync());
     }
 
     [Fact]
     public async Task UpdateAsync_Throws_NotSupported()
     {
+        // Arrange
         var repo = BuildRepo(new StubHttpMessageHandler(TestResponses.Status(HttpStatusCode.OK)));
+
+        // Act + Assert
         await Assert.ThrowsAsync<NotSupportedException>(() => repo.UpdateAsync(new Review()));
     }
 
     [Fact]
     public async Task DeleteAsync_Throws_NotSupported()
     {
+        // Arrange
         var repo = BuildRepo(new StubHttpMessageHandler(TestResponses.Status(HttpStatusCode.OK)));
+
+        // Act + Assert
         await Assert.ThrowsAsync<NotSupportedException>(() => repo.DeleteAsync(1));
     }
 
@@ -177,6 +204,7 @@ public class ApiReviewRepositoryTests
 
     private static ApiReviewRepository BuildRepo(StubHttpMessageHandler stub)
     {
+        // Arrange: repository under test with a stubbed HttpClient.
         var client = new HttpClient(stub) { BaseAddress = new Uri("https://api.test/") };
         return new ApiReviewRepository(client);
     }

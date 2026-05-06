@@ -27,17 +27,21 @@ public sealed class DbCategoryRepositoryTests : IClassFixture<DatabaseFixture>, 
     [Fact]
     public async Task ListAsync_Returns_AllTwelveSeededCategories()
     {
+        // Act
         var categories = await _repo.ListAsync();
 
+        // Assert
         Assert.Equal(12, categories.Count);
     }
 
     [Fact]
     public async Task ListAsync_OrderedById_FirstIsPowerTools()
     {
+        // Act
         var categories = await _repo.ListAsync();
         var first = categories.MinBy(c => c.Id);
 
+        // Assert
         Assert.Equal("Power Tools", first!.Name);
         Assert.Equal("power-tools", first.Slug);
     }
@@ -47,8 +51,10 @@ public sealed class DbCategoryRepositoryTests : IClassFixture<DatabaseFixture>, 
     [Fact]
     public async Task GetByIdAsync_Returns_Category_WhenExists()
     {
+        // Act
         var category = await _repo.GetByIdAsync(3); // "Camping Gear"
 
+        // Assert
         Assert.NotNull(category);
         Assert.Equal("Camping Gear", category!.Name);
         Assert.Equal("camping-gear", category.Slug);
@@ -57,8 +63,10 @@ public sealed class DbCategoryRepositoryTests : IClassFixture<DatabaseFixture>, 
     [Fact]
     public async Task GetByIdAsync_Returns_Null_WhenNotFound()
     {
+        // Act
         var category = await _repo.GetByIdAsync(9999);
 
+        // Assert
         Assert.Null(category);
     }
 }

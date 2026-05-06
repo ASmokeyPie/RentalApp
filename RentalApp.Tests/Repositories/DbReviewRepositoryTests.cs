@@ -30,11 +30,14 @@ public sealed class DbReviewRepositoryTests : IClassFixture<DatabaseFixture>, IA
     [Fact]
     public async Task CreateAsync_Persists_Review_And_Assigns_Id()
     {
+        // Arrange
         var (_, borrower, _, rental) = await SeedScenarioAsync();
         _user.CurrentUserId = borrower.Id;
 
+        // Act
         var review = await _repo.CreateAsync(rental.Id, rating: 5, comment: "Great!");
 
+        // Assert
         Assert.True(review.Id > 0);
         Assert.Equal(5, review.Rating);
         Assert.Equal("Great!", review.Comment);
@@ -44,11 +47,14 @@ public sealed class DbReviewRepositoryTests : IClassFixture<DatabaseFixture>, IA
     [Fact]
     public async Task CreateAsync_Populates_DisplayFields()
     {
+        // Arrange
         var (owner, borrower, item, rental) = await SeedScenarioAsync("Ada", "Lovelace");
         _user.CurrentUserId = borrower.Id;
 
+        // Act
         var review = await _repo.CreateAsync(rental.Id, rating: 4, comment: null);
 
+        // Assert
         Assert.Equal(item.Title, review.ItemTitle);
         Assert.Equal("Bob J.", review.ReviewerName);
     }
@@ -56,11 +62,14 @@ public sealed class DbReviewRepositoryTests : IClassFixture<DatabaseFixture>, IA
     [Fact]
     public async Task CreateAsync_NullComment_Is_Allowed()
     {
+        // Arrange
         var (_, borrower, _, rental) = await SeedScenarioAsync();
         _user.CurrentUserId = borrower.Id;
 
+        // Act
         var review = await _repo.CreateAsync(rental.Id, rating: 3, comment: null);
 
+        // Assert
         Assert.Null(review.Comment);
     }
 
@@ -69,6 +78,7 @@ public sealed class DbReviewRepositoryTests : IClassFixture<DatabaseFixture>, IA
     [Fact]
     public async Task GetForItemAsync_Returns_Reviews_For_Item()
     {
+        // Arrange
         var (owner1, borrower1, item1, rental1) = await SeedScenarioAsync();
         var (owner2, borrower2, item2, rental2) = await SeedScenarioAsync(
             ownerEmail: "o2@test.com", borrowerEmail: "b2@test.com");
@@ -76,8 +86,10 @@ public sealed class DbReviewRepositoryTests : IClassFixture<DatabaseFixture>, IA
         await SeedReviewAsync(rental1.Id, borrower1.Id, rating: 5);
         await SeedReviewAsync(rental2.Id, borrower2.Id, rating: 3);
 
+        // Act
         var result = await _repo.GetForItemAsync(item1.Id);
 
+        // Assert
         Assert.Single(result.Items);
         Assert.Equal(1, result.TotalCount);
         Assert.Equal(5, result.Items[0].Rating);
@@ -86,6 +98,7 @@ public sealed class DbReviewRepositoryTests : IClassFixture<DatabaseFixture>, IA
     [Fact]
     public async Task GetForItemAsync_Respects_Pagination()
     {
+        // Arrange
         var (owner, borrower, item, _) = await SeedScenarioAsync();
 
         // Seed 3 rentals → 3 reviews for the same item.
@@ -96,9 +109,11 @@ public sealed class DbReviewRepositoryTests : IClassFixture<DatabaseFixture>, IA
             await SeedReviewAsync(rental.Id, extra.Id, rating: i);
         }
 
+        // Act
         var page1 = await _repo.GetForItemAsync(item.Id, page: 1, pageSize: 2);
         var page2 = await _repo.GetForItemAsync(item.Id, page: 2, pageSize: 2);
 
+        // Assert
         Assert.Equal(3, page1.TotalCount);
         Assert.Equal(2, page1.Items.Count);
         Assert.Single(page2.Items);
@@ -109,6 +124,7 @@ public sealed class DbReviewRepositoryTests : IClassFixture<DatabaseFixture>, IA
     [Fact]
     public async Task GetForUserAsync_Returns_Reviews_Written_By_User()
     {
+        // Arrange
         var (_, borrower1, _, rental1) = await SeedScenarioAsync();
         var (_, borrower2, _, rental2) = await SeedScenarioAsync(
             ownerEmail: "o2@test.com", borrowerEmail: "b2@test.com");
@@ -116,8 +132,10 @@ public sealed class DbReviewRepositoryTests : IClassFixture<DatabaseFixture>, IA
         await SeedReviewAsync(rental1.Id, borrower1.Id, rating: 4, comment: "Good kit");
         await SeedReviewAsync(rental2.Id, borrower2.Id, rating: 2);
 
+        // Act
         var result = await _repo.GetForUserAsync(borrower1.Id);
 
+        // Assert
         Assert.Single(result.Items);
         Assert.Equal("Good kit", result.Items[0].Comment);
     }
@@ -125,11 +143,14 @@ public sealed class DbReviewRepositoryTests : IClassFixture<DatabaseFixture>, IA
     [Fact]
     public async Task GetForUserAsync_Populates_ItemTitle()
     {
+        // Arrange
         var (_, borrower, item, rental) = await SeedScenarioAsync();
         await SeedReviewAsync(rental.Id, borrower.Id, rating: 5);
 
+        // Act
         var result = await _repo.GetForUserAsync(borrower.Id);
 
+        // Assert
         Assert.Single(result.Items);
         Assert.Equal(item.Title, result.Items[0].ItemTitle);
     }
