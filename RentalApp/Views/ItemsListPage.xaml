@@ -16,7 +16,7 @@
                      Command="{Binding NavigateToCreateItemCommand}"/>
     </ContentPage.ToolbarItems>
 
-    <Grid RowDefinitions="Auto,Auto,*,Auto">
+    <Grid RowDefinitions="Auto,Auto,Auto,*,Auto">
 
         <!-- Error banner -->
         <Border Grid.Row="0"
@@ -75,9 +75,15 @@
                                VerticalOptions="Center"/>
         </Grid>
 
+        <!-- Search bar -->
+        <SearchBar Grid.Row="2"
+                   Text="{Binding SearchText}"
+                   Placeholder="Search items..."
+                   Margin="12,0,12,4"/>
+
         <!-- Items list with pull-to-refresh. Paging is driven by the
              explicit Load-more button below, not infinite scroll. -->
-        <RefreshView Grid.Row="2"
+        <RefreshView Grid.Row="3"
                      IsRefreshing="{Binding IsRefreshing}"
                      Command="{Binding RefreshCommand}">
             <CollectionView x:Name="ItemsCollection"
@@ -97,7 +103,7 @@
                                HorizontalOptions="Center"
                                IsVisible="{Binding IsEmpty}"/>
                         <Label Grid.Row="1"
-                               Text="Try a different category, or pull down to refresh."
+                               Text="Try a different search term or category, or pull down to refresh."
                                FontSize="13"
                                TextColor="{AppThemeBinding Light={StaticResource Gray500}, Dark={StaticResource Gray400}}"
                                HorizontalTextAlignment="Center"
@@ -179,7 +185,7 @@
         </RefreshView>
 
         <!-- Footer: Load-more button + item count + loading spinner -->
-        <StackLayout Grid.Row="3"
+        <StackLayout Grid.Row="4"
                 Padding="12,8"
                 Spacing="6">
             <Button Text="{Binding RemainingCount, StringFormat='Load more ({0} remaining)'}"

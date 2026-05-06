@@ -1,5 +1,5 @@
 /// @file ItemsListViewModel.cs
-/// @brief Browse-items list view model with pull-to-refresh, Load-more button, and category filter
+/// @brief Browse-items list view model with pull-to-refresh, Load-more button, category filter, and text search
 /// @author RentalApp Development Team
 /// @date 2026
 
@@ -59,6 +59,13 @@ public partial class ItemsListViewModel : BaseViewModel
     ///          cause a double-load.
     [ObservableProperty]
     private CategoryFilterItem? selectedCategoryFilter;
+
+    /// @brief Free-text search term applied across item title and description.
+    /// @details Changing this triggers an automatic page-1 refresh once the
+    ///          list has been loaded at least once, matching the same guard
+    ///          used by <see cref="SelectedCategoryFilter"/>.
+    [ObservableProperty]
+    private string searchText = string.Empty;
 
     /// @brief True while categories are being fetched for the filter picker.
     [ObservableProperty]
@@ -195,6 +202,7 @@ public partial class ItemsListViewModel : BaseViewModel
                 Page = 1,
                 PageSize = PageSize,
                 CategorySlug = SelectedCategoryFilter?.Slug,
+                Search = string.IsNullOrWhiteSpace(SearchText) ? null : SearchText.Trim(),
             });
 
             Items.Clear();
@@ -237,6 +245,7 @@ public partial class ItemsListViewModel : BaseViewModel
                 Page = nextPage,
                 PageSize = PageSize,
                 CategorySlug = SelectedCategoryFilter?.Slug,
+                Search = string.IsNullOrWhiteSpace(SearchText) ? null : SearchText.Trim(),
             });
 
             foreach (var i in page.Items) Items.Add(i);
@@ -292,6 +301,14 @@ public partial class ItemsListViewModel : BaseViewModel
     ///          where the "All Categories" item is pre-selected before the
     ///          first <see cref="RefreshAsync"/> has run.
     partial void OnSelectedCategoryFilterChanged(CategoryFilterItem? value)
+    {
+        if (CurrentPage > 0)
+            _ = RefreshAsync();
+    }
+
+    /// @brief Triggers a page-1 refresh when the search text changes —
+    ///        same guard as category: only after the first load has run.
+    partial void OnSearchTextChanged(string value)
     {
         if (CurrentPage > 0)
             _ = RefreshAsync();
