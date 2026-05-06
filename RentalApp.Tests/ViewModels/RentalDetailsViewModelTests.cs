@@ -135,12 +135,12 @@ public class RentalDetailsViewModelTests
 
     [Theory]
     // status,                          canApprove, canReject, canMarkOut, canMarkCompleted
-    [InlineData(RentalStatus.Requested,  true,  true,  false, false)]
-    [InlineData(RentalStatus.Approved,   false, false, true,  false)]
+    [InlineData(RentalStatus.Requested, true, true, false, false)]
+    [InlineData(RentalStatus.Approved, false, false, true, false)]
     [InlineData(RentalStatus.OutForRent, false, false, false, false)]   // Mark Returned is borrower-only
-    [InlineData(RentalStatus.Returned,   false, false, false, true)]
-    [InlineData(RentalStatus.Completed,  false, false, false, false)]
-    [InlineData(RentalStatus.Rejected,   false, false, false, false)]
+    [InlineData(RentalStatus.Returned, false, false, false, true)]
+    [InlineData(RentalStatus.Completed, false, false, false, false)]
+    [InlineData(RentalStatus.Rejected, false, false, false, false)]
     public async Task OwnerActionFlags_FollowStatus(
         RentalStatus status,
         bool canApprove,
@@ -160,23 +160,23 @@ public class RentalDetailsViewModelTests
         await vm.LoadAsync();
 
         // Assert
-        Assert.Equal(canApprove,        vm.CanApprove);
-        Assert.Equal(canReject,         vm.CanReject);
+        Assert.Equal(canApprove, vm.CanApprove);
+        Assert.Equal(canReject, vm.CanReject);
         Assert.Equal(canMarkOutForRent, vm.CanMarkOutForRent);
-        Assert.Equal(canMarkCompleted,  vm.CanMarkCompleted);
+        Assert.Equal(canMarkCompleted, vm.CanMarkCompleted);
         // Owner does NOT mark Returned (the borrower does, per server rule).
         Assert.False(vm.CanMarkReturned);
     }
 
     [Theory]
     // status,                          canMarkReturned
-    [InlineData(RentalStatus.Requested,  false)]
-    [InlineData(RentalStatus.Approved,   false)]
+    [InlineData(RentalStatus.Requested, false)]
+    [InlineData(RentalStatus.Approved, false)]
     [InlineData(RentalStatus.OutForRent, true)]   // ← borrower marks Returned
-    [InlineData(RentalStatus.Overdue,    true)]   // ← overdue = late OutForRent, same action
-    [InlineData(RentalStatus.Returned,   false)]
-    [InlineData(RentalStatus.Completed,  false)]
-    [InlineData(RentalStatus.Rejected,   false)]
+    [InlineData(RentalStatus.Overdue, true)]   // ← overdue = late OutForRent, same action
+    [InlineData(RentalStatus.Returned, false)]
+    [InlineData(RentalStatus.Completed, false)]
+    [InlineData(RentalStatus.Rejected, false)]
     public async Task BorrowerActionFlags_FollowStatus(
         RentalStatus status,
         bool canMarkReturned)
@@ -206,7 +206,7 @@ public class RentalDetailsViewModelTests
     [Fact]
     public async Task ApproveAsync_DelegatesToService_AndPatchesStatus()
     {
-         // Arrange
+        // Arrange
         var (vm, rentals, auth) = Build();
         rentals.Setup(s => s.GetRentalAsync(7, default))
                .ReturnsAsync(SampleRental(7, "Drill", RentalStatus.Requested, ownerId: 1, borrowerId: 2));
@@ -216,11 +216,11 @@ public class RentalDetailsViewModelTests
 
         vm.RentalId = 7;
 
-         // Act
+        // Act
         await vm.LoadAsync();
         await vm.ApproveAsync();
 
-         // Assert
+        // Assert
         Assert.Equal(RentalStatus.Approved, vm.Rental!.Status);
         Assert.True(vm.CanMarkOutForRent);   // derived flags re-evaluated
         Assert.False(vm.CanApprove);
@@ -229,7 +229,7 @@ public class RentalDetailsViewModelTests
     [Fact]
     public async Task ActionAsync_OnException_SetsError_AndKeepsStatus()
     {
-         // Arrange
+        // Arrange
         var (vm, rentals, auth) = Build();
         rentals.Setup(s => s.GetRentalAsync(7, default))
                .ReturnsAsync(SampleRental(7, "Drill", RentalStatus.Requested, ownerId: 1, borrowerId: 2));
@@ -239,11 +239,11 @@ public class RentalDetailsViewModelTests
 
         vm.RentalId = 7;
 
-         // Act
+        // Act
         await vm.LoadAsync();
         await vm.ApproveAsync();
 
-         // Assert
+        // Assert
         Assert.Equal(RentalStatus.Requested, vm.Rental!.Status);  // unchanged
         Assert.True(vm.HasError);
         Assert.Contains("server error", vm.ErrorMessage);
@@ -275,7 +275,7 @@ public class RentalDetailsViewModelTests
 
         vm.RentalId = 7;
 
-         // Act
+        // Act
         await vm.LoadAsync();
 
         await vm.ApproveAsync();

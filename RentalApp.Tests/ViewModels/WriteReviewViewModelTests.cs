@@ -12,6 +12,7 @@ public class WriteReviewViewModelTests
     [Fact]
     public async Task LoadAsync_PopulatesRental_AndCanReview_OnHappyPath()
     {
+        // Arrange
         var (vm, rentals, reviews, auth, _) = Build();
         var rental = SampleRental(7, RentalStatus.Completed, borrowerId: 2);
         rentals.Setup(s => s.GetRentalAsync(7, default)).ReturnsAsync(rental);
@@ -19,8 +20,11 @@ public class WriteReviewViewModelTests
         reviews.Setup(s => s.IsRentalReviewable(rental, 2)).Returns(true);
 
         vm.RentalId = 7;
+
+        // Act
         await vm.LoadAsync();
 
+        // Assert
         Assert.NotNull(vm.Rental);
         Assert.True(vm.CanReview);
         Assert.False(vm.HasError);
@@ -29,12 +33,16 @@ public class WriteReviewViewModelTests
     [Fact]
     public async Task LoadAsync_OnNotFound_SetsError()
     {
+        // Arrange
         var (vm, rentals, _, _, _) = Build();
         rentals.Setup(s => s.GetRentalAsync(7, default)).ReturnsAsync((Rental?)null);
 
         vm.RentalId = 7;
+
+        // Act
         await vm.LoadAsync();
 
+        // Assert
         Assert.False(vm.CanReview);
         Assert.True(vm.HasError);
     }
@@ -42,6 +50,7 @@ public class WriteReviewViewModelTests
     [Fact]
     public async Task LoadAsync_LocksForm_WhenStatusNotCompleted()
     {
+        // Arrange
         var (vm, rentals, reviews, auth, _) = Build();
         var rental = SampleRental(7, RentalStatus.Approved, borrowerId: 2);
         rentals.Setup(s => s.GetRentalAsync(7, default)).ReturnsAsync(rental);
@@ -49,8 +58,11 @@ public class WriteReviewViewModelTests
         reviews.Setup(s => s.IsRentalReviewable(rental, 2)).Returns(false);
 
         vm.RentalId = 7;
+
+        // Act
         await vm.LoadAsync();
 
+        // Assert
         Assert.False(vm.CanReview);
         Assert.True(vm.HasError);
         Assert.Contains("Completed", vm.ErrorMessage);
@@ -59,6 +71,7 @@ public class WriteReviewViewModelTests
     [Fact]
     public async Task LoadAsync_LocksForm_WhenViewerIsNotBorrower()
     {
+        // Arrange
         var (vm, rentals, reviews, auth, _) = Build();
         var rental = SampleRental(7, RentalStatus.Completed, borrowerId: 2);
         rentals.Setup(s => s.GetRentalAsync(7, default)).ReturnsAsync(rental);
@@ -66,8 +79,11 @@ public class WriteReviewViewModelTests
         reviews.Setup(s => s.IsRentalReviewable(rental, 99)).Returns(false);
 
         vm.RentalId = 7;
+
+        // Act
         await vm.LoadAsync();
 
+        // Assert
         Assert.False(vm.CanReview);
         Assert.True(vm.HasError);
         Assert.Contains("borrower", vm.ErrorMessage, StringComparison.OrdinalIgnoreCase);
@@ -78,10 +94,13 @@ public class WriteReviewViewModelTests
     [Fact]
     public void StarSymbols_FollowRating()
     {
+        // Arrange
         var (vm, _, _, _, _) = Build();
 
+        // Act
         vm.Rating = 3;
 
+        // Assert
         Assert.Equal("★", vm.Star1Symbol);
         Assert.Equal("★", vm.Star2Symbol);
         Assert.Equal("★", vm.Star3Symbol);
@@ -93,9 +112,12 @@ public class WriteReviewViewModelTests
     public void SetRating_ClampsToValidRange()
     {
         // SetRating takes string (CommandParameter from XAML is always string).
+
+        // Arrange
         var (vm, _, _, _, _) = Build();
         vm.Rating = 3;
 
+        // Act + Assert
         vm.SetRating("0");      // out of range — ignored
         Assert.Equal(3, vm.Rating);
 
@@ -114,6 +136,7 @@ public class WriteReviewViewModelTests
     [Fact]
     public async Task SubmitAsync_DelegatesToService_AndNavigatesBack_OnSuccess()
     {
+        // Arrange
         var (vm, rentals, reviews, auth, nav) = Build();
         var rental = SampleRental(7, RentalStatus.Completed, borrowerId: 2);
         rentals.Setup(s => s.GetRentalAsync(7, default)).ReturnsAsync(rental);
@@ -123,11 +146,14 @@ public class WriteReviewViewModelTests
                .ReturnsAsync(new Review { Id = 99 });
 
         vm.RentalId = 7;
+
+        // Act
         await vm.LoadAsync();
         vm.Rating = 4;
         vm.Comment = "Great drill";
         await vm.SubmitAsync();
 
+        // Assert
         reviews.Verify(s => s.SubmitReviewAsync(rental, 4, "Great drill", 2, default), Times.Once);
         nav.Verify(n => n.NavigateBackAsync(), Times.Once);
         Assert.False(vm.HasError);
@@ -136,6 +162,7 @@ public class WriteReviewViewModelTests
     [Fact]
     public async Task SubmitAsync_PassesNullComment_WhenBlank()
     {
+        // Arrange
         var (vm, rentals, reviews, auth, _) = Build();
         var rental = SampleRental(7, RentalStatus.Completed, borrowerId: 2);
         rentals.Setup(s => s.GetRentalAsync(7, default)).ReturnsAsync(rental);
@@ -145,16 +172,20 @@ public class WriteReviewViewModelTests
                .ReturnsAsync(new Review { Id = 99 });
 
         vm.RentalId = 7;
+
+        // Act
         await vm.LoadAsync();
         vm.Comment = "   ";   // whitespace-only → null
         await vm.SubmitAsync();
 
+        // Assert
         reviews.Verify(s => s.SubmitReviewAsync(rental, It.IsAny<int>(), null, 2, default), Times.Once);
     }
 
     [Fact]
     public async Task SubmitAsync_DoesNothing_WhenNotReviewable()
     {
+        // Arrange
         var (vm, rentals, reviews, auth, nav) = Build();
         var rental = SampleRental(7, RentalStatus.Approved, borrowerId: 2);
         rentals.Setup(s => s.GetRentalAsync(7, default)).ReturnsAsync(rental);
@@ -162,9 +193,12 @@ public class WriteReviewViewModelTests
         reviews.Setup(s => s.IsRentalReviewable(rental, 2)).Returns(false);
 
         vm.RentalId = 7;
+
+        // Act
         await vm.LoadAsync();
         await vm.SubmitAsync();
 
+        // Assert
         reviews.Verify(s => s.SubmitReviewAsync(
                 It.IsAny<Rental>(), It.IsAny<int>(), It.IsAny<string?>(), It.IsAny<int>(), default),
             Times.Never);
@@ -174,6 +208,7 @@ public class WriteReviewViewModelTests
     [Fact]
     public async Task SubmitAsync_OnServiceValidationError_SetsError_AndDoesNotNavigate()
     {
+        // Arrange
         var (vm, rentals, reviews, auth, nav) = Build();
         var rental = SampleRental(7, RentalStatus.Completed, borrowerId: 2);
         rentals.Setup(s => s.GetRentalAsync(7, default)).ReturnsAsync(rental);
@@ -183,9 +218,12 @@ public class WriteReviewViewModelTests
                .ThrowsAsync(new InvalidOperationException("Rating must be between 1 and 5 stars."));
 
         vm.RentalId = 7;
+
+        // Act
         await vm.LoadAsync();
         await vm.SubmitAsync();
 
+        // Assert
         nav.Verify(n => n.NavigateBackAsync(), Times.Never);
         Assert.True(vm.HasError);
         Assert.Contains("1 and 5", vm.ErrorMessage);
@@ -195,6 +233,7 @@ public class WriteReviewViewModelTests
     public async Task SubmitAsync_OnServerConflict_SurfacesMessage()
     {
         // 409 already-reviewed surfaces as HttpRequestException through the repo.
+        // Arrange
         var (vm, rentals, reviews, auth, nav) = Build();
         var rental = SampleRental(7, RentalStatus.Completed, borrowerId: 2);
         rentals.Setup(s => s.GetRentalAsync(7, default)).ReturnsAsync(rental);
@@ -204,9 +243,12 @@ public class WriteReviewViewModelTests
                .ThrowsAsync(new HttpRequestException("Review already exists for this rental."));
 
         vm.RentalId = 7;
+
+        // Act
         await vm.LoadAsync();
         await vm.SubmitAsync();
 
+        // Assert
         nav.Verify(n => n.NavigateBackAsync(), Times.Never);
         Assert.True(vm.HasError);
         Assert.Contains("already exists", vm.ErrorMessage);

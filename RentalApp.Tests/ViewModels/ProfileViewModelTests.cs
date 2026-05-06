@@ -63,7 +63,7 @@ public class ProfileViewModelTests
 
         // Assert
         Assert.Equal(2, vm.Reviews.Count);
-        Assert.Equal("Drill",  vm.Reviews[0].ItemTitle);
+        Assert.Equal("Drill", vm.Reviews[0].ItemTitle);
         Assert.Equal("Ladder", vm.Reviews[1].ItemTitle);
     }
 
@@ -277,16 +277,22 @@ public class ProfileViewModelTests
     [Fact]
     public void AverageRatingDisplay_ReturnsFormattedString_WhenRatingSet()
     {
+        // Arrange
         var (vm, _, _, _) = Build();
         vm.AverageRating = 3.75;
+
+        // Act + Assert
         Assert.Equal("3.8 ★", vm.AverageRatingDisplay);
     }
 
     [Fact]
     public void AverageRatingDisplay_ReturnsFallback_WhenRatingNull()
     {
+        // Arrange
         var (vm, _, _, _) = Build();
         vm.AverageRating = null;
+
+        // Act + Assert
         Assert.Equal("No ratings yet", vm.AverageRatingDisplay);
     }
 
@@ -298,9 +304,9 @@ public class ProfileViewModelTests
         Mock<IReviewRepository> reviews,
         Mock<INavigationService> navigation) Build()
     {
-        var auth    = new Mock<IAuthenticationService>();
+        var auth = new Mock<IAuthenticationService>();
         var reviews = new Mock<IReviewRepository>();
-        var nav     = new Mock<INavigationService>();
+        var nav = new Mock<INavigationService>();
 
         // RefreshCurrentUserAsync is a void Task — default Moq behaviour is fine,
         // but set it up explicitly so tests can verify it was called.
@@ -312,32 +318,32 @@ public class ProfileViewModelTests
 
     private static User User(int id, string first = "Test", string last = "User",
                              double? averageRating = null) => new()
-    {
-        Id            = id,
-        FirstName     = first,
-        LastName      = last,
-        Email         = $"user{id}@example.com",
-        PasswordHash  = string.Empty,
-        AverageRating = averageRating,
-    };
+                             {
+                                 Id = id,
+                                 FirstName = first,
+                                 LastName = last,
+                                 Email = $"user{id}@example.com",
+                                 PasswordHash = string.Empty,
+                                 AverageRating = averageRating,
+                             };
 
     private static Review Review(int id, string itemTitle, int rating, string? comment) => new()
     {
-        Id         = id,
-        RentalId   = 100 + id,
+        Id = id,
+        RentalId = 100 + id,
         ReviewerId = 1,
-        Rating     = rating,
-        Comment    = comment,
-        ItemTitle  = itemTitle,
-        CreatedAt  = new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc).AddDays(id - 1),
+        Rating = rating,
+        Comment = comment,
+        ItemTitle = itemTitle,
+        CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc).AddDays(id - 1),
     };
 
     private static PagedResult<Review> PagedResult(IEnumerable<Review> items, int total) =>
         new()
         {
-            Items      = items.ToList(),
-            Page       = 1,
-            PageSize   = 50,
+            Items = items.ToList(),
+            Page = 1,
+            PageSize = 50,
             TotalCount = total,
         };
 }

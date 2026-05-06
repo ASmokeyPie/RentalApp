@@ -16,14 +16,18 @@ public class RequestRentalViewModelTests
         // Regression: RefreshView toggles IsRefreshing=true BEFORE firing the
         // command. An early-return on IsRefreshing would leave the spinner
         // stuck. LoadAsync must still run and clear the flag in finally.
+        // Arrange
         var (vm, items, _, _) = Build();
         items.Setup(r => r.GetByIdAsync(42, default))
              .ReturnsAsync(SampleItem(42, "Drill", dailyRate: 5m));
 
         vm.IsRefreshing = true;
         vm.ItemId = 42;
+
+        // Act
         await vm.LoadAsync();
 
+        // Assert
         Assert.False(vm.IsRefreshing);
         Assert.True(vm.IsLoaded);
     }
@@ -31,13 +35,17 @@ public class RequestRentalViewModelTests
     [Fact]
     public async Task LoadAsync_PopulatesItem_AndUpdatesTitle_OnSuccess()
     {
+        // Arrange
         var (vm, items, _, _) = Build();
         items.Setup(r => r.GetByIdAsync(42, default))
              .ReturnsAsync(SampleItem(42, "Drill", dailyRate: 5m));
 
         vm.ItemId = 42;
+
+        // Act
         await vm.LoadAsync();
 
+        // Assert
         Assert.NotNull(vm.Item);
         Assert.Equal(42, vm.Item!.Id);
         Assert.True(vm.IsLoaded);
@@ -48,13 +56,17 @@ public class RequestRentalViewModelTests
     [Fact]
     public async Task LoadAsync_OnNotFound_SetsError_AndIsLoadedFalse()
     {
+        // Arrange
         var (vm, items, _, _) = Build();
         items.Setup(r => r.GetByIdAsync(42, default))
              .ReturnsAsync((Item?)null);
 
         vm.ItemId = 42;
+
+        // Act
         await vm.LoadAsync();
 
+        // Assert
         Assert.Null(vm.Item);
         Assert.False(vm.IsLoaded);
         Assert.True(vm.HasError);
@@ -65,15 +77,18 @@ public class RequestRentalViewModelTests
     [Fact]
     public async Task TotalPrice_UpdatesWhenDatesChange()
     {
+        // Arrange
         var (vm, items, _, _) = Build();
         items.Setup(r => r.GetByIdAsync(42, default))
              .ReturnsAsync(SampleItem(42, "Drill", dailyRate: 5m));
         vm.ItemId = 42;
         await vm.LoadAsync();
 
+        // Act
         vm.StartDate = DateTime.Today.AddDays(1);
-        vm.EndDate   = DateTime.Today.AddDays(3);
+        vm.EndDate = DateTime.Today.AddDays(3);
 
+        // Assert
         // 3 inclusive days at £5 = £15
         Assert.Equal(3, vm.TotalDays);
         Assert.Equal(15m, vm.TotalPrice);
@@ -82,18 +97,22 @@ public class RequestRentalViewModelTests
     [Fact]
     public async Task TotalPrice_ZeroBeforeItemLoads()
     {
+        // Arrange
         var (vm, _, _, _) = Build();
         vm.StartDate = DateTime.Today.AddDays(1);
-        vm.EndDate   = DateTime.Today.AddDays(3);
+        vm.EndDate = DateTime.Today.AddDays(3);
 
+        // Act
         await Task.Yield();
 
+        // Assert
         Assert.Equal(0m, vm.TotalPrice);
     }
 
     [Fact]
     public async Task StartDate_DragsEndDateForward_WhenStartMovesPastEnd()
     {
+        // Arrange
         var (vm, items, _, _) = Build();
         items.Setup(r => r.GetByIdAsync(42, default))
              .ReturnsAsync(SampleItem(42, "Drill", dailyRate: 5m));
@@ -101,10 +120,13 @@ public class RequestRentalViewModelTests
         await vm.LoadAsync();
 
         vm.StartDate = DateTime.Today.AddDays(1);
-        vm.EndDate   = DateTime.Today.AddDays(2);
+        vm.EndDate = DateTime.Today.AddDays(2);
         // Now move start past current end:
+
+        // Act
         vm.StartDate = DateTime.Today.AddDays(5);
 
+        // Assert
         Assert.Equal(DateTime.Today.AddDays(5), vm.EndDate);
         Assert.Equal(1, vm.TotalDays);
     }
@@ -114,6 +136,7 @@ public class RequestRentalViewModelTests
     [Fact]
     public async Task SubmitAsync_DelegatesToService_AndNavigatesBack_OnSuccess()
     {
+        // Arrange
         var (vm, items, rentals, nav) = Build();
         items.Setup(r => r.GetByIdAsync(42, default))
              .ReturnsAsync(SampleItem(42, "Drill", dailyRate: 5m));
@@ -123,10 +146,12 @@ public class RequestRentalViewModelTests
         vm.ItemId = 42;
         await vm.LoadAsync();
         vm.StartDate = DateTime.Today.AddDays(1);
-        vm.EndDate   = DateTime.Today.AddDays(3);
+        vm.EndDate = DateTime.Today.AddDays(3);
 
+        // Act
         await vm.SubmitAsync();
 
+        // Assert
         rentals.Verify(s => s.RequestRentalAsync(
                 42,
                 DateOnly.FromDateTime(DateTime.Today.AddDays(1)),
@@ -140,10 +165,13 @@ public class RequestRentalViewModelTests
     [Fact]
     public async Task SubmitAsync_DoesNothing_WhenItemNotLoaded()
     {
+        // Arrange
         var (vm, _, rentals, nav) = Build();
 
+        // Act
         await vm.SubmitAsync();
 
+        // Assert
         rentals.Verify(s => s.RequestRentalAsync(
                 It.IsAny<int>(), It.IsAny<DateOnly>(), It.IsAny<DateOnly>(), default),
             Times.Never);
@@ -155,6 +183,7 @@ public class RequestRentalViewModelTests
     public async Task SubmitAsync_SurfacesServiceValidationErrors()
     {
         // Service throws InvalidOperationException for past start dates etc.
+        // Arrange
         var (vm, items, rentals, nav) = Build();
         items.Setup(r => r.GetByIdAsync(42, default))
              .ReturnsAsync(SampleItem(42, "Drill", dailyRate: 5m));
@@ -164,8 +193,10 @@ public class RequestRentalViewModelTests
         vm.ItemId = 42;
         await vm.LoadAsync();
 
+        // Act
         await vm.SubmitAsync();
 
+        // Assert
         nav.Verify(n => n.NavigateBackAsync(), Times.Never);
         Assert.True(vm.HasError);
         Assert.Contains("past", vm.ErrorMessage, StringComparison.OrdinalIgnoreCase);
@@ -177,6 +208,7 @@ public class RequestRentalViewModelTests
         // Repo translates an HTTP 409 response into HttpRequestException —
         // the VM should surface the message via the error banner without
         // navigating away.
+        // Arrange
         var (vm, items, rentals, nav) = Build();
         items.Setup(r => r.GetByIdAsync(42, default))
              .ReturnsAsync(SampleItem(42, "Drill", dailyRate: 5m));
@@ -186,8 +218,10 @@ public class RequestRentalViewModelTests
         vm.ItemId = 42;
         await vm.LoadAsync();
 
+        // Act
         await vm.SubmitAsync();
 
+        // Assert
         nav.Verify(n => n.NavigateBackAsync(), Times.Never);
         Assert.True(vm.HasError);
         Assert.Contains("already booked", vm.ErrorMessage);
@@ -196,6 +230,7 @@ public class RequestRentalViewModelTests
     [Fact]
     public async Task SubmitAsync_RejectsEndBeforeStart_LocalGuard()
     {
+        // Arrange
         var (vm, items, rentals, _) = Build();
         items.Setup(r => r.GetByIdAsync(42, default))
              .ReturnsAsync(SampleItem(42, "Drill", dailyRate: 5m));
@@ -212,8 +247,10 @@ public class RequestRentalViewModelTests
         // back to before StartDate to simulate an invalid state.
         vm.EndDate = DateTime.Today.AddDays(1);
 
+        // Act
         await vm.SubmitAsync();
 
+        // Assert
         rentals.Verify(s => s.RequestRentalAsync(
                 It.IsAny<int>(), It.IsAny<DateOnly>(), It.IsAny<DateOnly>(), default),
             Times.Never);
