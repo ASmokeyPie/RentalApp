@@ -328,11 +328,11 @@ public class ItemDetailsViewModelTests
 
         vm.ItemId = 42;
 
-            // Act
+        // Act
         await vm.LoadAsync();
         await vm.RentItemAsync();
 
-            // Assert
+        // Assert
         nav.Verify(n => n.NavigateToAsync(
                 "RequestRentalPage",
                 It.Is<Dictionary<string, object>>(d =>
@@ -449,17 +449,17 @@ public class ItemDetailsViewModelTests
                .ReturnsAsync(firstPage)   // slot 2: first explicit LoadAsync
                .ReturnsAsync(secondPage); // slot 3: refresh under test
 
-         // Act
+        // Act
         vm.ItemId = 42;
         await vm.LoadAsync();
 
-         // Assert
+        // Assert
         Assert.Equal(2, vm.Reviews.Count);
 
-         // Act
+        // Act
         await vm.LoadAsync();
 
-         // Assert
+        // Assert
         Assert.Single(vm.Reviews);
         Assert.Equal(1, vm.TotalReviews);
     }

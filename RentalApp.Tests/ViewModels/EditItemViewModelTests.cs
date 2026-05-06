@@ -99,7 +99,7 @@ public class EditItemViewModelTests
     [Fact]
     public async Task SubmitAsync_PutsUpdatedItem_AndNavigatesBack_OnSuccess()
     {
-           // Arrange
+        // Arrange
         var (vm, items, auth, nav) = Build();
         items.Setup(i => i.GetByIdAsync(42, default))
              .ReturnsAsync(SampleItem(42, ownerId: 7));
@@ -109,7 +109,7 @@ public class EditItemViewModelTests
 
         vm.ItemId = 42;
 
-           // Act
+        // Act
         await vm.LoadAsync();
 
         // User edits a couple of fields and saves.
@@ -176,7 +176,7 @@ public class EditItemViewModelTests
     [Fact]
     public async Task SubmitAsync_OnRepoException_SetsError_AndDoesNotNavigate()
     {
-           // Arrange
+        // Arrange
         var (vm, items, auth, nav) = Build();
         items.Setup(i => i.GetByIdAsync(42, default))
              .ReturnsAsync(SampleItem(42, ownerId: 7));
@@ -186,11 +186,11 @@ public class EditItemViewModelTests
 
         vm.ItemId = 42;
 
-           // Act
+        // Act
         await vm.LoadAsync();
         await vm.SubmitAsync();
 
-           // Assert
+        // Assert
         nav.Verify(n => n.NavigateBackAsync(), Times.Never);
         Assert.True(vm.HasError);
         Assert.Contains("network down", vm.ErrorMessage);

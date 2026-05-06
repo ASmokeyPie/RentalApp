@@ -29,7 +29,7 @@ public class FindNearbyViewModelTests
         // Three entries: synthetic "All" + the two from the API.
         Assert.Equal(3, vm.Categories.Count);
         Assert.Equal("All categories", vm.Categories[0].Name);
-        Assert.Equal("Power Tools",   vm.Categories[1].Name);
+        Assert.Equal("Power Tools", vm.Categories[1].Name);
     }
 
     // ---- RefreshAsync ----------------------------------------------------

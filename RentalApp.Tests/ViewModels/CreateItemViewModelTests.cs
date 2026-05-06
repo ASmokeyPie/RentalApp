@@ -75,8 +75,8 @@ public class CreateItemViewModelTests
     }
 
     [Theory]
-    [InlineData("",       "Title")]   // empty
-    [InlineData("xx",     "Title")]   // too short
+    [InlineData("", "Title")]   // empty
+    [InlineData("xx", "Title")]   // too short
     public void TryBuildItem_RejectsBadTitle(string title, string expected)
     {
         // Arrange
@@ -93,10 +93,10 @@ public class CreateItemViewModelTests
     }
 
     [Theory]
-    [InlineData("",     "rate")]    // unparseable empty
-    [InlineData("0",    "rate")]    // not > 0
+    [InlineData("", "rate")]    // unparseable empty
+    [InlineData("0", "rate")]    // not > 0
     [InlineData("9999", "rate")]    // exceeds 1000 cap
-    [InlineData("abc",  "rate")]    // unparseable
+    [InlineData("abc", "rate")]    // unparseable
     public void TryBuildItem_RejectsBadDailyRate(string value, string expected)
     {
         // Arrange
@@ -130,7 +130,7 @@ public class CreateItemViewModelTests
 
     [Theory]
     [InlineData("100", "Latitude")]  // out of range
-    [InlineData("",    "Latitude")]  // empty
+    [InlineData("", "Latitude")]  // empty
     public void TryBuildItem_RejectsBadLatitude(string value, string expected)
     {
         // Arrange

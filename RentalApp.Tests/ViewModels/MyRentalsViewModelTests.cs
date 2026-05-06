@@ -37,7 +37,7 @@ public class MyRentalsViewModelTests
     [Fact]
     public async Task RefreshAsync_ReplacesExistingItems_OnSecondCall()
     {
-         // Arrange
+        // Arrange
         var (vm, rentals, _) = Build();
         rentals.SetupSequence(s => s.GetIncomingAsync(null, default))
                .ReturnsAsync(new[] { Rental(1, "Drill", RentalStatus.Requested) })
@@ -45,11 +45,11 @@ public class MyRentalsViewModelTests
         rentals.Setup(s => s.GetOutgoingAsync(null, default))
                .ReturnsAsync(Array.Empty<Rental>());
 
-         // Act
+        // Act
         await vm.RefreshAsync();
         await vm.RefreshAsync();
 
-         // Assert
+        // Assert
         Assert.Single(vm.Incoming);
         Assert.Equal(99, vm.Incoming[0].Id);
     }
@@ -58,7 +58,7 @@ public class MyRentalsViewModelTests
     public async Task RefreshAsync_ProceedsEvenWhenIsRefreshingAlreadyTrue()
     {
         // Same regression as the other refresh-driven VMs.
-         // Arrange
+        // Arrange
         var (vm, rentals, _) = Build();
         rentals.Setup(s => s.GetIncomingAsync(null, default))
                .ReturnsAsync(Array.Empty<Rental>());
@@ -67,10 +67,10 @@ public class MyRentalsViewModelTests
 
         vm.IsRefreshing = true;
 
-         // Act
+        // Act
         await vm.RefreshAsync();
 
-         // Assert
+        // Assert
         Assert.False(vm.IsRefreshing);
         rentals.Verify(s => s.GetIncomingAsync(null, default), Times.Once);
         rentals.Verify(s => s.GetOutgoingAsync(null, default), Times.Once);
