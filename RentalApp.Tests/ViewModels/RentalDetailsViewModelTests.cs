@@ -13,14 +13,18 @@ public class RentalDetailsViewModelTests
     [Fact]
     public async Task LoadAsync_PopulatesRental_AndUpdatesTitle_OnSuccess()
     {
+        // Arrange
         var (vm, rentals, auth) = Build();
         rentals.Setup(s => s.GetRentalAsync(7, default))
                .ReturnsAsync(SampleRental(7, "Drill", RentalStatus.Requested, ownerId: 1, borrowerId: 2));
         auth.SetupGet(a => a.CurrentUser).Returns(User(2));
 
         vm.RentalId = 7;
+
+        // Act
         await vm.LoadAsync();
 
+        // Assert
         Assert.NotNull(vm.Rental);
         Assert.Equal(7, vm.Rental!.Id);
         Assert.True(vm.IsLoaded);
@@ -31,13 +35,17 @@ public class RentalDetailsViewModelTests
     [Fact]
     public async Task LoadAsync_OnNotFound_SetsError()
     {
+        // Arrange
         var (vm, rentals, _) = Build();
         rentals.Setup(s => s.GetRentalAsync(7, default))
                .ReturnsAsync((Rental?)null);
 
         vm.RentalId = 7;
+
+        // Act
         await vm.LoadAsync();
 
+        // Assert
         Assert.False(vm.IsLoaded);
         Assert.True(vm.HasError);
     }
@@ -46,6 +54,7 @@ public class RentalDetailsViewModelTests
     public async Task LoadAsync_ProceedsEvenWhenIsRefreshingAlreadyTrue()
     {
         // Same regression as the other refresh-driven VMs.
+        // Arrange
         var (vm, rentals, auth) = Build();
         rentals.Setup(s => s.GetRentalAsync(7, default))
                .ReturnsAsync(SampleRental(7, "Drill", RentalStatus.Requested, ownerId: 1, borrowerId: 2));
@@ -53,8 +62,11 @@ public class RentalDetailsViewModelTests
 
         vm.IsRefreshing = true;
         vm.RentalId = 7;
+
+        // Act
         await vm.LoadAsync();
 
+        // Assert
         Assert.False(vm.IsRefreshing);
         Assert.True(vm.IsLoaded);
     }
@@ -64,14 +76,18 @@ public class RentalDetailsViewModelTests
     [Fact]
     public async Task IsOwner_TrueWhenViewerIsOwner()
     {
+        // Arrange
         var (vm, rentals, auth) = Build();
         rentals.Setup(s => s.GetRentalAsync(7, default))
                .ReturnsAsync(SampleRental(7, "Drill", RentalStatus.Requested, ownerId: 1, borrowerId: 2));
         auth.SetupGet(a => a.CurrentUser).Returns(User(1));
 
         vm.RentalId = 7;
+
+        // Act
         await vm.LoadAsync();
 
+        // Assert
         Assert.True(vm.IsOwner);
         Assert.False(vm.IsBorrower);
     }
@@ -79,14 +95,18 @@ public class RentalDetailsViewModelTests
     [Fact]
     public async Task IsBorrower_TrueWhenViewerIsBorrower()
     {
+        // Arrange
         var (vm, rentals, auth) = Build();
         rentals.Setup(s => s.GetRentalAsync(7, default))
                .ReturnsAsync(SampleRental(7, "Drill", RentalStatus.Requested, ownerId: 1, borrowerId: 2));
         auth.SetupGet(a => a.CurrentUser).Returns(User(2));
 
         vm.RentalId = 7;
+
+        // Act
         await vm.LoadAsync();
 
+        // Assert
         Assert.False(vm.IsOwner);
         Assert.True(vm.IsBorrower);
     }
@@ -94,14 +114,18 @@ public class RentalDetailsViewModelTests
     [Fact]
     public async Task BothFalse_WhenViewerIsThirdParty()
     {
+        // Arrange
         var (vm, rentals, auth) = Build();
         rentals.Setup(s => s.GetRentalAsync(7, default))
                .ReturnsAsync(SampleRental(7, "Drill", RentalStatus.Requested, ownerId: 1, borrowerId: 2));
         auth.SetupGet(a => a.CurrentUser).Returns(User(99));
 
         vm.RentalId = 7;
+
+        // Act
         await vm.LoadAsync();
 
+        // Assert
         Assert.False(vm.IsOwner);
         Assert.False(vm.IsBorrower);
         Assert.False(vm.HasAnyAction);
@@ -124,14 +148,18 @@ public class RentalDetailsViewModelTests
         bool canMarkOutForRent,
         bool canMarkCompleted)
     {
+        // Arrange
         var (vm, rentals, auth) = Build();
         rentals.Setup(s => s.GetRentalAsync(7, default))
                .ReturnsAsync(SampleRental(7, "Drill", status, ownerId: 1, borrowerId: 2));
         auth.SetupGet(a => a.CurrentUser).Returns(User(1));
 
         vm.RentalId = 7;
+
+        // Act
         await vm.LoadAsync();
 
+        // Assert
         Assert.Equal(canApprove,        vm.CanApprove);
         Assert.Equal(canReject,         vm.CanReject);
         Assert.Equal(canMarkOutForRent, vm.CanMarkOutForRent);
@@ -153,14 +181,18 @@ public class RentalDetailsViewModelTests
         RentalStatus status,
         bool canMarkReturned)
     {
+        // Arrange
         var (vm, rentals, auth) = Build();
         rentals.Setup(s => s.GetRentalAsync(7, default))
                .ReturnsAsync(SampleRental(7, "Drill", status, ownerId: 1, borrowerId: 2));
         auth.SetupGet(a => a.CurrentUser).Returns(User(2));
 
         vm.RentalId = 7;
+
+        // Act
         await vm.LoadAsync();
 
+        // Assert
         Assert.Equal(canMarkReturned, vm.CanMarkReturned);
         // Borrower has none of the owner-only flags.
         Assert.False(vm.CanApprove);
@@ -174,6 +206,7 @@ public class RentalDetailsViewModelTests
     [Fact]
     public async Task ApproveAsync_DelegatesToService_AndPatchesStatus()
     {
+         // Arrange
         var (vm, rentals, auth) = Build();
         rentals.Setup(s => s.GetRentalAsync(7, default))
                .ReturnsAsync(SampleRental(7, "Drill", RentalStatus.Requested, ownerId: 1, borrowerId: 2));
@@ -182,9 +215,12 @@ public class RentalDetailsViewModelTests
                .ReturnsAsync(new RentalStatusUpdate(7, RentalStatus.Approved, DateTime.UtcNow));
 
         vm.RentalId = 7;
+
+         // Act
         await vm.LoadAsync();
         await vm.ApproveAsync();
 
+         // Assert
         Assert.Equal(RentalStatus.Approved, vm.Rental!.Status);
         Assert.True(vm.CanMarkOutForRent);   // derived flags re-evaluated
         Assert.False(vm.CanApprove);
@@ -193,6 +229,7 @@ public class RentalDetailsViewModelTests
     [Fact]
     public async Task ActionAsync_OnException_SetsError_AndKeepsStatus()
     {
+         // Arrange
         var (vm, rentals, auth) = Build();
         rentals.Setup(s => s.GetRentalAsync(7, default))
                .ReturnsAsync(SampleRental(7, "Drill", RentalStatus.Requested, ownerId: 1, borrowerId: 2));
@@ -201,9 +238,12 @@ public class RentalDetailsViewModelTests
                .ThrowsAsync(new HttpRequestException("server error"));
 
         vm.RentalId = 7;
+
+         // Act
         await vm.LoadAsync();
         await vm.ApproveAsync();
 
+         // Assert
         Assert.Equal(RentalStatus.Requested, vm.Rental!.Status);  // unchanged
         Assert.True(vm.HasError);
         Assert.Contains("server error", vm.ErrorMessage);
@@ -219,6 +259,7 @@ public class RentalDetailsViewModelTests
         // So this test verifies the state-mutation chain regardless of which
         // role would actually trigger each step in the real UI (Mark Returned
         // is borrower-only, the rest are owner).
+        // Arrange
         var (vm, rentals, auth) = Build();
         var sample = SampleRental(7, "Drill", RentalStatus.Requested, ownerId: 1, borrowerId: 2);
         rentals.Setup(s => s.GetRentalAsync(7, default)).ReturnsAsync(sample);
@@ -233,6 +274,8 @@ public class RentalDetailsViewModelTests
                .ReturnsAsync(new RentalStatusUpdate(7, RentalStatus.Completed, DateTime.UtcNow));
 
         vm.RentalId = 7;
+
+         // Act
         await vm.LoadAsync();
 
         await vm.ApproveAsync();
@@ -247,6 +290,7 @@ public class RentalDetailsViewModelTests
         await vm.MarkCompletedAsync();
         Assert.Equal(RentalStatus.Completed, vm.Rental.Status);
 
+        // Assert
         Assert.False(vm.HasAnyAction);  // terminal — no further moves
     }
 
@@ -255,14 +299,18 @@ public class RentalDetailsViewModelTests
     [Fact]
     public async Task CanLeaveReview_True_ForBorrowerOnCompletedRental()
     {
+        // Arrange
         var (vm, rentals, auth) = Build();
         rentals.Setup(s => s.GetRentalAsync(7, default))
                .ReturnsAsync(SampleRental(7, "Drill", RentalStatus.Completed, ownerId: 1, borrowerId: 2));
         auth.SetupGet(a => a.CurrentUser).Returns(User(2));
 
         vm.RentalId = 7;
+
+        // Act
         await vm.LoadAsync();
 
+        // Assert
         Assert.True(vm.CanLeaveReview);
         Assert.True(vm.HasAnyAction);
     }
@@ -276,43 +324,55 @@ public class RentalDetailsViewModelTests
     [InlineData(RentalStatus.Rejected)]
     public async Task CanLeaveReview_False_ForBorrowerOnNonCompletedRental(RentalStatus status)
     {
+        // Arrange
         var (vm, rentals, auth) = Build();
         rentals.Setup(s => s.GetRentalAsync(7, default))
                .ReturnsAsync(SampleRental(7, "Drill", status, ownerId: 1, borrowerId: 2));
         auth.SetupGet(a => a.CurrentUser).Returns(User(2));
 
         vm.RentalId = 7;
+
+        // Act
         await vm.LoadAsync();
 
+        // Assert
         Assert.False(vm.CanLeaveReview);
     }
 
     [Fact]
     public async Task CanLeaveReview_False_ForOwnerOnCompletedRental()
     {
+        // Arrange
         var (vm, rentals, auth) = Build();
         rentals.Setup(s => s.GetRentalAsync(7, default))
                .ReturnsAsync(SampleRental(7, "Drill", RentalStatus.Completed, ownerId: 1, borrowerId: 2));
         auth.SetupGet(a => a.CurrentUser).Returns(User(1));
 
         vm.RentalId = 7;
+
+        // Act
         await vm.LoadAsync();
 
+        // Assert
         Assert.False(vm.CanLeaveReview);
     }
 
     [Fact]
     public async Task LeaveReviewAsync_NavigatesToWriteReviewPage_WhenAllowed()
     {
+        // Arrange
         var (vm, rentals, auth, nav) = BuildWithNav();
         rentals.Setup(s => s.GetRentalAsync(7, default))
                .ReturnsAsync(SampleRental(7, "Drill", RentalStatus.Completed, ownerId: 1, borrowerId: 2));
         auth.SetupGet(a => a.CurrentUser).Returns(User(2));
 
         vm.RentalId = 7;
+
+        // Act
         await vm.LoadAsync();
         await vm.LeaveReviewAsync();
 
+        // Assert
         nav.Verify(n => n.NavigateToAsync(
                 "WriteReviewPage",
                 It.Is<Dictionary<string, object>>(d =>
@@ -324,15 +384,19 @@ public class RentalDetailsViewModelTests
     public async Task LeaveReviewAsync_DoesNothing_WhenNotAllowed()
     {
         // Owner viewing own rental — CanLeaveReview is false.
+        // Arrange
         var (vm, rentals, auth, nav) = BuildWithNav();
         rentals.Setup(s => s.GetRentalAsync(7, default))
                .ReturnsAsync(SampleRental(7, "Drill", RentalStatus.Completed, ownerId: 1, borrowerId: 2));
         auth.SetupGet(a => a.CurrentUser).Returns(User(1));
 
         vm.RentalId = 7;
+
+        // Act
         await vm.LoadAsync();
         await vm.LeaveReviewAsync();
 
+        // Assert
         nav.Verify(n => n.NavigateToAsync("WriteReviewPage", It.IsAny<Dictionary<string, object>>()),
             Times.Never);
     }

@@ -40,7 +40,7 @@ public class ApiReviewRepositoryTests
         using var doc = JsonDocument.Parse(bodyJson);
         var root = doc.RootElement;
         Assert.Equal(10, root.GetProperty("rentalId").GetInt32());
-        Assert.Equal(5,  root.GetProperty("rating").GetInt32());
+        Assert.Equal(5, root.GetProperty("rating").GetInt32());
         Assert.Equal("Loved it", root.GetProperty("comment").GetString());
 
         Assert.Equal(1, review.Id);
@@ -78,15 +78,22 @@ public class ApiReviewRepositoryTests
         // Arrange
         var stub = new StubHttpMessageHandler(TestResponses.Json(new
         {
-            id = 2, rentalId = 7, reviewerId = 3, reviewerName = "Ada",
-            rating = 3, createdAt = DateTime.UtcNow,
+            id = 2,
+            rentalId = 7,
+            reviewerId = 3,
+            reviewerName = "Ada",
+            rating = 3,
+            createdAt = DateTime.UtcNow,
         }, HttpStatusCode.Created));
         var repo = BuildRepo(stub);
 
         // Act
         var review = await repo.CreateAsync(new Review
         {
-            RentalId = 7, ReviewerId = 3, Rating = 3, Comment = "ok",
+            RentalId = 7,
+            ReviewerId = 3,
+            Rating = 3,
+            Comment = "ok",
         });
 
         // Assert
@@ -121,7 +128,7 @@ public class ApiReviewRepositoryTests
         // Assert
         var uri = stub.Requests.Single().RequestUri!;
         Assert.Equal("/users/5/reviews", uri.AbsolutePath);
-        Assert.Contains("page=1",     uri.Query);
+        Assert.Contains("page=1", uri.Query);
         Assert.Contains("pageSize=20", uri.Query);
     }
 

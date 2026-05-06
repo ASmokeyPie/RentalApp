@@ -24,7 +24,7 @@ public sealed class DbRentalRepositoryTests : IClassFixture<DatabaseFixture>, IA
     }
 
     public Task InitializeAsync() => _fixture.ResetAsync();
-    public Task DisposeAsync()    => Task.CompletedTask;
+    public Task DisposeAsync() => Task.CompletedTask;
 
     // ---- RequestAsync -----------------------------------------------------
 
@@ -36,7 +36,7 @@ public sealed class DbRentalRepositoryTests : IClassFixture<DatabaseFixture>, IA
         _user.CurrentUserId = borrower.Id;
 
         var start = DateOnly.FromDateTime(DateTime.UtcNow.AddDays(1));
-        var end   = start.AddDays(3); // 3-day rental at £10/day
+        var end = start.AddDays(3); // 3-day rental at £10/day
 
         // Act
         var rental = await _repo.RequestAsync(item.Id, start, end);
@@ -71,7 +71,7 @@ public sealed class DbRentalRepositoryTests : IClassFixture<DatabaseFixture>, IA
         // Arrange
         var (owner, borrower, item) = await SeedScenarioAsync();
         var unrelatedOwner = await SeedUserAsync("other@test.com");
-        var unrelatedItem  = await SeedItemAsync(unrelatedOwner.Id);
+        var unrelatedItem = await SeedItemAsync(unrelatedOwner.Id);
         var unrelatedRenter = await SeedUserAsync("renter2@test.com");
 
         // Rental on owner's item
@@ -223,27 +223,27 @@ public sealed class DbRentalRepositoryTests : IClassFixture<DatabaseFixture>, IA
 
     private async Task<(User owner, User borrower, Item item)> SeedScenarioAsync()
     {
-        var owner    = await SeedUserAsync("owner@test.com",    "Alice", "Smith");
-        var borrower = await SeedUserAsync("borrower@test.com", "Bob",   "Jones");
-        var item     = await SeedItemAsync(owner.Id);
+        var owner = await SeedUserAsync("owner@test.com", "Alice", "Smith");
+        var borrower = await SeedUserAsync("borrower@test.com", "Bob", "Jones");
+        var item = await SeedItemAsync(owner.Id);
         return (owner, borrower, item);
     }
 
     private async Task<User> SeedUserAsync(
         string email,
         string firstName = "Test",
-        string lastName  = "User")
+        string lastName = "User")
     {
         using var db = _fixture.Factory.CreateDbContext();
         var user = new User
         {
-            FirstName    = firstName,
-            LastName     = lastName,
-            Email        = email,
+            FirstName = firstName,
+            LastName = lastName,
+            Email = email,
             PasswordHash = "dummy-hash",
-            IsActive     = true,
-            CreatedAt    = DateTime.UtcNow,
-            UpdatedAt    = DateTime.UtcNow,
+            IsActive = true,
+            CreatedAt = DateTime.UtcNow,
+            UpdatedAt = DateTime.UtcNow,
         };
         db.Users.Add(user);
         await db.SaveChangesAsync();
@@ -255,16 +255,16 @@ public sealed class DbRentalRepositoryTests : IClassFixture<DatabaseFixture>, IA
         using var db = _fixture.Factory.CreateDbContext();
         var item = new Item
         {
-            Title      = "Test Item",
-            DailyRate  = 10m,
+            Title = "Test Item",
+            DailyRate = 10m,
             CategoryId = 1,
-            OwnerId    = ownerId,
-            Latitude   = 55.9533,
-            Longitude  = -3.1883,
-            Location   = new Point(-3.1883, 55.9533) { SRID = 4326 },
+            OwnerId = ownerId,
+            Latitude = 55.9533,
+            Longitude = -3.1883,
+            Location = new Point(-3.1883, 55.9533) { SRID = 4326 },
             IsAvailable = true,
-            CreatedAt  = DateTime.UtcNow,
-            UpdatedAt  = DateTime.UtcNow,
+            CreatedAt = DateTime.UtcNow,
+            UpdatedAt = DateTime.UtcNow,
         };
         db.Items.Add(item);
         await db.SaveChangesAsync();
@@ -272,25 +272,25 @@ public sealed class DbRentalRepositoryTests : IClassFixture<DatabaseFixture>, IA
     }
 
     private async Task<Rental> SeedRentalAsync(
-        int          itemId,
-        int          borrowerId,
-        RentalStatus status    = RentalStatus.Requested,
-        DateOnly?    startDate = null,
-        DateOnly?    endDate   = null)
+        int itemId,
+        int borrowerId,
+        RentalStatus status = RentalStatus.Requested,
+        DateOnly? startDate = null,
+        DateOnly? endDate = null)
     {
         using var db = _fixture.Factory.CreateDbContext();
         var start = startDate ?? DateOnly.FromDateTime(DateTime.UtcNow.AddDays(1));
-        var end   = endDate   ?? start.AddDays(3);
+        var end = endDate ?? start.AddDays(3);
         var rental = new Rental
         {
-            ItemId     = itemId,
+            ItemId = itemId,
             BorrowerId = borrowerId,
-            StartDate  = start,
-            EndDate    = end,
-            Status     = status,
+            StartDate = start,
+            EndDate = end,
+            Status = status,
             TotalPrice = 30m,
-            CreatedAt  = DateTime.UtcNow,
-            UpdatedAt  = DateTime.UtcNow,
+            CreatedAt = DateTime.UtcNow,
+            UpdatedAt = DateTime.UtcNow,
         };
         db.Rentals.Add(rental);
         await db.SaveChangesAsync();

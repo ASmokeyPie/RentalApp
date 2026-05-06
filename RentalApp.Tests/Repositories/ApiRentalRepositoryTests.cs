@@ -166,11 +166,17 @@ public class ApiRentalRepositoryTests
         // Arrange
         var stub = new StubHttpMessageHandler(TestResponses.Json(new
         {
-            id = 7, itemId = 1, itemTitle = "Drill",
-            borrowerId = 2, borrowerName = "Bob",
-            ownerId = 1, ownerName = "Ada",
-            startDate, endDate,
-            status = "Approved", totalPrice = 10m,
+            id = 7,
+            itemId = 1,
+            itemTitle = "Drill",
+            borrowerId = 2,
+            borrowerName = "Bob",
+            ownerId = 1,
+            ownerName = "Ada",
+            startDate,
+            endDate,
+            status = "Approved",
+            totalPrice = 10m,
             requestedAt = DateTime.UtcNow,
         }));
         var repo = BuildRepo(stub);
@@ -384,8 +390,10 @@ public class ApiRentalRepositoryTests
         await Assert.ThrowsAsync<NotSupportedException>(
             () => repo.CreateAsync(new Rental
             {
-                ItemId = 1, BorrowerId = 2,
-                StartDate = new DateOnly(2026, 1, 1), EndDate = new DateOnly(2026, 1, 2),
+                ItemId = 1,
+                BorrowerId = 2,
+                StartDate = new DateOnly(2026, 1, 1),
+                EndDate = new DateOnly(2026, 1, 2),
             }));
     }
 

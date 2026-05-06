@@ -13,6 +13,7 @@ public class CreateItemViewModelTests
     [Fact]
     public async Task LoadCategoriesAsync_PopulatesCollection()
     {
+        // Arrange
         var (vm, _, cats, _) = Build();
         cats.Setup(c => c.ListAsync(default))
             .ReturnsAsync(new List<Category>
@@ -21,8 +22,10 @@ public class CreateItemViewModelTests
                 new() { Id = 2, Name = "Camping Gear", Slug = "camping-gear" },
             });
 
+        // Act
         await vm.LoadCategoriesAsync();
 
+        // Assert
         Assert.Equal(2, vm.Categories.Count);
         Assert.Equal("Power Tools", vm.Categories[0].Name);
         Assert.False(vm.HasError);
@@ -31,12 +34,15 @@ public class CreateItemViewModelTests
     [Fact]
     public async Task LoadCategoriesAsync_OnException_SetsError()
     {
+        // Arrange
         var (vm, _, cats, _) = Build();
         cats.Setup(c => c.ListAsync(default))
             .ThrowsAsync(new HttpRequestException("offline"));
 
+        // Act
         await vm.LoadCategoriesAsync();
 
+        // Assert
         Assert.True(vm.HasError);
         Assert.Empty(vm.Categories);
     }
@@ -46,6 +52,7 @@ public class CreateItemViewModelTests
     [Fact]
     public void TryBuildItem_ReturnsItem_WhenAllFieldsValid()
     {
+        // Arrange
         var (vm, _, _, _) = Build();
         vm.SelectedCategory = new Category { Id = 3, Name = "X", Slug = "x" };
         vm.ItemTitle = "Drill 18V";
@@ -54,8 +61,10 @@ public class CreateItemViewModelTests
         vm.LatitudeText = "55.95";
         vm.LongitudeText = "-3.19";
 
+        // Act
         var ok = vm.TryBuildItem(out var item, out var err);
 
+        // Assert
         Assert.True(ok);
         Assert.Equal(string.Empty, err);
         Assert.Equal("Drill 18V", item.Title);
@@ -70,12 +79,15 @@ public class CreateItemViewModelTests
     [InlineData("xx",     "Title")]   // too short
     public void TryBuildItem_RejectsBadTitle(string title, string expected)
     {
+        // Arrange
         var (vm, _, _, _) = Build();
         SetValidDefaults(vm);
         vm.ItemTitle = title;
 
+        // Act
         var ok = vm.TryBuildItem(out _, out var err);
 
+        // Assert
         Assert.False(ok);
         Assert.Contains(expected, err);
     }
@@ -87,12 +99,15 @@ public class CreateItemViewModelTests
     [InlineData("abc",  "rate")]    // unparseable
     public void TryBuildItem_RejectsBadDailyRate(string value, string expected)
     {
+        // Arrange
         var (vm, _, _, _) = Build();
         SetValidDefaults(vm);
         vm.DailyRateText = value;
 
+        // Act
         var ok = vm.TryBuildItem(out _, out var err);
 
+        // Assert
         Assert.False(ok);
         Assert.Contains(expected, err);
     }
@@ -100,12 +115,15 @@ public class CreateItemViewModelTests
     [Fact]
     public void TryBuildItem_RejectsMissingCategory()
     {
+        // Arrange
         var (vm, _, _, _) = Build();
         SetValidDefaults(vm);
         vm.SelectedCategory = null;
 
+        // Act
         var ok = vm.TryBuildItem(out _, out var err);
 
+        // Assert
         Assert.False(ok);
         Assert.Contains("category", err, StringComparison.OrdinalIgnoreCase);
     }
@@ -115,12 +133,15 @@ public class CreateItemViewModelTests
     [InlineData("",    "Latitude")]  // empty
     public void TryBuildItem_RejectsBadLatitude(string value, string expected)
     {
+        // Arrange
         var (vm, _, _, _) = Build();
         SetValidDefaults(vm);
         vm.LatitudeText = value;
 
+        // Act
         var ok = vm.TryBuildItem(out _, out var err);
 
+        // Assert
         Assert.False(ok);
         Assert.Contains(expected, err);
     }
@@ -130,13 +151,16 @@ public class CreateItemViewModelTests
     [Fact]
     public async Task SubmitAsync_PostsItem_AndNavigatesBack_OnSuccess()
     {
+        // Arrange
         var (vm, items, _, nav) = Build();
         SetValidDefaults(vm);
         items.Setup(i => i.CreateAsync(It.IsAny<Item>(), default))
              .ReturnsAsync((Item entity, CancellationToken _) => entity);
 
+        // Act
         await vm.SubmitAsync();
 
+        // Assert
         items.Verify(i => i.CreateAsync(
                 It.Is<Item>(it => it.Title == "Drill 18V" && it.DailyRate == 12.50m),
                 default),
@@ -148,11 +172,14 @@ public class CreateItemViewModelTests
     [Fact]
     public async Task SubmitAsync_DoesNotNavigate_WhenValidationFails()
     {
+        // Arrange
         var (vm, items, _, nav) = Build();
         // Leave fields empty so validation rejects.
 
+        // Act
         await vm.SubmitAsync();
 
+        // Assert
         items.Verify(i => i.CreateAsync(It.IsAny<Item>(), default), Times.Never);
         nav.Verify(n => n.NavigateBackAsync(), Times.Never);
         Assert.True(vm.HasError);
@@ -161,13 +188,16 @@ public class CreateItemViewModelTests
     [Fact]
     public async Task SubmitAsync_OnRepoException_SetsError_AndDoesNotNavigate()
     {
+        // Arrange
         var (vm, items, _, nav) = Build();
         SetValidDefaults(vm);
         items.Setup(i => i.CreateAsync(It.IsAny<Item>(), default))
              .ThrowsAsync(new HttpRequestException("server fire"));
 
+        // Act
         await vm.SubmitAsync();
 
+        // Assert
         nav.Verify(n => n.NavigateBackAsync(), Times.Never);
         Assert.True(vm.HasError);
         Assert.Contains("server fire", vm.ErrorMessage);
@@ -178,12 +208,15 @@ public class CreateItemViewModelTests
     [Fact]
     public async Task UseCurrentLocationAsync_FillsLatLon_OnSuccess()
     {
+        // Arrange
         var (vm, _, _, _, location) = BuildAll();
         location.Setup(l => l.GetCurrentLocationAsync(default))
                 .ReturnsAsync((55.95, -3.19));
 
+        // Act
         await vm.UseCurrentLocationAsync();
 
+        // Assert
         Assert.Equal("55.95", vm.LatitudeText);
         Assert.Equal("-3.19", vm.LongitudeText);
         Assert.False(vm.HasError);
@@ -193,12 +226,15 @@ public class CreateItemViewModelTests
     [Fact]
     public async Task UseCurrentLocationAsync_OnPermissionDenied_SetsError_AndLeavesFieldsBlank()
     {
+        // Arrange
         var (vm, _, _, _, location) = BuildAll();
         location.Setup(l => l.GetCurrentLocationAsync(default))
                 .ReturnsAsync((((double, double)?)null));
 
+        // Act
         await vm.UseCurrentLocationAsync();
 
+        // Assert
         Assert.Equal(string.Empty, vm.LatitudeText);
         Assert.Equal(string.Empty, vm.LongitudeText);
         Assert.True(vm.HasError);

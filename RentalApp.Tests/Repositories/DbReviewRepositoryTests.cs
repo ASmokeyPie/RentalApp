@@ -23,7 +23,7 @@ public sealed class DbReviewRepositoryTests : IClassFixture<DatabaseFixture>, IA
     }
 
     public Task InitializeAsync() => _fixture.ResetAsync();
-    public Task DisposeAsync()    => Task.CompletedTask;
+    public Task DisposeAsync() => Task.CompletedTask;
 
     // ---- CreateAsync ------------------------------------------------------
 
@@ -159,32 +159,32 @@ public sealed class DbReviewRepositoryTests : IClassFixture<DatabaseFixture>, IA
 
     private async Task<(User owner, User borrower, Item item, Rental rental)> SeedScenarioAsync(
         string ownerFirstName = "Alice",
-        string ownerLastName  = "Smith",
-        string ownerEmail     = "owner@test.com",
-        string borrowerEmail  = "borrower@test.com")
+        string ownerLastName = "Smith",
+        string ownerEmail = "owner@test.com",
+        string borrowerEmail = "borrower@test.com")
     {
-        var owner    = await SeedUserAsync(ownerEmail,    ownerFirstName, ownerLastName);
+        var owner = await SeedUserAsync(ownerEmail, ownerFirstName, ownerLastName);
         var borrower = await SeedUserAsync(borrowerEmail, "Bob", "Jones");
-        var item     = await SeedItemAsync(owner.Id);
-        var rental   = await SeedRentalAsync(item.Id, borrower.Id);
+        var item = await SeedItemAsync(owner.Id);
+        var rental = await SeedRentalAsync(item.Id, borrower.Id);
         return (owner, borrower, item, rental);
     }
 
     private async Task<User> SeedUserAsync(
         string email,
         string firstName = "Test",
-        string lastName  = "User")
+        string lastName = "User")
     {
         using var db = _fixture.Factory.CreateDbContext();
         var user = new User
         {
-            FirstName    = firstName,
-            LastName     = lastName,
-            Email        = email,
+            FirstName = firstName,
+            LastName = lastName,
+            Email = email,
             PasswordHash = "dummy-hash",
-            IsActive     = true,
-            CreatedAt    = DateTime.UtcNow,
-            UpdatedAt    = DateTime.UtcNow,
+            IsActive = true,
+            CreatedAt = DateTime.UtcNow,
+            UpdatedAt = DateTime.UtcNow,
         };
         db.Users.Add(user);
         await db.SaveChangesAsync();
@@ -196,16 +196,16 @@ public sealed class DbReviewRepositoryTests : IClassFixture<DatabaseFixture>, IA
         using var db = _fixture.Factory.CreateDbContext();
         var item = new Item
         {
-            Title      = "Test Item",
-            DailyRate  = 10m,
+            Title = "Test Item",
+            DailyRate = 10m,
             CategoryId = 1,
-            OwnerId    = ownerId,
-            Latitude   = 55.9533,
-            Longitude  = -3.1883,
-            Location   = new Point(-3.1883, 55.9533) { SRID = 4326 },
+            OwnerId = ownerId,
+            Latitude = 55.9533,
+            Longitude = -3.1883,
+            Location = new Point(-3.1883, 55.9533) { SRID = 4326 },
             IsAvailable = true,
-            CreatedAt  = DateTime.UtcNow,
-            UpdatedAt  = DateTime.UtcNow,
+            CreatedAt = DateTime.UtcNow,
+            UpdatedAt = DateTime.UtcNow,
         };
         db.Items.Add(item);
         await db.SaveChangesAsync();
@@ -218,14 +218,14 @@ public sealed class DbReviewRepositoryTests : IClassFixture<DatabaseFixture>, IA
         var start = DateOnly.FromDateTime(DateTime.UtcNow.AddDays(-5));
         var rental = new Rental
         {
-            ItemId     = itemId,
+            ItemId = itemId,
             BorrowerId = borrowerId,
-            StartDate  = start,
-            EndDate    = start.AddDays(3),
-            Status     = RentalStatus.Completed,
+            StartDate = start,
+            EndDate = start.AddDays(3),
+            Status = RentalStatus.Completed,
             TotalPrice = 30m,
-            CreatedAt  = DateTime.UtcNow,
-            UpdatedAt  = DateTime.UtcNow,
+            CreatedAt = DateTime.UtcNow,
+            UpdatedAt = DateTime.UtcNow,
         };
         db.Rentals.Add(rental);
         await db.SaveChangesAsync();
@@ -233,19 +233,19 @@ public sealed class DbReviewRepositoryTests : IClassFixture<DatabaseFixture>, IA
     }
 
     private async Task<Review> SeedReviewAsync(
-        int     rentalId,
-        int     reviewerId,
-        int     rating  = 5,
+        int rentalId,
+        int reviewerId,
+        int rating = 5,
         string? comment = null)
     {
         using var db = _fixture.Factory.CreateDbContext();
         var review = new Review
         {
-            RentalId   = rentalId,
+            RentalId = rentalId,
             ReviewerId = reviewerId,
-            Rating     = rating,
-            Comment    = comment,
-            CreatedAt  = DateTime.UtcNow,
+            Rating = rating,
+            Comment = comment,
+            CreatedAt = DateTime.UtcNow,
         };
         db.Reviews.Add(review);
         await db.SaveChangesAsync();

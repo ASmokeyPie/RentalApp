@@ -16,6 +16,7 @@ public class EditItemViewModelTests
         // Regression: RefreshView toggles IsRefreshing=true BEFORE firing the
         // command. An early-return on IsRefreshing would leave the spinner
         // stuck. LoadAsync must still run and clear the flag in finally.
+        // Arrange
         var (vm, items, auth, _) = Build();
         items.Setup(i => i.GetByIdAsync(42, default))
              .ReturnsAsync(SampleItem(42, ownerId: 7));
@@ -23,8 +24,11 @@ public class EditItemViewModelTests
 
         vm.IsRefreshing = true;
         vm.ItemId = 42;
+
+        // Act
         await vm.LoadAsync();
 
+        // Assert
         Assert.False(vm.IsRefreshing);
         Assert.True(vm.CanEdit);
     }
@@ -32,14 +36,18 @@ public class EditItemViewModelTests
     [Fact]
     public async Task LoadAsync_PopulatesForm_AndSetsCanEdit_WhenOwner()
     {
+        // Arrange
         var (vm, items, auth, _) = Build();
         items.Setup(i => i.GetByIdAsync(42, default))
              .ReturnsAsync(SampleItem(42, ownerId: 7, dailyRate: 8.50m));
         auth.SetupGet(a => a.CurrentUser).Returns(new User { Id = 7, Email = "a@b.c", FirstName = "Ada", LastName = "L" });
 
         vm.ItemId = 42;
+
+        // Act
         await vm.LoadAsync();
 
+        // Assert
         Assert.True(vm.CanEdit);
         Assert.Equal("Drill", vm.ItemTitle);
         Assert.Equal("8.5", vm.DailyRateText);
@@ -50,14 +58,18 @@ public class EditItemViewModelTests
     [Fact]
     public async Task LoadAsync_LocksForm_WhenCurrentUserIsNotOwner()
     {
+        // Arrange
         var (vm, items, auth, _) = Build();
         items.Setup(i => i.GetByIdAsync(42, default))
              .ReturnsAsync(SampleItem(42, ownerId: 7));
         auth.SetupGet(a => a.CurrentUser).Returns(new User { Id = 99, Email = "z@b.c", FirstName = "Zed", LastName = "L" });
 
         vm.ItemId = 42;
+
+        // Act
         await vm.LoadAsync();
 
+        // Assert
         Assert.False(vm.CanEdit);
         Assert.True(vm.HasError);
         Assert.Contains("only edit items you own", vm.ErrorMessage);
@@ -66,13 +78,17 @@ public class EditItemViewModelTests
     [Fact]
     public async Task LoadAsync_LocksForm_WhenItemNotFound()
     {
+        // Arrange
         var (vm, items, _, _) = Build();
         items.Setup(i => i.GetByIdAsync(42, default))
              .ReturnsAsync((Item?)null);
 
         vm.ItemId = 42;
+
+        // Act
         await vm.LoadAsync();
 
+        // Assert
         Assert.False(vm.CanEdit);
         Assert.True(vm.HasError);
         Assert.Contains("could not be found", vm.ErrorMessage);
@@ -83,6 +99,7 @@ public class EditItemViewModelTests
     [Fact]
     public async Task SubmitAsync_PutsUpdatedItem_AndNavigatesBack_OnSuccess()
     {
+           // Arrange
         var (vm, items, auth, nav) = Build();
         items.Setup(i => i.GetByIdAsync(42, default))
              .ReturnsAsync(SampleItem(42, ownerId: 7));
@@ -91,6 +108,8 @@ public class EditItemViewModelTests
              .ReturnsAsync((Item entity, CancellationToken _) => entity);
 
         vm.ItemId = 42;
+
+           // Act
         await vm.LoadAsync();
 
         // User edits a couple of fields and saves.
@@ -100,6 +119,7 @@ public class EditItemViewModelTests
 
         await vm.SubmitAsync();
 
+        // Assert
         items.Verify(i => i.UpdateAsync(
                 It.Is<Item>(it => it.Id == 42 && it.Title == "Renamed Drill" && it.DailyRate == 15.00m && !it.IsAvailable),
                 default),
@@ -111,15 +131,19 @@ public class EditItemViewModelTests
     [Fact]
     public async Task SubmitAsync_DoesNothing_WhenNotOwner()
     {
+        // Arrange
         var (vm, items, auth, nav) = Build();
         items.Setup(i => i.GetByIdAsync(42, default))
              .ReturnsAsync(SampleItem(42, ownerId: 7));
         auth.SetupGet(a => a.CurrentUser).Returns(new User { Id = 99, Email = "z@b.c", FirstName = "Zed", LastName = "L" });
 
         vm.ItemId = 42;
+
+        // Act
         await vm.LoadAsync();
         await vm.SubmitAsync();
 
+        // Assert
         items.Verify(i => i.UpdateAsync(It.IsAny<Item>(), default), Times.Never);
         nav.Verify(n => n.NavigateBackAsync(), Times.Never);
     }
@@ -127,12 +151,15 @@ public class EditItemViewModelTests
     [Fact]
     public async Task SubmitAsync_DoesNotNavigate_WhenValidationFails()
     {
+        // Arrange
         var (vm, items, auth, nav) = Build();
         items.Setup(i => i.GetByIdAsync(42, default))
              .ReturnsAsync(SampleItem(42, ownerId: 7));
         auth.SetupGet(a => a.CurrentUser).Returns(new User { Id = 7, Email = "a@b.c", FirstName = "Ada", LastName = "L" });
 
         vm.ItemId = 42;
+
+        // Act
         await vm.LoadAsync();
 
         // Force validation failure.
@@ -140,6 +167,7 @@ public class EditItemViewModelTests
 
         await vm.SubmitAsync();
 
+        // Assert
         items.Verify(i => i.UpdateAsync(It.IsAny<Item>(), default), Times.Never);
         nav.Verify(n => n.NavigateBackAsync(), Times.Never);
         Assert.True(vm.HasError);
@@ -148,6 +176,7 @@ public class EditItemViewModelTests
     [Fact]
     public async Task SubmitAsync_OnRepoException_SetsError_AndDoesNotNavigate()
     {
+           // Arrange
         var (vm, items, auth, nav) = Build();
         items.Setup(i => i.GetByIdAsync(42, default))
              .ReturnsAsync(SampleItem(42, ownerId: 7));
@@ -156,9 +185,12 @@ public class EditItemViewModelTests
              .ThrowsAsync(new HttpRequestException("network down"));
 
         vm.ItemId = 42;
+
+           // Act
         await vm.LoadAsync();
         await vm.SubmitAsync();
 
+           // Assert
         nav.Verify(n => n.NavigateBackAsync(), Times.Never);
         Assert.True(vm.HasError);
         Assert.Contains("network down", vm.ErrorMessage);
@@ -169,6 +201,7 @@ public class EditItemViewModelTests
     [Fact]
     public void TryBuildItem_PreservesNonEditableFields()
     {
+        // Arrange
         var (vm, _, _, _) = Build();
         var loaded = SampleItem(42, ownerId: 7, dailyRate: 5m);
         loaded.CategoryId = 8;
@@ -184,8 +217,10 @@ public class EditItemViewModelTests
         vm.DailyRateText = "20";
         vm.IsAvailable = false;
 
+        // Act
         var ok = vm.TryBuildItem(out var item, out var err);
 
+        // Assert
         Assert.True(ok);
         Assert.Equal(string.Empty, err);
         Assert.Equal(8, item.CategoryId);

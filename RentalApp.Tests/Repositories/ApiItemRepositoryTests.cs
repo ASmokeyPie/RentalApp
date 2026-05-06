@@ -78,12 +78,16 @@ public class ApiItemRepositoryTests
         var stub = new StubHttpMessageHandler(TestResponses.Json(new
         {
             id = 42,
-            title = "Drill", description = (string?)null,
+            title = "Drill",
+            description = (string?)null,
             dailyRate = 5m,
-            categoryId = 1, category = "Power Tools",
-            ownerId = 7, ownerName = "Ada",
+            categoryId = 1,
+            category = "Power Tools",
+            ownerId = 7,
+            ownerName = "Ada",
             ownerRating = (double?)null,
-            latitude = 0.0, longitude = 0.0,
+            latitude = 0.0,
+            longitude = 0.0,
             isAvailable = true,
             averageRating = 4.5,
             totalReviews = 3,
@@ -114,7 +118,7 @@ public class ApiItemRepositoryTests
         Assert.Equal(3, item!.TotalReviews);
         Assert.Equal(2, item.Reviews.Count);
         Assert.Equal("Bob", item.Reviews[0].ReviewerName);
-        Assert.Equal(5,     item.Reviews[0].Rating);
+        Assert.Equal(5, item.Reviews[0].Rating);
         Assert.Equal("Loved it", item.Reviews[0].Comment);
         Assert.Null(item.Reviews[1].Comment);   // null comment round-trips as null
     }
@@ -309,11 +313,11 @@ public class ApiItemRepositoryTests
         using var doc = JsonDocument.Parse(bodyJson);
         var root = doc.RootElement;
         Assert.Equal("New Item", root.GetProperty("title").GetString());
-        Assert.Equal("desc",     root.GetProperty("description").GetString());
-        Assert.Equal(12.5m,      root.GetProperty("dailyRate").GetDecimal());
-        Assert.Equal(3,          root.GetProperty("categoryId").GetInt32());
-        Assert.Equal(1.0,        root.GetProperty("latitude").GetDouble());
-        Assert.Equal(2.0,        root.GetProperty("longitude").GetDouble());
+        Assert.Equal("desc", root.GetProperty("description").GetString());
+        Assert.Equal(12.5m, root.GetProperty("dailyRate").GetDecimal());
+        Assert.Equal(3, root.GetProperty("categoryId").GetInt32());
+        Assert.Equal(1.0, root.GetProperty("latitude").GetDouble());
+        Assert.Equal(2.0, root.GetProperty("longitude").GetDouble());
         // OwnerId is implicit from JWT — must NOT be in the body
         Assert.False(root.TryGetProperty("ownerId", out _));
         // The short forms must NOT be in the body either.
@@ -413,7 +417,7 @@ public class ApiItemRepositoryTests
         // Assert
         var uri = stub.Requests.Single().RequestUri!;
         Assert.Equal("/items/42/reviews", uri.AbsolutePath);
-        Assert.Contains("page=1",     uri.Query);
+        Assert.Contains("page=1", uri.Query);
         Assert.Contains("pageSize=20", uri.Query);
 
         Assert.Single(result.Items);

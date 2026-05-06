@@ -24,7 +24,7 @@ public sealed class DbItemRepositoryTests : IClassFixture<DatabaseFixture>, IAsy
     }
 
     public Task InitializeAsync() => _fixture.ResetAsync();
-    public Task DisposeAsync()    => Task.CompletedTask;
+    public Task DisposeAsync() => Task.CompletedTask;
 
     // ---- CreateAsync ------------------------------------------------------
 
@@ -38,11 +38,11 @@ public sealed class DbItemRepositoryTests : IClassFixture<DatabaseFixture>, IAsy
         // Act
         var created = await _repo.CreateAsync(new Item
         {
-            Title      = "Cordless Drill",
-            DailyRate  = 5.00m,
+            Title = "Cordless Drill",
+            DailyRate = 5.00m,
             CategoryId = 1,             // Power Tools
-            Latitude   = 55.9533,
-            Longitude  = -3.1883,
+            Latitude = 55.9533,
+            Longitude = -3.1883,
         });
 
         // Assert
@@ -61,8 +61,11 @@ public sealed class DbItemRepositoryTests : IClassFixture<DatabaseFixture>, IAsy
         // Act
         var created = await _repo.CreateAsync(new Item
         {
-            Title = "Tent", DailyRate = 10m, CategoryId = 3,
-            Latitude = 55.9533, Longitude = -3.1883,
+            Title = "Tent",
+            DailyRate = 10m,
+            CategoryId = 3,
+            Latitude = 55.9533,
+            Longitude = -3.1883,
         });
 
         // Reload raw from DB to confirm Location was written.
@@ -80,17 +83,17 @@ public sealed class DbItemRepositoryTests : IClassFixture<DatabaseFixture>, IAsy
     {
         // Arrange
         var owner = await SeedUserAsync("ada@test.com", "Ada", "Lovelace");
-        var item  = await SeedItemAsync(owner.Id, title: "Hammer", categoryId: 2);
+        var item = await SeedItemAsync(owner.Id, title: "Hammer", categoryId: 2);
 
         // Act
         var loaded = await _repo.GetByIdAsync(item.Id);
 
         // Assert
         Assert.NotNull(loaded);
-        Assert.Equal("Hammer",      loaded!.Title);
-        Assert.Equal("Ada L.",      loaded.OwnerName);
-        Assert.Equal("Hand Tools",  loaded.CategoryName);
-        Assert.Equal("hand-tools",  loaded.CategorySlug);
+        Assert.Equal("Hammer", loaded!.Title);
+        Assert.Equal("Ada L.", loaded.OwnerName);
+        Assert.Equal("Hand Tools", loaded.CategoryName);
+        Assert.Equal("hand-tools", loaded.CategorySlug);
     }
 
     [Fact]
@@ -110,7 +113,7 @@ public sealed class DbItemRepositoryTests : IClassFixture<DatabaseFixture>, IAsy
     {
         // Arrange
         var owner = await SeedUserAsync("bob@test.com");
-        await SeedItemAsync(owner.Id, title: "Drill",  categoryId: 1); // power-tools
+        await SeedItemAsync(owner.Id, title: "Drill", categoryId: 1); // power-tools
         await SeedItemAsync(owner.Id, title: "Hammer", categoryId: 2); // hand-tools
 
         // Act
@@ -127,7 +130,7 @@ public sealed class DbItemRepositoryTests : IClassFixture<DatabaseFixture>, IAsy
         // Arrange
         var owner = await SeedUserAsync("carol@test.com");
         await SeedItemAsync(owner.Id, title: "Circular Saw", categoryId: 1);
-        await SeedItemAsync(owner.Id, title: "Tent",         categoryId: 3);
+        await SeedItemAsync(owner.Id, title: "Tent", categoryId: 3);
 
         // Act
         var result = await _repo.SearchAsync(new ItemQuery { Search = "circular" });
@@ -162,9 +165,9 @@ public sealed class DbItemRepositoryTests : IClassFixture<DatabaseFixture>, IAsy
     {
         // Arrange
         var owner = await SeedUserAsync("eve@test.com");
-        var item  = await SeedItemAsync(owner.Id, title: "Old Title", categoryId: 1);
+        var item = await SeedItemAsync(owner.Id, title: "Old Title", categoryId: 1);
 
-        item.Title     = "New Title";
+        item.Title = "New Title";
         item.DailyRate = 99.99m;
 
         // Act
@@ -184,7 +187,7 @@ public sealed class DbItemRepositoryTests : IClassFixture<DatabaseFixture>, IAsy
     {
         // Arrange
         var owner = await SeedUserAsync("frank@test.com");
-        var item  = await SeedItemAsync(owner.Id, title: "Doomed Item", categoryId: 1);
+        var item = await SeedItemAsync(owner.Id, title: "Doomed Item", categoryId: 1);
 
         // Act
         await _repo.DeleteAsync(item.Id);
@@ -203,10 +206,10 @@ public sealed class DbItemRepositoryTests : IClassFixture<DatabaseFixture>, IAsy
         var owner = await SeedUserAsync("geo@test.com");
 
         // Edinburgh city centre — all within 1 km.
-        await SeedItemAsync(owner.Id, title: "Near",  lat: 55.9533, lon: -3.1883); // ~0 km
-        await SeedItemAsync(owner.Id, title: "Medium",lat: 55.9550, lon: -3.1900); // ~0.2 km
+        await SeedItemAsync(owner.Id, title: "Near", lat: 55.9533, lon: -3.1883); // ~0 km
+        await SeedItemAsync(owner.Id, title: "Medium", lat: 55.9550, lon: -3.1900); // ~0.2 km
         // Glasgow — far away, should be excluded.
-        await SeedItemAsync(owner.Id, title: "Far",   lat: 55.8617, lon: -4.2583);
+        await SeedItemAsync(owner.Id, title: "Far", lat: 55.8617, lon: -4.2583);
 
         // Act
         var results = await _repo.GetNearbyAsync(55.9533, -3.1883, radiusKm: 1.0);
@@ -223,18 +226,18 @@ public sealed class DbItemRepositoryTests : IClassFixture<DatabaseFixture>, IAsy
     private async Task<User> SeedUserAsync(
         string email,
         string firstName = "Test",
-        string lastName  = "User")
+        string lastName = "User")
     {
         using var db = _fixture.Factory.CreateDbContext();
         var user = new User
         {
-            FirstName    = firstName,
-            LastName     = lastName,
-            Email        = email,
+            FirstName = firstName,
+            LastName = lastName,
+            Email = email,
             PasswordHash = "dummy-hash",
-            IsActive     = true,
-            CreatedAt    = DateTime.UtcNow,
-            UpdatedAt    = DateTime.UtcNow,
+            IsActive = true,
+            CreatedAt = DateTime.UtcNow,
+            UpdatedAt = DateTime.UtcNow,
         };
         db.Users.Add(user);
         await db.SaveChangesAsync();
@@ -242,25 +245,25 @@ public sealed class DbItemRepositoryTests : IClassFixture<DatabaseFixture>, IAsy
     }
 
     private async Task<Item> SeedItemAsync(
-        int    ownerId,
-        string title      = "Test Item",
-        int    categoryId = 1,
-        double lat        = 55.9533,
-        double lon        = -3.1883)
+        int ownerId,
+        string title = "Test Item",
+        int categoryId = 1,
+        double lat = 55.9533,
+        double lon = -3.1883)
     {
         using var db = _fixture.Factory.CreateDbContext();
         var item = new Item
         {
-            Title      = title,
-            DailyRate  = 10m,
+            Title = title,
+            DailyRate = 10m,
             CategoryId = categoryId,
-            OwnerId    = ownerId,
-            Latitude   = lat,
-            Longitude  = lon,
-            Location   = new Point(lon, lat) { SRID = 4326 },
+            OwnerId = ownerId,
+            Latitude = lat,
+            Longitude = lon,
+            Location = new Point(lon, lat) { SRID = 4326 },
             IsAvailable = true,
-            CreatedAt  = DateTime.UtcNow,
-            UpdatedAt  = DateTime.UtcNow,
+            CreatedAt = DateTime.UtcNow,
+            UpdatedAt = DateTime.UtcNow,
         };
         db.Items.Add(item);
         await db.SaveChangesAsync();

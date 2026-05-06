@@ -20,7 +20,7 @@ public sealed class DbCategoryRepositoryTests : IClassFixture<DatabaseFixture>, 
     }
 
     public Task InitializeAsync() => _fixture.ResetAsync();
-    public Task DisposeAsync()    => Task.CompletedTask;
+    public Task DisposeAsync() => Task.CompletedTask;
 
     // ---- ListAsync --------------------------------------------------------
 

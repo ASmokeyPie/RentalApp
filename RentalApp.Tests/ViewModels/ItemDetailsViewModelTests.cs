@@ -15,14 +15,18 @@ public class ItemDetailsViewModelTests
         // Regression: RefreshView toggles IsRefreshing=true BEFORE firing the
         // command. An early-return on IsRefreshing would leave the spinner
         // stuck. LoadAsync must still run and clear the flag in finally.
+        // Arrange
         var (vm, repo, _, _, _) = Build();
         repo.Setup(r => r.GetByIdAsync(42, default))
             .ReturnsAsync(SampleItem(42, "Drill"));
 
         vm.IsRefreshing = true;            // simulate the RefreshView pre-set
         vm.ItemId = 42;
+
+        // Act
         await vm.LoadAsync();
 
+        // Assert
         Assert.False(vm.IsRefreshing);     // cleared in finally
         Assert.True(vm.IsLoaded);
     }
@@ -30,10 +34,13 @@ public class ItemDetailsViewModelTests
     [Fact]
     public async Task LoadAsync_NoOps_WhenItemIdIsZero()
     {
+        // Arrange
         var (vm, repo, _, _, _) = Build();
 
+        // Act
         await vm.LoadAsync();
 
+        // Assert
         repo.Verify(r => r.GetByIdAsync(It.IsAny<int>(), default), Times.Never);
         Assert.False(vm.IsLoaded);
     }
@@ -41,13 +48,17 @@ public class ItemDetailsViewModelTests
     [Fact]
     public async Task LoadAsync_PopulatesItem_OnSuccess_AndUpdatesTitle()
     {
+        // Arrange
         var (vm, repo, _, _, _) = Build();
         repo.Setup(r => r.GetByIdAsync(42, default))
             .ReturnsAsync(SampleItem(42, "Cordless Drill"));
 
         vm.ItemId = 42;
+
+        // Act
         await vm.LoadAsync();
 
+        // Assert
         Assert.NotNull(vm.Item);
         Assert.Equal(42, vm.Item!.Id);
         Assert.True(vm.IsLoaded);
@@ -58,13 +69,17 @@ public class ItemDetailsViewModelTests
     [Fact]
     public async Task LoadAsync_OnNotFound_SetsError_AndIsLoadedStaysFalse()
     {
+        // Arrange
         var (vm, repo, _, _, _) = Build();
         repo.Setup(r => r.GetByIdAsync(42, default))
             .ReturnsAsync((Item?)null);
 
         vm.ItemId = 42;
+
+        // Act
         await vm.LoadAsync();
 
+        // Assert
         Assert.Null(vm.Item);
         Assert.False(vm.IsLoaded);
         Assert.False(vm.IsOwner);
@@ -75,13 +90,17 @@ public class ItemDetailsViewModelTests
     [Fact]
     public async Task LoadAsync_OnException_SetsError_AndIsLoadedStaysFalse()
     {
+        // Arrange
         var (vm, repo, _, _, _) = Build();
         repo.Setup(r => r.GetByIdAsync(7, default))
             .ThrowsAsync(new HttpRequestException("network down"));
 
         vm.ItemId = 7;
+
+        // Act
         await vm.LoadAsync();
 
+        // Assert
         Assert.Null(vm.Item);
         Assert.False(vm.IsLoaded);
         Assert.False(vm.IsOwner);
@@ -95,12 +114,15 @@ public class ItemDetailsViewModelTests
         // OnItemIdChanged fires LoadAsync as fire-and-forget. We can't await
         // it directly, so verify the side-effect by asserting the repo call
         // happened before the await suspension yields back.
+        // Arrange
         var (vm, repo, _, _, _) = Build();
         var tcs = new TaskCompletionSource<Item?>();
         repo.Setup(r => r.GetByIdAsync(42, default)).Returns(tcs.Task);
 
+        // Act
         vm.ItemId = 42;
 
+        // Assert
         repo.Verify(r => r.GetByIdAsync(42, default), Times.Once);
 
         // Complete the load so we leave the test in a clean state.
@@ -113,42 +135,54 @@ public class ItemDetailsViewModelTests
     [Fact]
     public async Task LoadAsync_SetsIsOwnerTrue_WhenCurrentUserOwnsItem()
     {
+        // Arrange
         var (vm, repo, auth, _, _) = Build();
         repo.Setup(r => r.GetByIdAsync(42, default))
             .ReturnsAsync(SampleItem(42, "Drill", ownerId: 7));
         auth.SetupGet(a => a.CurrentUser).Returns(new User { Id = 7, Email = "a@b.c", FirstName = "Ada", LastName = "L" });
 
         vm.ItemId = 42;
+
+        // Act
         await vm.LoadAsync();
 
+        // Assert
         Assert.True(vm.IsOwner);
     }
 
     [Fact]
     public async Task LoadAsync_SetsIsOwnerFalse_WhenCurrentUserIsNotOwner()
     {
+        // Arrange
         var (vm, repo, auth, _, _) = Build();
         repo.Setup(r => r.GetByIdAsync(42, default))
             .ReturnsAsync(SampleItem(42, "Drill", ownerId: 7));
         auth.SetupGet(a => a.CurrentUser).Returns(new User { Id = 99, Email = "z@b.c", FirstName = "Zed", LastName = "L" });
 
         vm.ItemId = 42;
+
+        // Act
         await vm.LoadAsync();
 
+        // Assert
         Assert.False(vm.IsOwner);
     }
 
     [Fact]
     public async Task LoadAsync_SetsIsOwnerFalse_WhenAnonymous()
     {
+        // Arrange
         var (vm, repo, auth, _, _) = Build();
         repo.Setup(r => r.GetByIdAsync(42, default))
             .ReturnsAsync(SampleItem(42, "Drill", ownerId: 7));
         auth.SetupGet(a => a.CurrentUser).Returns((User?)null);
 
         vm.ItemId = 42;
+
+        // Act
         await vm.LoadAsync();
 
+        // Assert
         Assert.False(vm.IsOwner);
     }
 
@@ -157,15 +191,19 @@ public class ItemDetailsViewModelTests
     [Fact]
     public async Task EditItemAsync_NavigatesToEditPage_WhenOwner()
     {
+        // Arrange
         var (vm, repo, auth, nav, _) = Build();
         repo.Setup(r => r.GetByIdAsync(42, default))
             .ReturnsAsync(SampleItem(42, "Drill", ownerId: 7));
         auth.SetupGet(a => a.CurrentUser).Returns(new User { Id = 7, Email = "a@b.c", FirstName = "Ada", LastName = "L" });
 
         vm.ItemId = 42;
+
+        // Act
         await vm.LoadAsync();
         await vm.EditItemAsync();
 
+        // Assert
         nav.Verify(n => n.NavigateToAsync(
                 "EditItemPage",
                 It.Is<Dictionary<string, object>>(d =>
@@ -176,15 +214,19 @@ public class ItemDetailsViewModelTests
     [Fact]
     public async Task EditItemAsync_DoesNothing_WhenNotOwner()
     {
+        // Arrange
         var (vm, repo, auth, nav, _) = Build();
         repo.Setup(r => r.GetByIdAsync(42, default))
             .ReturnsAsync(SampleItem(42, "Drill", ownerId: 7));
         auth.SetupGet(a => a.CurrentUser).Returns(new User { Id = 99, Email = "z@b.c", FirstName = "Zed", LastName = "L" });
 
         vm.ItemId = 42;
+
+        // Act
         await vm.LoadAsync();
         await vm.EditItemAsync();
 
+        // Assert
         nav.Verify(n => n.NavigateToAsync(It.IsAny<string>(), It.IsAny<Dictionary<string, object>>()),
             Times.Never);
     }
@@ -194,6 +236,7 @@ public class ItemDetailsViewModelTests
     [Fact]
     public async Task LoadAsync_SetsCanRent_WhenAuthenticatedNonOwnerAvailableItem()
     {
+        // Arrange
         var (vm, repo, auth, _, _) = Build();
         var item = SampleItem(42, "Drill", ownerId: 7);
         item.IsAvailable = true;
@@ -203,14 +246,18 @@ public class ItemDetailsViewModelTests
             new User { Id = 99, Email = "z@b.c", FirstName = "Zed", LastName = "L" });
 
         vm.ItemId = 42;
+
+        // Act
         await vm.LoadAsync();
 
+        // Assert
         Assert.True(vm.CanRent);
     }
 
     [Fact]
     public async Task LoadAsync_CanRentFalse_WhenViewerIsOwner()
     {
+        // Arrange
         var (vm, repo, auth, _, _) = Build();
         repo.Setup(r => r.GetByIdAsync(42, default))
             .ReturnsAsync(SampleItem(42, "Drill", ownerId: 7));
@@ -219,14 +266,18 @@ public class ItemDetailsViewModelTests
             new User { Id = 7, Email = "a@b.c", FirstName = "Ada", LastName = "L" });
 
         vm.ItemId = 42;
+
+        // Act
         await vm.LoadAsync();
 
+        // Assert
         Assert.False(vm.CanRent);
     }
 
     [Fact]
     public async Task LoadAsync_CanRentFalse_WhenItemNotAvailable()
     {
+        // Arrange
         var (vm, repo, auth, _, _) = Build();
         var item = SampleItem(42, "Drill", ownerId: 7);
         item.IsAvailable = false;
@@ -236,14 +287,18 @@ public class ItemDetailsViewModelTests
             new User { Id = 99, Email = "z@b.c", FirstName = "Zed", LastName = "L" });
 
         vm.ItemId = 42;
+
+        // Act
         await vm.LoadAsync();
 
+        // Assert
         Assert.False(vm.CanRent);
     }
 
     [Fact]
     public async Task LoadAsync_CanRentFalse_WhenNotAuthenticated()
     {
+        // Arrange
         var (vm, repo, auth, _, _) = Build();
         repo.Setup(r => r.GetByIdAsync(42, default))
             .ReturnsAsync(SampleItem(42, "Drill", ownerId: 7));
@@ -251,14 +306,18 @@ public class ItemDetailsViewModelTests
         auth.SetupGet(a => a.CurrentUser).Returns((User?)null);
 
         vm.ItemId = 42;
+
+        // Act
         await vm.LoadAsync();
 
+        // Assert
         Assert.False(vm.CanRent);
     }
 
     [Fact]
     public async Task RentItemAsync_NavigatesToRequestRentalPage_WhenCanRent()
     {
+        // Arrange
         var (vm, repo, auth, nav, _) = Build();
         var item = SampleItem(42, "Drill", ownerId: 7);
         item.IsAvailable = true;
@@ -268,9 +327,12 @@ public class ItemDetailsViewModelTests
             new User { Id = 99, Email = "z@b.c", FirstName = "Zed", LastName = "L" });
 
         vm.ItemId = 42;
+
+            // Act
         await vm.LoadAsync();
         await vm.RentItemAsync();
 
+            // Assert
         nav.Verify(n => n.NavigateToAsync(
                 "RequestRentalPage",
                 It.Is<Dictionary<string, object>>(d =>
@@ -281,6 +343,7 @@ public class ItemDetailsViewModelTests
     [Fact]
     public async Task RentItemAsync_DoesNothing_WhenCannotRent()
     {
+        // Arrange
         var (vm, repo, auth, nav, _) = Build();
         // Owner viewing own item — CanRent will be false
         repo.Setup(r => r.GetByIdAsync(42, default))
@@ -290,9 +353,12 @@ public class ItemDetailsViewModelTests
             new User { Id = 7, Email = "a@b.c", FirstName = "Ada", LastName = "L" });
 
         vm.ItemId = 42;
+
+        // Act
         await vm.LoadAsync();
         await vm.RentItemAsync();
 
+        // Assert
         nav.Verify(n => n.NavigateToAsync("RequestRentalPage", It.IsAny<Dictionary<string, object>>()),
             Times.Never);
     }
@@ -302,6 +368,7 @@ public class ItemDetailsViewModelTests
     [Fact]
     public async Task LoadAsync_PopulatesReviews_FromDedicatedEndpoint()
     {
+        // Arrange
         var (vm, repo, _, _, reviews) = Build();
         repo.Setup(r => r.GetByIdAsync(42, default)).ReturnsAsync(SampleItem(42, "Drill"));
         var page = new PagedResult<Review>
@@ -314,8 +381,11 @@ public class ItemDetailsViewModelTests
         reviews.Setup(r => r.GetForItemAsync(42, 1, 50, default)).ReturnsAsync(page);
 
         vm.ItemId = 42;
+
+        // Act
         await vm.LoadAsync();
 
+        // Assert
         Assert.Equal(2, vm.Reviews.Count);
         Assert.Equal(2, vm.TotalReviews);
     }
@@ -325,6 +395,7 @@ public class ItemDetailsViewModelTests
     {
         // The key scenario: server has 75 reviews but we only fetch 50. TotalReviews
         // should show 75 (from TotalCount), not 50 (the visible row count).
+        // Arrange
         var (vm, repo, _, _, reviews) = Build();
         repo.Setup(r => r.GetByIdAsync(42, default)).ReturnsAsync(SampleItem(42, "Drill"));
         var items = Enumerable.Range(1, 50).Select(i => SampleReview(i)).ToArray();
@@ -338,8 +409,11 @@ public class ItemDetailsViewModelTests
         reviews.Setup(r => r.GetForItemAsync(42, 1, 50, default)).ReturnsAsync(page);
 
         vm.ItemId = 42;
+
+        // Act
         await vm.LoadAsync();
 
+        // Assert
         Assert.Equal(50, vm.Reviews.Count);
         Assert.Equal(75, vm.TotalReviews);
     }
@@ -356,6 +430,7 @@ public class ItemDetailsViewModelTests
         //   slot 1 → fire-and-forget (ItemId assignment)
         //   slot 2 → first explicit await
         //   slot 3 → second explicit await (the refresh under test)
+        // Arrange
         var (vm, repo, _, _, reviews) = Build();
         repo.Setup(r => r.GetByIdAsync(42, default)).ReturnsAsync(SampleItem(42, "Drill"));
 
@@ -374,11 +449,17 @@ public class ItemDetailsViewModelTests
                .ReturnsAsync(firstPage)   // slot 2: first explicit LoadAsync
                .ReturnsAsync(secondPage); // slot 3: refresh under test
 
+         // Act
         vm.ItemId = 42;
         await vm.LoadAsync();
+
+         // Assert
         Assert.Equal(2, vm.Reviews.Count);
 
+         // Act
         await vm.LoadAsync();
+
+         // Assert
         Assert.Single(vm.Reviews);
         Assert.Equal(1, vm.TotalReviews);
     }
@@ -386,12 +467,16 @@ public class ItemDetailsViewModelTests
     [Fact]
     public async Task LoadAsync_ClearsReviews_WhenItemNotFound()
     {
+        // Arrange
         var (vm, repo, _, _, _) = Build();
         repo.Setup(r => r.GetByIdAsync(42, default)).ReturnsAsync((Item?)null);
 
         vm.ItemId = 42;
+
+        // Act
         await vm.LoadAsync();
 
+        // Assert
         Assert.Empty(vm.Reviews);
         Assert.Equal(0, vm.TotalReviews);
     }
@@ -399,13 +484,17 @@ public class ItemDetailsViewModelTests
     [Fact]
     public async Task LoadAsync_ReviewsAreEmpty_WhenNoReviewsExist()
     {
+        // Arrange
         var (vm, repo, _, _, _) = Build();
         repo.Setup(r => r.GetByIdAsync(42, default)).ReturnsAsync(SampleItem(42, "Drill"));
         // Default setup returns empty page — no additional setup needed.
 
         vm.ItemId = 42;
+
+        // Act
         await vm.LoadAsync();
 
+        // Assert
         Assert.Empty(vm.Reviews);
         Assert.Equal(0, vm.TotalReviews);
     }

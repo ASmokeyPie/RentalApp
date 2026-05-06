@@ -13,6 +13,7 @@ public class MyRentalsViewModelTests
     [Fact]
     public async Task RefreshAsync_LoadsBothLists_AndPopulatesCollections()
     {
+        // Arrange
         var (vm, rentals, _) = Build();
         rentals.Setup(s => s.GetIncomingAsync(null, default))
                .ReturnsAsync(new[] { Rental(1, "Drill", RentalStatus.Requested) });
@@ -23,8 +24,10 @@ public class MyRentalsViewModelTests
                    Rental(3, "Camera", RentalStatus.Completed),
                });
 
+        // Act
         await vm.RefreshAsync();
 
+        // Assert
         Assert.Single(vm.Incoming);
         Assert.Equal(2, vm.Outgoing.Count);
         Assert.False(vm.IsRefreshing);
@@ -34,6 +37,7 @@ public class MyRentalsViewModelTests
     [Fact]
     public async Task RefreshAsync_ReplacesExistingItems_OnSecondCall()
     {
+         // Arrange
         var (vm, rentals, _) = Build();
         rentals.SetupSequence(s => s.GetIncomingAsync(null, default))
                .ReturnsAsync(new[] { Rental(1, "Drill", RentalStatus.Requested) })
@@ -41,9 +45,11 @@ public class MyRentalsViewModelTests
         rentals.Setup(s => s.GetOutgoingAsync(null, default))
                .ReturnsAsync(Array.Empty<Rental>());
 
+         // Act
         await vm.RefreshAsync();
         await vm.RefreshAsync();
 
+         // Assert
         Assert.Single(vm.Incoming);
         Assert.Equal(99, vm.Incoming[0].Id);
     }
@@ -52,6 +58,7 @@ public class MyRentalsViewModelTests
     public async Task RefreshAsync_ProceedsEvenWhenIsRefreshingAlreadyTrue()
     {
         // Same regression as the other refresh-driven VMs.
+         // Arrange
         var (vm, rentals, _) = Build();
         rentals.Setup(s => s.GetIncomingAsync(null, default))
                .ReturnsAsync(Array.Empty<Rental>());
@@ -59,8 +66,11 @@ public class MyRentalsViewModelTests
                .ReturnsAsync(Array.Empty<Rental>());
 
         vm.IsRefreshing = true;
+
+         // Act
         await vm.RefreshAsync();
 
+         // Assert
         Assert.False(vm.IsRefreshing);
         rentals.Verify(s => s.GetIncomingAsync(null, default), Times.Once);
         rentals.Verify(s => s.GetOutgoingAsync(null, default), Times.Once);
@@ -69,12 +79,15 @@ public class MyRentalsViewModelTests
     [Fact]
     public async Task RefreshAsync_OnException_SetsError_AndClearsSpinner()
     {
+        // Arrange
         var (vm, rentals, _) = Build();
         rentals.Setup(s => s.GetIncomingAsync(null, default))
                .ThrowsAsync(new HttpRequestException("network down"));
 
+        // Act
         await vm.RefreshAsync();
 
+        // Assert
         Assert.True(vm.HasError);
         Assert.Contains("network down", vm.ErrorMessage);
         Assert.False(vm.IsRefreshing);
@@ -85,7 +98,10 @@ public class MyRentalsViewModelTests
     [Fact]
     public void DefaultsToIncomingTab()
     {
+        // Arrange
         var (vm, _, _) = Build();
+
+        // Assert
         Assert.Equal("Incoming", vm.SelectedTab);
         Assert.True(vm.IsIncomingSelected);
         Assert.False(vm.IsOutgoingSelected);
@@ -94,9 +110,13 @@ public class MyRentalsViewModelTests
     [Fact]
     public void SelectOutgoing_FlipsBooleanFlags()
     {
+        // Arrange
         var (vm, _, _) = Build();
+
+        // Act
         vm.SelectOutgoing();
 
+        // Assert
         Assert.Equal("Outgoing", vm.SelectedTab);
         Assert.False(vm.IsIncomingSelected);
         Assert.True(vm.IsOutgoingSelected);
@@ -105,6 +125,7 @@ public class MyRentalsViewModelTests
     [Fact]
     public async Task CurrentTabCount_FollowsActiveTab()
     {
+        // Arrange
         var (vm, rentals, _) = Build();
         rentals.Setup(s => s.GetIncomingAsync(null, default))
                .ReturnsAsync(new[] { Rental(1, "Drill", RentalStatus.Requested) });
@@ -115,10 +136,16 @@ public class MyRentalsViewModelTests
                    Rental(3, "Camera", RentalStatus.Completed),
                });
 
+        // Act
         await vm.RefreshAsync();
+
+        // Assert
         Assert.Equal(1, vm.CurrentTabCount);   // Incoming has 1
 
+        // Act
         vm.SelectOutgoing();
+
+        // Assert
         Assert.Equal(2, vm.CurrentTabCount);   // Outgoing has 2
     }
 
@@ -127,11 +154,14 @@ public class MyRentalsViewModelTests
     [Fact]
     public async Task SelectRentalAsync_NavigatesToRentalDetail()
     {
+        // Arrange
         var (vm, _, nav) = Build();
         var rental = Rental(7, "Drill", RentalStatus.Approved);
 
+        // Act
         await vm.SelectRentalAsync(rental);
 
+        // Assert
         nav.Verify(n => n.NavigateToAsync(
                 "RentalDetailsPage",
                 It.Is<Dictionary<string, object>>(d =>
@@ -142,10 +172,13 @@ public class MyRentalsViewModelTests
     [Fact]
     public async Task SelectRentalAsync_TolerantOfNull()
     {
+        // Arrange
         var (vm, _, nav) = Build();
 
+        // Act
         await vm.SelectRentalAsync(null);
 
+        // Assert
         nav.Verify(n => n.NavigateToAsync(It.IsAny<string>(), It.IsAny<Dictionary<string, object>>()),
             Times.Never);
     }
