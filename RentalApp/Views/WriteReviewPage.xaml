@@ -74,7 +74,7 @@
                           ColumnSpacing="6">
                         <Button Grid.Column="0"
                                 Text="{Binding Star1Symbol}"
-                                TextColor="{AppThemeBinding Light={StaticResource AccentColor}, Dark={StaticResource AccentColor}}"
+                                TextColor="{StaticResource Magenta}"
                                 FontSize="28"
                                 Command="{Binding SetRatingCommand}"
                                 CommandParameter="1"
