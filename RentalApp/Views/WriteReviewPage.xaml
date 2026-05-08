@@ -13,7 +13,8 @@
     <RefreshView IsRefreshing="{Binding IsRefreshing}"
                  Command="{Binding LoadCommand}">
         <ScrollView>
-            <StackLayout Padding="20" Spacing="16">
+            <StackLayout Padding="20"
+                         Spacing="16">
 
                 <!-- Error banner -->
                 <Border BackgroundColor="{AppThemeBinding Light=#FFEBEE, Dark=#1B0000}"
@@ -64,36 +65,44 @@
                 </Border>
 
                 <!-- Star picker + comment, only when reviewable -->
-                <StackLayout IsVisible="{Binding CanReview}" Spacing="14">
+                <StackLayout IsVisible="{Binding CanReview}"
+                             Spacing="14">
 
-                    <Label Text="Your rating" FontAttributes="Bold"/>
-                    <Grid ColumnDefinitions="*,*,*,*,*" ColumnSpacing="6">
+                    <Label Text="Your rating"
+                           FontAttributes="Bold"/>
+                    <Grid ColumnDefinitions="*,*,*,*,*"
+                          ColumnSpacing="6">
                         <Button Grid.Column="0"
                                 Text="{Binding Star1Symbol}"
+                                TextColor="{AppThemeBinding Light={StaticResource AccentColor}, Dark={StaticResource AccentColor}}"
                                 FontSize="28"
                                 Command="{Binding SetRatingCommand}"
                                 CommandParameter="1"
                                 BackgroundColor="Transparent"/>
                         <Button Grid.Column="1"
                                 Text="{Binding Star2Symbol}"
+                                TextColor="{StaticResource Magenta}"
                                 FontSize="28"
                                 Command="{Binding SetRatingCommand}"
                                 CommandParameter="2"
                                 BackgroundColor="Transparent"/>
                         <Button Grid.Column="2"
                                 Text="{Binding Star3Symbol}"
+                                TextColor="{StaticResource Magenta}"
                                 FontSize="28"
                                 Command="{Binding SetRatingCommand}"
                                 CommandParameter="3"
                                 BackgroundColor="Transparent"/>
                         <Button Grid.Column="3"
                                 Text="{Binding Star4Symbol}"
+                                TextColor="{StaticResource Magenta}"
                                 FontSize="28"
                                 Command="{Binding SetRatingCommand}"
                                 CommandParameter="4"
                                 BackgroundColor="Transparent"/>
                         <Button Grid.Column="4"
                                 Text="{Binding Star5Symbol}"
+                                TextColor="{StaticResource Magenta}"
                                 FontSize="28"
                                 Command="{Binding SetRatingCommand}"
                                 CommandParameter="5"
@@ -103,7 +112,8 @@
                            HorizontalOptions="Center"
                            FontSize="14"/>
 
-                    <Label Text="Your comment (optional)" FontAttributes="Bold"/>
+                    <Label Text="Your comment (optional)"
+                           FontAttributes="Bold"/>
                     <Editor Text="{Binding Comment}"
                             Placeholder="How was your rental? (up to 500 characters)"
                             HeightRequest="140"

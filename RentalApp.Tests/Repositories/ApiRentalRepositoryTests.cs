@@ -260,8 +260,8 @@ public class ApiRentalRepositoryTests
     [Fact]
     public async Task UpdateStatusAsync_SendsSpacedWireString_ForOutForRent()
     {
-        // Regression: server rejected "OutForRent" with 409. The requirements
-        // doc and (presumably) server use "Out for Rent" with spaces. We must
+        // Regression: server rejected "OutForRent" with 409. The 
+        // server uses "Out for Rent" with spaces. Must
         // translate the enum on the way out.
         // Arrange
         var stub = new StubHttpMessageHandler(TestResponses.Json(new

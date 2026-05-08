@@ -3,8 +3,8 @@ using RentalApp.Services;
 namespace RentalApp.Tests.Support;
 
 /// <summary>
-/// Deterministic in-memory replacement for <see cref="ITokenStorage"/> used
-/// across the Phase 1 auth tests. Also records call counts for assertions.
+/// Deterministic in-memory replacement for <see cref="ITokenStorage"/> .
+/// Also records call counts for assertions.
 /// </summary>
 public class InMemoryTokenStorage : ITokenStorage
 {
